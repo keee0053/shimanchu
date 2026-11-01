@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit（AI コードレビュー）の設定。PR を作ると自動でレビューされる
+# 設定項目: https://docs.coderabbit.ai/reference/configuration
+
+language: ja-JP
+
+tone_instructions: '日本語で、簡潔かつ丁寧にレビューしてください。指摘には理由と修正案を添えてください。'
+
+reviews:
+  profile: chill
+  high_level_summary: true
+  # 要約は PR 本文ではなく CodeRabbit のコメント（Walkthrough）に書く（PR 本文に AI ツール表記を入れないため）
+  high_level_summary_in_walkthrough: true
+  review_status: true
+  poem: false
+  # AI ツール表記を PR やコミットに入れないチームルールのため、AI エージェント向けのプロンプト欄は出さない
+  enable_prompt_for_ai_agents: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    # デフォルトブランチ（main）以外に、develop 向けの PR もレビューする
+    base_branches:
+      - develop
+
+  # CodeRabbit がコミットを作る機能は使わない（コミットメッセージのルール・AI ツール表記の禁止に反するため）
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false
+
+  # 自動生成ファイルはレビューしない
+  path_filters:
+    - '!package-lock.json'
+    - '!src/types/database.ts'
+    - '!ios/**'
+    - '!android/**'
+    - '!assets/**'
+
+  # パスごとのレビュー観点（docs/CODING_GUIDELINES.md に対応）
+  path_instructions:
+    - path: 'src/**/*.{ts,tsx}'
+      instructions: |
+        docs/CODING_GUIDELINES.md のルールに沿っているか確認してください。特に:
+        - 画面・コンポーネントから supabase.from() を直接呼ばず、src/api/ にまとめているか
+        - サーバーのデータは TanStack Query、端末内の状態だけ Zustand になっているか（サーバーデータを Zustand にコピーしていないか）
+        - Supabase の { data, error } の error を確認して throw しているか
+        - Realtime の購読をクリーンアップで removeChannel しているか
+        - ファイル名がケバブケースか、any を使っていないか
+    - path: 'src/app/**'
+      instructions: |
+        Expo Router の画面ファイルです。画面以外のコード（コンポーネント・フック・ロジック）を置いていないか確認してください。
+    - path: 'src/**/*location*'
+      instructions: |
+        位置情報を扱うコードです。次を重点的に確認してください:
+        - 座標を console.log などのログに出していないか
+        - 権限拒否・取得失敗時に「漂流」状態として扱っているか
+        - 精度・更新間隔を src/constants/location.ts の定数から使っているか
+    - path: 'supabase/migrations/**'
+      instructions: |
+        DB のマイグレーションです。次を重点的に確認してください:
+        - 新しいテーブルで RLS が有効になり、ポリシーが設定されているか
+        - 位置情報が、グループの共有設定どおりのメンバーにしか読めないポリシーになっているか
+        - auth.uid() を使った権限チェックに抜けがないか
+        - テーブル・カラム名が snake_case、テーブル名が複数形か
+    - path: 'src/tasks/**'
+      instructions: |
+        バックグラウンドタスクです。TaskManager.defineTask がファイルのトップレベルで呼ばれているか確認してください。
+
+chat:
+  auto_reply: true
