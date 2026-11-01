@@ -432,12 +432,15 @@ Windows で Docker Desktop 自体が起動しない場合は、`wsl --status` �
 
 ### `supabase start` でポートが使われていると出る
 
-別のプロジェクトのローカル Supabase が動いている可能性がある。
+別のプロジェクトのローカル Supabase が同じポート（54321〜）で動いている可能性がある。動いているプロジェクトは `docker ps` のコンテナ名（`supabase_db_<プロジェクト名>` など）で分かる。
 
 ```bash
-supabase stop --all
+docker ps --format '{{.Names}}' | grep supabase_db   # 動いているプロジェクトを確認
+supabase stop --project-id <プロジェクト名>            # そのプロジェクトだけ止める（--all で全部止める）
 supabase start
 ```
+
+止めたプロジェクトのデータは Docker のボリュームに残るので、そのプロジェクトのフォルダで `supabase start` すれば元に戻る。
 
 ### アプリ起動時に「EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY が未設定です」と出る
 
