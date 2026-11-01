@@ -100,7 +100,7 @@ GitHub 上でも CI（GitHub Actions）が同じチェックを実行します�
 
 ## コーディング規約
 
-`docs/CODING_GUIDELINES.md` を参照（準備中）。
+[docs/CODING_GUIDELINES.md](docs/CODING_GUIDELINES.md) を参照（命名・ディレクトリ・Supabase・状態管理・位置情報・フォーム）。
 
 ## 使用禁止事項
 
