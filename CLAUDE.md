@@ -10,6 +10,7 @@ Expo 全般のルール（docs の参照方法、`npx expo install`、`ios/` `an
 
 - チーム開発ルール（ブランチ・コミット・PR・レビュー）: [CONTRIBUTING.md](CONTRIBUTING.md)
 - コーディング規約（命名・ディレクトリ・Supabase・状態管理・位置情報・フォーム）: [docs/CODING_GUIDELINES.md](docs/CODING_GUIDELINES.md)
+- アーキテクチャ（全体像・データの流れ・ディレクトリ構成）: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ## Git（厳守）
 
@@ -58,5 +59,5 @@ supabase migration new <name>  # マイグレーション作成
 
 ## 現状メモ
 
-- `src/` の多くは create-expo-app テンプレートのサンプル（README で 🧪 印）。本実装で置き換える予定で、Web 用ファイルも当面は残す方針
+- `src/` の多くは create-expo-app テンプレートのサンプル（docs/ARCHITECTURE.md で 🧪 印）。本実装で置き換える予定で、Web 用ファイルも当面は残す方針
 - テンプレート由来の既知のエラー: `tsc` で `app-tabs.web.tsx`、lint で `use-color-scheme.web.ts` が1件ずつ出る
