@@ -270,7 +270,11 @@ supabase status
 npm run gen:types   # src/infrastructure/supabase/database.types.ts が生成される
 ```
 
-### 3-4. 停止
+### 3-4. 停止（作業を終えるとき）
+
+> ⚠️ 環境構築の途中では実行しない。このまま手順 4 に進む（Supabase を止めるとアプリから接続できない）。
+
+開発を終えるときに止める:
 
 ```bash
 supabase stop
@@ -293,11 +297,14 @@ supabase stop
 
 1. スマホに **Expo Go** をインストールする（App Store / Google Play）。プロジェクトの Expo SDK（58）に対応したバージョンであること
 2. PC とスマホを同じ Wi-Fi につなぐ
-3. 開発サーバーを起動し、表示された QR コードをスマホで読み取る
+3. **iPhone の場合のみ**: PC で `npx expo login` を実行し、Expo Go アプリでも**同じ Expo アカウント**にサインインする（iPhone の実機で開発サーバーのプロジェクトを開くには、両方が同じアカウントでサインインしている必要がある。Android・シミュレーターでは不要）
+4. 開発サーバーを Expo Go 向けに起動し、表示された QR コードをスマホで読み取る
 
 ```bash
-npx expo start
+npx expo start --go
 ```
+
+> このプロジェクトには `expo-dev-client` が入っているので、`--go` を付けないと Development Build 向けに起動する（Expo Go では開けない）。起動後にターミナルで `s` を押して切り替えることもできる。
 
 > **Windows**: 初回起動時に「Windows セキュリティの重要な警告」で Node.js の通信の許可を求められたら、**プライベート ネットワーク**を許可する。許可しないとスマホから接続できない。
 >
