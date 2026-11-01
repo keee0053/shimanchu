@@ -39,6 +39,13 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: node scripts/git-hooks/check-commit-message.js --title "$PR_TITLE"
 
+      - name: ブランチ名
+        if: github.event_name == 'pull_request'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/git-hooks/check-branch-name.js "$HEAD_REF" "$BASE_REF"
+
       - name: コミットメッセージ（PR）
         if: github.event_name == 'pull_request'
         env:
