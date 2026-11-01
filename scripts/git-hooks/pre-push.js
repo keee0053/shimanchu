@@ -3,7 +3,7 @@
 // 1. push 先のブランチ名（feature/PascalCase、main / develop への直接 push 禁止）
 // 2. push するコミットのメッセージ
 // 3. 型チェック・Lint・整形チェック（CI と同じ）
-// スキップする場合は git push --no-verify
+// 作業途中の push で型チェック・Lint・整形だけを飛ばす場合は git push --no-verify（CONTRIBUTING.md 参照）
 
 const { spawnSync } = require('child_process');
 const fs = require('fs');
@@ -55,7 +55,9 @@ for (const { localSha, remoteRef, remoteSha } of updates) {
 }
 
 if (!ok) {
-  console.error('\npush を中止しました（スキップする場合は git push --no-verify）\n');
+  console.error(
+    '\npush を中止しました。ブランチ名・コミットメッセージを直してから push してください\n',
+  );
   process.exit(1);
 }
 
@@ -71,7 +73,7 @@ for (const { name, command } of checks) {
   const result = spawnSync(command, { stdio: 'inherit', shell: true });
   if (result.status !== 0) {
     console.error(
-      `\n✖ ${name}に失敗したため push を中止しました（スキップする場合は git push --no-verify）\n`,
+      `\n✖ ${name}に失敗したため push を中止しました（作業途中の push に限り git push --no-verify で飛ばせます。CONTRIBUTING.md 参照）\n`,
     );
     process.exit(1);
   }

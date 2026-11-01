@@ -90,7 +90,12 @@ npm run setup-hooks
 | `git commit`（commit-msg） | コミットメッセージが `type: 説明` の日本語1行か、AI ツール表記が含まれていないか                                                                                                                            | コミットが中止される |
 | `git push`（pre-push）     | push 先のブランチ名（`feature/PascalCase`、`main` / `develop` への直接 push 禁止）、push するコミットのメッセージ、型チェック（`npx tsc --noEmit`）、Lint（`npm run lint`）、整形（`npm run format:check`） | push が中止される    |
 
-どうしてもスキップしたい場合は `git commit --no-verify` / `git push --no-verify` を使う（CI では同じチェックが走るので、PR で引っかかる）。
+フックのスキップ（`--no-verify`）は次のルールに従う。
+
+- `git commit --no-verify` は**使わない**（コミットメッセージのルールは常に守る）
+- `git push --no-verify` は、**作業途中の feature ブランチを共有したいときに、型チェック・Lint・整形の失敗を一時的に飛ばす場合だけ**使ってよい。ブランチ名・コミットメッセージの違反を避けるためには使わない
+- PR を出す前（レビューを依頼する前）には、スキップせずにすべてのチェックが通る状態にする（CI でも同じチェックが走る）
+- AI ツール（Claude Code など）にはスキップさせない
 
 ### CI（GitHub Actions）
 

@@ -21,7 +21,7 @@ Expo 全般のルール（docs の参照方法、`npx expo install`、`ios/` `an
 - `main` / `develop` に直接コミットしない。`develop` から `feature/PascalCase`（例: `feature/AvatarDrift`）を切って作業する
 - PR は `develop` 向け。タイトルは `prefix: 日本語`、本文は `.github/pull_request_template.md` に沿う。自己マージしない
 - commit / push / PR 作成はユーザーに頼まれたときだけ行う
-- コミットメッセージとブランチ名は Git フック（`.githooks/`）と CI で検査される。フックに止められたら `--no-verify` で回避せず、メッセージや変更を直す
+- コミットメッセージとブランチ名は Git フック（`.githooks/`）と CI で検査される。フックに止められたら `--no-verify` で回避せず、メッセージや変更を直す（人が作業途中の push で使ってよい条件は CONTRIBUTING.md にあるが、Claude Code は使わない）
 
 ## コマンド
 
