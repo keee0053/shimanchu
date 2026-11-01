@@ -18,6 +18,7 @@ const AI_MARKERS = [
     label: 'Generated with ...',
   },
   { pattern: /noreply@anthropic\.com/i, label: 'noreply@anthropic.com' },
+  { pattern: /^claude-session\s*:/im, label: 'Claude-Session' },
   { pattern: /🤖/u, label: '🤖' },
 ];
 
