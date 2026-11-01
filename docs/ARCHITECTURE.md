@@ -113,6 +113,7 @@ shimanchu/
 ├── .nvmrc                        # Node.js のバージョン指定（nvm use で切り替え）
 ├── .env.local                    # 🚫 実際の環境変数（各自で作成、コミットしない）
 ├── .gitignore
+├── .gitattributes                # 改行コードを LF に統一（Windows 対策）
 ├── AGENTS.md                     # AI コーディングエージェント向けのプロジェクトルール
 ├── .claude/settings.json         # Claude Code の設定（Expo プラグイン有効化）
 └── .vscode/                      # VS Code 推奨拡張（Expo Tools・ESLint・Prettier）・保存時の自動整形設定

@@ -8,12 +8,12 @@ React Native + Expo (SDK 58) / TypeScript / Expo Router / TanStack Query / Zusta
 
 ## セットアップ
 
-初めての人は **[docs/SETUP.md](docs/SETUP.md)** の手順に沿ってツールを入れること（Node.js 22・Docker・Supabase CLI・Xcode / Android Studio など）。
+初めての人は **[docs/SETUP.md](docs/SETUP.md)** の手順に沿ってツールを入れること（macOS / Windows 対応。Node.js 22・Docker・Supabase CLI・Xcode / Android Studio など）。
 ツールが揃っていれば、以下で起動できる。
 
 ```bash
 npm install
-cp .env.example .env.local
+cp .env.example .env.local   # Windows (PowerShell) は Copy-Item .env.example .env.local
 
 # ローカル Supabase を起動（Docker が必要）
 supabase start
