@@ -1,0 +1,3 @@
+#!/bin/sh
+# コミットメッセージのルールを確認する（scripts/git-hooks/check-commit-message.js）
+exec node scripts/git-hooks/check-commit-message.js "$1"
