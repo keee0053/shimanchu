@@ -27,17 +27,17 @@ npx expo start
 
 ## よく使うコマンド
 
-| コマンド                           | 内容                                                      |
-| ---------------------------------- | --------------------------------------------------------- |
-| `npx expo start`                   | 開発サーバー起動                                          |
-| `npx expo install <pkg>`           | SDK 互換バージョンでパッケージ追加（Expo 系は必ずこちら） |
-| `npx tsc --noEmit`                 | 型チェック                                                |
-| `npm run lint`                     | Lint                                                      |
-| `npm run format`                   | Prettier で全ファイルを整形（`format:check` は確認のみ）  |
-| `npm run gen:types`                | DB スキーマから型を生成（`src/types/database.ts`）        |
-| `npx expo-doctor`                  | 依存関係・設定の診断                                      |
-| `supabase start` / `supabase stop` | ローカル Supabase の起動 / 停止                           |
-| `supabase migration new <name>`    | マイグレーション作成                                      |
+| コマンド                           | 内容                                                                       |
+| ---------------------------------- | -------------------------------------------------------------------------- |
+| `npx expo start`                   | 開発サーバー起動                                                           |
+| `npx expo install <pkg>`           | SDK 互換バージョンでパッケージ追加（Expo 系は必ずこちら）                  |
+| `npx tsc --noEmit`                 | 型チェック                                                                 |
+| `npm run lint`                     | Lint                                                                       |
+| `npm run format`                   | Prettier で全ファイルを整形（`format:check` は確認のみ）                   |
+| `npm run gen:types`                | DB スキーマから型を生成（`src/infrastructure/supabase/database.types.ts`） |
+| `npx expo-doctor`                  | 依存関係・設定の診断                                                       |
+| `supabase start` / `supabase stop` | ローカル Supabase の起動 / 停止                                            |
+| `supabase migration new <name>`    | マイグレーション作成                                                       |
 
 ## ドキュメント
 

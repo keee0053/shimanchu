@@ -31,7 +31,7 @@ npx expo install <pkg>    # パッケージ追加（npm install ではなくこ�
 npx tsc --noEmit          # 型チェック
 npm run lint              # ESLint（Prettier 連携）
 npm run format            # Prettier で整形（format:check は確認のみ）
-npm run gen:types         # DB の型を src/types/database.ts に生成（要 supabase start）
+npm run gen:types         # DB の型を src/infrastructure/supabase/database.types.ts に生成（要 supabase start）
 supabase migration new <name>  # マイグレーション作成
 ```
 
@@ -39,14 +39,27 @@ supabase migration new <name>  # マイグレーション作成
 
 ## コードを書くときの要点
 
+### 層構成（クリーンアーキテクチャ・ESLint で強制）
+
+依存の向きは `presentation（src/app・src/presentation）→ application → domain ← infrastructure`。層をまたいでつなぐのは `src/container.ts` だけ。
+
+- **domain**（`src/domain/`）: エンティティの型・ルールの純粋関数（エリア判定・漂流判定など）・リポジトリのインターフェース。React・Expo・Supabase を import しない
+- **application**（`src/application/`）: ロジックがある操作だけユースケースにする。依存は `createXxx(deps)` の引数で受け取る
+- **infrastructure**（`src/infrastructure/`）: Supabase・expo-location・expo-task-manager を使うコードはここだけ。リポジトリの実装を書く
+- **presentation**: 画面・コンポーネント・TanStack Query のフック（`queries/`）・Zustand（`stores/`）・フォームの Zod（`schemas/`）。データは `@/container` のユースケースかリポジトリ経由で使う。ロジックのない単純な取得はユースケースを作らずリポジトリを直接呼んでよい
+- クラスや DI コンテナは使わず、関数と型で書く
+- 新しい機能を作るときは、エンティティ → リポジトリのインターフェース → infrastructure の実装 → container への登録 →（必要なら）ユースケース → presentation のフック、の順に作る
+
+### その他
+
 - ファイル名はケバブケース、コンポーネントは PascalCase。画面（`src/app/`）だけ `export default`、他は名前付き export
-- 画面・コンポーネントから `supabase.from()` を直接呼ばない。`src/api/<ドメイン>.ts` に取得処理と TanStack Query のフックをまとめる。`error` は必ず `throw`
-- サーバーのデータは TanStack Query、端末内の状態だけ Zustand（`src/stores/`）。サーバーデータを Zustand にコピーしない
-- Realtime の購読はクリーンアップで必ず `supabase.removeChannel`。受信した変更は TanStack Query のキャッシュに反映する
+- Supabase の `{ data, error }` の `error` は必ず `throw`。`select('*')` ではなく使うカラムを書く
+- サーバーのデータは TanStack Query、端末内の状態だけ Zustand。サーバーデータを Zustand にコピーしない
+- Realtime の購読は infrastructure のリポジトリに実装し、解除関数を返す。presentation のフックはクリーンアップで必ず解除する。受信した変更は TanStack Query のキャッシュに反映する
 - DB 変更は必ずマイグレーションで。新しいテーブルは RLS を有効にしてポリシーを書く。マージ済みマイグレーションは編集しない
-- DB の型は手書きせず `npm run gen:types` で生成したものを使う
-- 位置情報: 当面フォアグラウンドのみ。取得失敗・権限拒否は「漂流」状態として扱う。座標をログに出さない。`TaskManager.defineTask` は `src/tasks/` のトップレベルで定義
-- フォームは React Hook Form + Zod（`src/schemas/`、型は `z.infer`、エラーメッセージは日本語）
+- DB の行の型は手書きせず `npm run gen:types` で生成したもの（infrastructure 内）を使う。domain のエンティティは必要な項目だけ手で定義し、リポジトリの実装で変換する
+- 位置情報: 当面フォアグラウンドのみ。取得失敗・権限拒否は「漂流」状態として扱う（domain のルール）。座標をログに出さない。`TaskManager.defineTask` は `src/infrastructure/location/` のトップレベルで定義し、`src/container.ts` で import する
+- フォームは React Hook Form + Zod（`src/presentation/schemas/`、型は `z.infer`、エラーメッセージは日本語）
 - 秘密情報（`service_role` キー、`.env.local`）をコードやコミットに含めない。`EXPO_PUBLIC_` 付きの環境変数は公開される前提で扱う
 
 ## 未決定事項

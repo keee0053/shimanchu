@@ -267,7 +267,7 @@ supabase status
 - マイグレーションがあれば、DB の型を生成できることを確認する:
 
 ```bash
-npm run gen:types   # src/types/database.ts が生成される
+npm run gen:types   # src/infrastructure/supabase/database.types.ts が生成される
 ```
 
 ### 3-4. 停止
