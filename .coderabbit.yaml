@@ -73,7 +73,7 @@ reviews:
     - path: 'src/app/**'
       instructions: |
         Expo Router の画面ファイルです。画面以外のコード（コンポーネント・フック・ロジック）を置いていないか確認してください。
-    - path: 'src/**/*location*'
+    - path: 'src/**/{*location*,location/**}'
       instructions: |
         位置情報を扱うコードです。次を重点的に確認してください:
         - 座標を console.log などのログに出していないか
