@@ -37,6 +37,8 @@ npx expo start
 | `npx expo install <pkg>`           | SDK 互換バージョンでパッケージ追加（Expo 系は必ずこちら） |
 | `npx tsc --noEmit`                 | 型チェック                                                |
 | `npm run lint`                     | Lint                                                      |
+| `npm run format`                   | Prettier で全ファイルを整形（`format:check` は確認のみ）  |
+| `npm run gen:types`                | DB スキーマから型を生成（`src/types/database.ts`）        |
 | `npx expo-doctor`                  | 依存関係・設定の診断                                      |
 | `supabase start` / `supabase stop` | ローカル Supabase の起動 / 停止                           |
 | `supabase migration new <name>`    | マイグレーション作成                                      |
@@ -70,7 +72,8 @@ shimanchu/
 │   │   ├── use-color-scheme.ts   # 🧪 ライト/ダーク判定（.web.ts は Web 版）
 │   │   └── use-theme.ts          # 🧪 現在のテーマ取得
 │   ├── lib/                      # 外部サービス接続などの共通処理
-│   │   └── supabase.ts           # Supabase クライアント（認証セッションを AsyncStorage に保存）
+│   │   ├── supabase.ts           # Supabase クライアント（認証セッションを AsyncStorage に保存）
+│   │   └── query-client.ts       # TanStack Query のクライアント（フォアグラウンド復帰時に再取得）
 │   └── global.css                # 🧪 Web 用グローバル CSS
 │
 ├── assets/                       # 画像・アイコン
@@ -86,17 +89,25 @@ shimanchu/
 ├── scripts/
 │   └── reset-project.js          # 🧪 サンプルを片付けて空のプロジェクトにするスクリプト
 │
+├── docs/
+│   └── CODING_GUIDELINES.md      # コーディング規約（命名・ディレクトリ・状態管理・位置情報など）
+├── .github/
+│   └── pull_request_template.md  # PR テンプレート
+├── CONTRIBUTING.md               # チーム開発ルール（ブランチ・コミット・PR・レビュー）
+│
 ├── app.json                      # Expo のアプリ設定（アプリ名・アイコン・位置情報の権限文言・プラグイン）
 ├── package.json                  # 依存パッケージと npm スクリプト
 ├── package-lock.json             # 依存バージョンの固定（コミットする）
 ├── tsconfig.json                 # TypeScript 設定（strict、"@/*" → src/* のパスエイリアス）
+├── eslint.config.js              # ESLint 設定（Expo 推奨 + Prettier 連携）
+├── .prettierrc.json              # Prettier 設定（.prettierignore で対象外を指定）
 ├── expo-env.d.ts                 # 🚫 Expo の型定義（expo start 時に自動生成）
 ├── .env.example                  # 環境変数のひな形 → .env.local にコピーして使う
 ├── .env.local                    # 🚫 実際の環境変数（各自で作成、コミットしない）
 ├── .gitignore
 ├── AGENTS.md                     # AI コーディングエージェント向けのプロジェクトルール
 ├── .claude/settings.json         # Claude Code の設定（Expo プラグイン有効化）
-└── .vscode/                      # VS Code 推奨拡張（Expo Tools）・保存時の自動整形設定
+└── .vscode/                      # VS Code 推奨拡張（Expo Tools・ESLint・Prettier）・保存時の自動整形設定
 ```
 
 ### 自動生成されるディレクトリ（すべて 🚫）
@@ -113,4 +124,4 @@ shimanchu/
 - **画面**は `src/app/` に置く。画面以外のコード（コンポーネント・フック・ロジック）は `src/app/` に置かない（ルートとして扱われてしまうため）。
 - `*.web.tsx` / `*.web.ts` は Web でのみ使われる実装。同名の `*.tsx` がネイティブ用。
 - Supabase など外部サービスとの接続は `src/lib/` にまとめる。
-- 今後の追加予定（例）: Zustand のストアは `src/stores/`、Zod スキーマは `src/schemas/`、位置情報のバックグラウンドタスクは `src/tasks/`。
+- 今後追加するディレクトリ（`src/api/`・`src/stores/`・`src/schemas/`・`src/tasks/` など）の役割は [docs/CODING_GUIDELINES.md](docs/CODING_GUIDELINES.md#3-ディレクトリ) を参照。
