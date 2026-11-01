@@ -152,8 +152,7 @@ shimanchu/
 │   │   ├── check-commit-message.js # 1件のコミットメッセージ / PR タイトルを検査
 │   │   ├── check-commits.js      # 範囲内のコミットメッセージをまとめて検査（CI 用）
 │   │   └── pre-push.js           # push 前のチェック（ブランチ名・メッセージ・型・Lint・整形）
-│   ├── setup-hooks.js            # Git フックを有効にする（npm install 時に自動実行）
-│   └── reset-project.js          # 🧪 サンプルを片付けて空のプロジェクトにするスクリプト
+│   └── setup-hooks.js            # Git フックを有効にする（npm install 時に自動実行）
 ├── .githooks/                    # Git フックの入口（commit-msg / pre-push。中身は scripts/git-hooks/ を呼ぶだけ）
 │
 ├── docs/
