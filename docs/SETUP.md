@@ -210,6 +210,8 @@ node -v   # fnm が .nvmrc を読んで v22.x.x になっていることを確�
 npm install
 ```
 
+このとき Git フックも自動で有効になり、`✔ Git フックを有効にしました（.githooks/）` と表示される。以降、ルールに沿わないコミットメッセージや、型チェック・Lint が通らない push は自動で止められる（[CONTRIBUTING.md](../CONTRIBUTING.md#git-フックと-ci-による自動チェック)）。
+
 > パッケージを**追加**するときは `npm install <pkg>` ではなく `npx expo install <pkg>` を使う（SDK に合うバージョンが入る）。
 
 ### 2-3. 環境変数ファイルを作る
@@ -433,6 +435,7 @@ npx expo-doctor          # "No issues detected!"
 npx tsc --noEmit         # 型チェック
 npm run lint             # ESLint
 npm run format:check     # Prettier
+git config core.hooksPath  # .githooks（Git フックが有効）
 npx expo start           # アプリが起動し、画面が表示される
 ```
 
@@ -534,5 +537,4 @@ Remove-Item -Recurse -Force node_modules; npm install
 ## 未整備（決まり次第追記）
 
 - **Google ログイン**: Google Cloud での OAuth クライアント作成と、`supabase/config.toml` への設定がまだ。ローカルでのログインはこれが終わるまで試せない
-- **Git フック**: commit-msg / pre-push フック（`./scripts/setup-hooks`）はまだ作っていない。作るときは Windows でも動く形（Node.js のスクリプトなど）にすること
 - **EAS Build**: クラウドでのビルド・実機配布の設定はまだ。Windows の人が iOS の Development Build を作るにはこれが必要

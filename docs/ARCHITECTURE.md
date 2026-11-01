@@ -79,6 +79,7 @@ shimanchu/
 │   │   ├── supabase.ts           # Supabase クライアント（認証セッションを AsyncStorage に保存）
 │   │   └── query-client.ts       # TanStack Query のクライアント（フォアグラウンド復帰時に再取得）
 │   ├── types/
+│   │   ├── expo.d.ts             # Expo の型参照（自動生成の expo-env.d.ts がない環境でも型チェックを通す）
 │   │   └── database.ts           # 🚫 DB の型（npm run gen:types で自動生成。手で編集しない。コミットはする）
 │   └── global.css                # 🧪 Web 用グローバル CSS
 │
@@ -93,13 +94,21 @@ shimanchu/
 │   # 今後 migrations/（DB スキーマ）や seed.sql（初期データ）をここに追加する
 │
 ├── scripts/
+│   ├── git-hooks/                # Git フック・CI から使うチェック処理（Node.js。macOS / Windows 共通）
+│   │   ├── commit-rules.js       # コミットメッセージ・PR タイトル・ブランチ名のルール本体
+│   │   ├── check-commit-message.js # 1件のコミットメッセージ / PR タイトルを検査
+│   │   ├── check-commits.js      # 範囲内のコミットメッセージをまとめて検査（CI 用）
+│   │   └── pre-push.js           # push 前のチェック（ブランチ名・メッセージ・型・Lint・整形）
+│   ├── setup-hooks.js            # Git フックを有効にする（npm install 時に自動実行）
 │   └── reset-project.js          # 🧪 サンプルを片付けて空のプロジェクトにするスクリプト
+├── .githooks/                    # Git フックの入口（commit-msg / pre-push。中身は scripts/git-hooks/ を呼ぶだけ）
 │
 ├── docs/
 │   ├── ARCHITECTURE.md           # アーキテクチャ（全体像・データの流れ・ディレクトリ構成）← このファイル
 │   ├── SETUP.md                  # 環境構築手順
 │   └── CODING_GUIDELINES.md      # コーディング規約（命名・ディレクトリ・状態管理・位置情報など）
 ├── .github/
+│   ├── workflows/ci.yml          # CI（PR 時に PR タイトル・コミットメッセージ・型・Lint・整形をチェック）
 │   └── pull_request_template.md  # PR テンプレート
 ├── CONTRIBUTING.md               # チーム開発ルール（ブランチ・コミット・PR・レビュー）
 ├── CLAUDE.md                     # Claude Code 向けのプロジェクトルール
@@ -117,7 +126,7 @@ shimanchu/
 ├── .gitignore
 ├── .gitattributes                # 改行コードを LF に統一（Windows 対策）
 ├── AGENTS.md                     # AI コーディングエージェント向けのプロジェクトルール
-├── .claude/settings.json         # Claude Code の設定（Expo プラグイン有効化）
+├── .claude/settings.json         # Claude Code の設定（Expo プラグイン有効化・コミット / PR への署名を無効化）
 └── .vscode/                      # VS Code 推奨拡張（Expo Tools・ESLint・Prettier）・保存時の自動整形設定
 ```
 
