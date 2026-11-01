@@ -305,13 +305,28 @@ npx expo start
 
 1. Mac App Store から **Xcode** をインストールする
 2. Xcode を開き、**Settings… > Components** の **Platform Support > iOS** で **Get** を押してシミュレーターを入れる
-3. **Settings… > Locations** の **Command Line Tools** で最新の Xcode を選ぶ
+3. **Settings… > Locations** の **Command Line Tools** で最新の Xcode を選ぶ（ターミナルで行う場合は下のコマンド。Mac のログインパスワードを聞かれる）
+
+   ```bash
+   sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+   ```
+
+4. iOS ビルドで使う **CocoaPods** を入れる（Expo の公式手順には書かれていないが、`npx expo run:ios` の中で使われる）
+
+   ```bash
+   brew install cocoapods
+   ```
 
 確認:
 
 ```bash
-xcodebuild -version   # Xcode xx.x と表示されれば OK
+xcode-select -p         # /Applications/Xcode.app/Contents/Developer（CommandLineTools になっていたら手順 3 をやり直す）
+xcodebuild -version     # Xcode xx.x と表示されれば OK
+xcrun simctl list runtimes   # iOS xx.x が1つ以上表示されれば OK。空なら手順 2 のシミュレーターが入っていない
+pod --version
 ```
+
+> シミュレーターは `xcodebuild -downloadPlatform iOS` でもダウンロードできる（8GB 前後）。
 
 ビルドして起動（初回はネイティブのビルドで数分かかる）:
 
