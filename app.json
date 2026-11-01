@@ -30,10 +30,9 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "友達の島でアバターの居場所を更新するため、バックグラウンドでも位置情報を使用します。",
           "locationWhenInUsePermission": "島でのアバターの居場所を決めるために位置情報を使用します。",
-          "isIosBackgroundLocationEnabled": true,
-          "isAndroidBackgroundLocationEnabled": true
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false
         }
       ],
       [
