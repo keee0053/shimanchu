@@ -12,7 +12,11 @@ const { checkBranchName } = require('./commit-rules');
 const { checkRange } = require('./check-commits');
 
 const ZERO_SHA = /^0+$/;
+// git は第1引数にリモート名を渡す。リモート名ではなく URL を指定して push した場合は URL が渡る
 const remoteName = process.argv[2] ?? 'origin';
+const isUrl = /[:/]/.test(remoteName);
+// まだリモートにないコミットを判定する基準（URL の場合はすべてのリモートの追跡ブランチを使う）
+const remoteRefs = isUrl ? '--remotes' : `--remotes=${remoteName}`;
 
 // git は push する ref を「<local ref> <local sha> <remote ref> <remote sha>」の形で標準入力に渡す
 const updates = fs
@@ -40,7 +44,7 @@ for (const { localSha, remoteRef, remoteSha } of updates) {
 
   // まだリモートにないコミットだけを検査する
   const range = ZERO_SHA.test(remoteSha)
-    ? [localSha, '--not', `--remotes=${remoteName}`]
+    ? [localSha, '--not', remoteRefs]
     : [localSha, '--not', remoteSha];
   const { failed } = checkRange(range);
   if (failed > 0) {
