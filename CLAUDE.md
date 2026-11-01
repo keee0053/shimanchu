@@ -11,6 +11,7 @@ Expo 全般のルール（docs の参照方法、`npx expo install`、`ios/` `an
 - チーム開発ルール（ブランチ・コミット・PR・レビュー）: [CONTRIBUTING.md](CONTRIBUTING.md)
 - コーディング規約（命名・ディレクトリ・Supabase・状態管理・位置情報・フォーム）: [docs/CODING_GUIDELINES.md](docs/CODING_GUIDELINES.md)
 - アーキテクチャ（全体像・データの流れ・ディレクトリ構成）: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- 環境構築手順: [docs/SETUP.md](docs/SETUP.md)
 
 ## Git（厳守）
 

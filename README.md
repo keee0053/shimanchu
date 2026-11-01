@@ -6,14 +6,10 @@
 
 React Native + Expo (SDK 58) / TypeScript / Expo Router / TanStack Query / Zustand / Supabase (Auth・PostgreSQL・Realtime) / expo-location / expo-task-manager / React Hook Form / Zod
 
-## 必要なもの
-
-- Node.js 22 以上
-- Docker Desktop（ローカル Supabase 用）
-- Supabase CLI（`brew install supabase/tap/supabase`）
-- 実機確認用: iOS は Xcode、Android は Android Studio（または EAS Build）
-
 ## セットアップ
+
+初めての人は **[docs/SETUP.md](docs/SETUP.md)** の手順に沿ってツールを入れること（Node.js 22・Docker・Supabase CLI・Xcode / Android Studio など）。
+ツールが揃っていれば、以下で起動できる。
 
 ```bash
 npm install
@@ -47,6 +43,7 @@ npx expo start
 
 | ファイル                                               | 内容                                                             |
 | ------------------------------------------------------ | ---------------------------------------------------------------- |
+| [docs/SETUP.md](docs/SETUP.md)                         | 環境構築手順（ツールの導入・確認・トラブルシューティング）       |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)           | アーキテクチャ（全体像・データの流れ・ディレクトリ構成）         |
 | [docs/CODING_GUIDELINES.md](docs/CODING_GUIDELINES.md) | コーディング規約（命名・Supabase・状態管理・位置情報・フォーム） |
 | [CONTRIBUTING.md](CONTRIBUTING.md)                     | チーム開発ルール（ブランチ・コミット・PR・レビュー）             |

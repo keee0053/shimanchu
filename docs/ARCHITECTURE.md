@@ -95,6 +95,7 @@ shimanchu/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md           # アーキテクチャ（全体像・データの流れ・ディレクトリ構成）← このファイル
+│   ├── SETUP.md                  # 環境構築手順
 │   └── CODING_GUIDELINES.md      # コーディング規約（命名・ディレクトリ・状態管理・位置情報など）
 ├── .github/
 │   └── pull_request_template.md  # PR テンプレート
@@ -109,6 +110,7 @@ shimanchu/
 ├── .prettierrc.json              # Prettier 設定（.prettierignore で対象外を指定）
 ├── expo-env.d.ts                 # 🚫 Expo の型定義（expo start 時に自動生成）
 ├── .env.example                  # 環境変数のひな形 → .env.local にコピーして使う
+├── .nvmrc                        # Node.js のバージョン指定（nvm use で切り替え）
 ├── .env.local                    # 🚫 実際の環境変数（各自で作成、コミットしない）
 ├── .gitignore
 ├── AGENTS.md                     # AI コーディングエージェント向けのプロジェクトルール
