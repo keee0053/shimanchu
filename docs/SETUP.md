@@ -436,8 +436,6 @@ npm run format:check     # Prettier
 npx expo start           # アプリが起動し、画面が表示される
 ```
 
-> 現時点では、テンプレートのサンプル由来のエラーが `npx tsc --noEmit`（`app-tabs.web.tsx`）と `npm run lint`（`use-color-scheme.web.ts`）で1件ずつ出る。これ以外のエラーが出なければ OK。
-
 ## トラブルシューティング
 
 ### `Cannot connect to the Docker daemon` と出る
