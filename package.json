@@ -58,7 +58,7 @@
     "lint": "expo lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "gen:types": "supabase gen types typescript --local > src/types/database.ts",
+    "gen:types": "supabase gen types typescript --local > src/infrastructure/supabase/database.types.ts",
     "prepare": "node scripts/setup-hooks.js",
     "setup-hooks": "node scripts/setup-hooks.js"
   },

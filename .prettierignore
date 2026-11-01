@@ -5,4 +5,4 @@ ios/
 android/
 package-lock.json
 supabase/
-src/types/database.ts
+src/infrastructure/supabase/database.types.ts

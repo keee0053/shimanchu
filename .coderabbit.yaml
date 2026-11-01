@@ -41,7 +41,7 @@ reviews:
   # 自動生成ファイルはレビューしない
   path_filters:
     - '!package-lock.json'
-    - '!src/types/database.ts'
+    - '!src/infrastructure/supabase/database.types.ts'
     - '!ios/**'
     - '!android/**'
     - '!assets/**'
