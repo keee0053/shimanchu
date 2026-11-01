@@ -4,6 +4,8 @@ name: CI
 on:
   pull_request:
     branches: [develop, main]
+    # edited: PR タイトルだけを変更したときもタイトルの検査を再実行する
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [develop, main]
 
@@ -37,12 +39,21 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: node scripts/git-hooks/check-commit-message.js --title "$PR_TITLE"
 
-      - name: コミットメッセージ
+      - name: コミットメッセージ（PR）
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node scripts/git-hooks/check-commits.js "$BASE_SHA" "$HEAD_SHA"
+
+      # develop / main に直接入ったコミット（フックを通っていないもの）も検査する
+      # ブランチ新規作成時（before が 0000...）は比較元がないためスキップする
+      - name: コミットメッセージ（push）
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.event.after }}
+        run: node scripts/git-hooks/check-commits.js "$BEFORE_SHA" "$AFTER_SHA"
 
       - name: 型チェック
         run: npx tsc --noEmit
