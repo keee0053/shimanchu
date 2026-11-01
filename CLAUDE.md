@@ -71,6 +71,7 @@ supabase migration new <name>  # マイグレーション作成
 - バックグラウンド位置情報の導入時期
 - Sign in with Apple への対応
 - テスト方針
+- 認証セッションの保存方法（今は AsyncStorage。Google ログイン実装時に SecureStore を使った暗号化方式へ変更予定）
 
 ## 現状メモ
 
