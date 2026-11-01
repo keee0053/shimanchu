@@ -3,7 +3,7 @@
 prefix: add / fix / refactor / test / chore / perf / docs
 -->
 
-## 概要
+## 概要/目的
 
 <!-- このPRで何をしたかを簡潔に -->
 
