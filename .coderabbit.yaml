@@ -51,11 +51,25 @@ reviews:
     - path: 'src/**/*.{ts,tsx}'
       instructions: |
         docs/CODING_GUIDELINES.md のルールに沿っているか確認してください。特に:
-        - 画面・コンポーネントから supabase.from() を直接呼ばず、src/api/ にまとめているか
+        - クリーンアーキテクチャの層の責務が守られているか（presentation → application → domain ← infrastructure。import の禁止は ESLint で検査済みなので、責務の置き場所が適切かを見る）
+        - ロジックが presentation（画面・フック）に書かれていないか。ルールは domain の純粋関数、操作はユースケースにあるべき
         - サーバーのデータは TanStack Query、端末内の状態だけ Zustand になっているか（サーバーデータを Zustand にコピーしていないか）
-        - Supabase の { data, error } の error を確認して throw しているか
-        - Realtime の購読をクリーンアップで removeChannel しているか
+        - クラスや DI コンテナを使わず、関数と型で書かれているか
         - ファイル名がケバブケースか、any を使っていないか
+    - path: 'src/domain/**'
+      instructions: |
+        domain 層です。React・Expo・Supabase などに依存しない純粋な TypeScript になっているか、副作用（通信・保存・ログ出力）がないかを確認してください。
+        エリア判定・漂流判定などのルールは、入力から出力が決まる純粋関数になっているか確認してください。
+    - path: 'src/application/**'
+      instructions: |
+        ユースケースです。依存（リポジトリ）が createXxx(deps) の引数で渡されているか、ロジックのない単なる受け渡しだけのユースケースになっていないかを確認してください（その場合はユースケース不要）。
+    - path: 'src/infrastructure/**'
+      instructions: |
+        infrastructure 層です。次を確認してください:
+        - domain のリポジトリのインターフェースを満たしているか
+        - Supabase の { data, error } の error を確認して throw しているか、select('*') ではなく使うカラムを書いているか
+        - DB の行（自動生成の型）から domain のエンティティへの変換が正しいか
+        - Realtime の購読が解除関数を返し、その中で removeChannel しているか
     - path: 'src/app/**'
       instructions: |
         Expo Router の画面ファイルです。画面以外のコード（コンポーネント・フック・ロジック）を置いていないか確認してください。
@@ -64,7 +78,8 @@ reviews:
         位置情報を扱うコードです。次を重点的に確認してください:
         - 座標を console.log などのログに出していないか
         - 権限拒否・取得失敗時に「漂流」状態として扱っているか
-        - 精度・更新間隔を src/constants/location.ts の定数から使っているか
+        - 精度・更新間隔を src/infrastructure/location/constants.ts の定数から使っているか
+        - TaskManager.defineTask がファイルのトップレベルで呼ばれているか
     - path: 'supabase/migrations/**'
       instructions: |
         DB のマイグレーションです。次を重点的に確認してください:
@@ -72,9 +87,6 @@ reviews:
         - 位置情報が、グループの共有設定どおりのメンバーにしか読めないポリシーになっているか
         - auth.uid() を使った権限チェックに抜けがないか
         - テーブル・カラム名が snake_case、テーブル名が複数形か
-    - path: 'src/tasks/**'
-      instructions: |
-        バックグラウンドタスクです。TaskManager.defineTask がファイルのトップレベルで呼ばれているか確認してください。
 
 chat:
   auto_reply: true
