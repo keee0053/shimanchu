@@ -21,7 +21,7 @@ cp .env.example .env.local
 
 # ローカル Supabase を起動（Docker が必要）
 supabase start
-supabase status   # 表示された API URL と anon key を .env.local に記入
+supabase status   # 表示された Project URL と Publishable キーを .env.local に記入
 
 npx expo start
 ```
