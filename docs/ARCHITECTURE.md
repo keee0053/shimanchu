@@ -78,6 +78,8 @@ shimanchu/
 │   ├── lib/                      # 外部サービス接続などの共通処理
 │   │   ├── supabase.ts           # Supabase クライアント（認証セッションを AsyncStorage に保存）
 │   │   └── query-client.ts       # TanStack Query のクライアント（フォアグラウンド復帰時に再取得）
+│   ├── types/
+│   │   └── database.ts           # 🚫 DB の型（npm run gen:types で自動生成。手で編集しない。コミットはする）
 │   └── global.css                # 🧪 Web 用グローバル CSS
 │
 ├── assets/                       # 画像・アイコン
