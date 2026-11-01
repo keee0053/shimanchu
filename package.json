@@ -56,7 +56,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "gen:types": "supabase gen types typescript --local > src/types/database.ts"
   },
   "private": true
 }
