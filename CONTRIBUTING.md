@@ -113,6 +113,7 @@ npm run setup-hooks
 `develop` / `main` 向けの PR と、`develop` / `main` への push で `.github/workflows/ci.yml` が実行される。
 
 - PR タイトルが `prefix: 日本語` 形式か
+- PR のブランチ名が `feature/PascalCase` か（`develop` → `main` のリリース用 PR は対象外）
 - PR に含まれるコミットのメッセージ
 - 型チェック・Lint・整形
 
