@@ -3,7 +3,8 @@
 // 1. push 先のブランチ名（feature/PascalCase、main / develop への直接 push 禁止）
 // 2. push するコミットのメッセージ
 // 3. 型チェック・Lint・整形チェック（CI と同じ）
-// 作業途中の push で型チェック・Lint・整形だけを飛ばす場合は git push --no-verify（CONTRIBUTING.md 参照）
+// 作業途中の push で 3 だけを飛ばす場合は、環境変数 SKIP_QUALITY_CHECKS=1 を付けて push する（1・2 は常に行う）
+// git push --no-verify はフック全体を飛ばすので使わない（CONTRIBUTING.md 参照）
 
 const { spawnSync } = require('child_process');
 const fs = require('fs');
@@ -61,6 +62,13 @@ if (!ok) {
   process.exit(1);
 }
 
+if (process.env.SKIP_QUALITY_CHECKS === '1') {
+  console.log(
+    '\n⚠ SKIP_QUALITY_CHECKS=1 のため、型チェック・Lint・整形チェックを飛ばしました（PR を出す前には通すこと。CI では実行される）\n',
+  );
+  process.exit(0);
+}
+
 const checks = [
   { name: '型チェック', command: 'npx tsc --noEmit' },
   { name: 'Lint', command: 'npm run lint' },
@@ -73,7 +81,7 @@ for (const { name, command } of checks) {
   const result = spawnSync(command, { stdio: 'inherit', shell: true });
   if (result.status !== 0) {
     console.error(
-      `\n✖ ${name}に失敗したため push を中止しました（作業途中の push に限り git push --no-verify で飛ばせます。CONTRIBUTING.md 参照）\n`,
+      `\n✖ ${name}に失敗したため push を中止しました（作業途中の push に限り SKIP_QUALITY_CHECKS=1 git push で飛ばせます。CONTRIBUTING.md 参照）\n`,
     );
     process.exit(1);
   }

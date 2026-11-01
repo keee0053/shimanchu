@@ -90,10 +90,21 @@ npm run setup-hooks
 | `git commit`（commit-msg） | コミットメッセージが `type: 説明` の日本語1行か、AI ツール表記が含まれていないか                                                                                                                            | コミットが中止される |
 | `git push`（pre-push）     | push 先のブランチ名（`feature/PascalCase`、`main` / `develop` への直接 push 禁止）、push するコミットのメッセージ、型チェック（`npx tsc --noEmit`）、Lint（`npm run lint`）、整形（`npm run format:check`） | push が中止される    |
 
-フックのスキップ（`--no-verify`）は次のルールに従う。
+フックのスキップは次のルールに従う。
 
-- `git commit --no-verify` は**使わない**（コミットメッセージのルールは常に守る）
-- `git push --no-verify` は、**作業途中の feature ブランチを共有したいときに、型チェック・Lint・整形の失敗を一時的に飛ばす場合だけ**使ってよい。ブランチ名・コミットメッセージの違反を避けるためには使わない
+- `--no-verify`（`git commit --no-verify` / `git push --no-verify`）は**使わない**。フック全体が飛ばされ、ブランチ名・コミットメッセージの検査も行われなくなるため
+- 作業途中の feature ブランチを共有したいときに限り、**型チェック・Lint・整形だけ**を環境変数で飛ばしてよい（ブランチ名・コミットメッセージの検査は行われる）
+
+  ```bash
+  # macOS
+  SKIP_QUALITY_CHECKS=1 git push
+  ```
+
+  ```powershell
+  # Windows（PowerShell）
+  $env:SKIP_QUALITY_CHECKS=1; git push; Remove-Item Env:SKIP_QUALITY_CHECKS
+  ```
+
 - PR を出す前（レビューを依頼する前）には、スキップせずにすべてのチェックが通る状態にする（CI でも同じチェックが走る）
 - AI ツール（Claude Code など）にはスキップさせない
 
