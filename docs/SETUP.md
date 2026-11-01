@@ -26,7 +26,7 @@
 | Node.js 22              | Expo・npm スクリプトの実行                  | nvm で管理                     | fnm で管理                | `node -v`                             |
 | Docker                  | ローカル Supabase の実行                    | Docker Desktop または OrbStack | Docker Desktop（WSL 2）   | `docker info`                         |
 | Supabase CLI            | ローカル Supabase・マイグレーション・型生成 | ✅                             | ✅                        | `supabase --version`                  |
-| Xcode                   | iOS シミュレーターでのビルド                | ✅                             | ❌ macOS のみ             | `xcodebuild -version`                 |
+| Xcode **26.4 以上**     | iOS シミュレーターでのビルド                | ✅                             | ❌ macOS のみ             | `xcodebuild -version`                 |
 | Android Studio + JDK 17 | Android エミュレーターでのビルド            | ✅                             | ✅                        | `adb version` / `java -version`       |
 | VS Code                 | エディタ（推奨）                            | ✅                             | ✅                        | —                                     |
 
@@ -305,7 +305,7 @@ npx expo start
 
 ### 4-2. iOS シミュレーター（macOS のみ）
 
-1. Mac App Store から **Xcode** をインストールする
+1. Mac App Store から **Xcode** をインストールする。Expo SDK 58 には **Xcode 26.4 以上**が必要（古いと Swift のコンパイルエラー `sending 'slot' risks causing data races` などでビルドが失敗する）。入っている場合も App Store で最新に更新する
 2. Xcode を開き、**Settings… > Components** の **Platform Support > iOS** で **Get** を押してシミュレーターを入れる
 3. **Settings… > Locations** の **Command Line Tools** で最新の Xcode を選ぶ（ターミナルで行う場合は下のコマンド。Mac のログインパスワードを聞かれる）
 
@@ -323,7 +323,7 @@ npx expo start
 
 ```bash
 xcode-select -p         # /Applications/Xcode.app/Contents/Developer（CommandLineTools になっていたら手順 3 をやり直す）
-xcodebuild -version     # Xcode xx.x と表示されれば OK
+xcodebuild -version     # Xcode 26.4 以上なら OK
 xcrun simctl list runtimes   # iOS xx.x が1つ以上表示されれば OK。空なら手順 2 のシミュレーターが入っていない
 pod --version
 ```
