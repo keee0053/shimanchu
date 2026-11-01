@@ -31,15 +31,15 @@ npx expo start
 
 ## よく使うコマンド
 
-| コマンド | 内容 |
-| --- | --- |
-| `npx expo start` | 開発サーバー起動 |
-| `npx expo install <pkg>` | SDK 互換バージョンでパッケージ追加（Expo 系は必ずこちら） |
-| `npx tsc --noEmit` | 型チェック |
-| `npm run lint` | Lint |
-| `npx expo-doctor` | 依存関係・設定の診断 |
-| `supabase start` / `supabase stop` | ローカル Supabase の起動 / 停止 |
-| `supabase migration new <name>` | マイグレーション作成 |
+| コマンド                           | 内容                                                      |
+| ---------------------------------- | --------------------------------------------------------- |
+| `npx expo start`                   | 開発サーバー起動                                          |
+| `npx expo install <pkg>`           | SDK 互換バージョンでパッケージ追加（Expo 系は必ずこちら） |
+| `npx tsc --noEmit`                 | 型チェック                                                |
+| `npm run lint`                     | Lint                                                      |
+| `npx expo-doctor`                  | 依存関係・設定の診断                                      |
+| `supabase start` / `supabase stop` | ローカル Supabase の起動 / 停止                           |
+| `supabase migration new <name>`    | マイグレーション作成                                      |
 
 ## ディレクトリ構成
 
@@ -101,12 +101,12 @@ shimanchu/
 
 ### 自動生成されるディレクトリ（すべて 🚫）
 
-| パス | 内容 |
-| --- | --- |
-| `node_modules/` | `npm install` でインストールされたパッケージ |
-| `.expo/` | Expo の開発用キャッシュ・型生成物 |
+| パス                | 内容                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------- |
+| `node_modules/`     | `npm install` でインストールされたパッケージ                                                      |
+| `.expo/`            | Expo の開発用キャッシュ・型生成物                                                                 |
 | `ios/` / `android/` | `npx expo run:ios` 等で生成されるネイティブプロジェクト。設定は `app.json` で行い、直接編集しない |
-| `dist/` | `npx expo export` のビルド成果物 |
+| `dist/`             | `npx expo export` のビルド成果物                                                                  |
 
 ### 配置ルール
 
