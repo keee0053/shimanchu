@@ -101,6 +101,15 @@ npm run setup-hooks
 
 CI が失敗している PR はマージしない。
 
+### CodeRabbit（AI コードレビュー）
+
+`develop` / `main` 向けの PR を作ると、CodeRabbit が自動でレビューし、日本語でコメントする（設定は `.coderabbit.yaml`）。
+
+- 要約とレビューは CodeRabbit のコメントに書かれる（PR 本文には書き込まない設定）
+- 指摘への質問や再レビューは、PR のコメントで `@coderabbitai` に話しかける
+- CodeRabbit の指摘は参考意見。採用するかは作成者とレビュアーが判断し、**メンバーによるレビューとマージは必ず人が行う**
+- CodeRabbit にコミットを作らせる機能（docstring・テスト生成など）は使わない
+
 ## 開発ルール
 
 ### アプリ（Expo / React Native）

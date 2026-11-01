@@ -110,6 +110,7 @@ shimanchu/
 ├── .github/
 │   ├── workflows/ci.yml          # CI（PR 時に PR タイトル・コミットメッセージ・型・Lint・整形をチェック）
 │   └── pull_request_template.md  # PR テンプレート
+├── .coderabbit.yaml               # CodeRabbit（AI コードレビュー）の設定
 ├── CONTRIBUTING.md               # チーム開発ルール（ブランチ・コミット・PR・レビュー）
 ├── CLAUDE.md                     # Claude Code 向けのプロジェクトルール
 │
