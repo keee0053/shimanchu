@@ -72,17 +72,34 @@ docs: README にセットアップ手順を追加
   - `service_role` キーなどの秘密情報をアプリに含めていないか（`EXPO_PUBLIC_` 付きの環境変数はアプリに埋め込まれ、誰でも見られる）
   - `.env.local` などの秘密情報をコミットしていないか
 
-## Push 前の品質チェック（準備中）
+## Git フックと CI による自動チェック
 
-push 前に品質チェックを実行する pre-push フックを利用できます（CI と同じチェック）。
+ルールの一部は Git フックと CI（GitHub Actions）で自動的に確認される。
+
+### Git フック
+
+`npm install` を実行すると自動で有効になる（`.githooks/` を使うよう git に設定される）。うまく動かないときは手動で有効にする:
 
 ```bash
-./scripts/setup-hooks   # 初回のみ実行
+npm run setup-hooks
 ```
 
-以降、`git push` 時に自動で 型チェック（`npx tsc --noEmit`）/ ESLint（`npx expo lint`）/ テスト / 依存関係チェック（`npx expo-doctor`）が実行されます。スキップする場合は `git push --no-verify` を使用してください。
+| タイミング                 | 確認する内容                                                                                                                                                                                                | 違反したとき         |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| `git commit`（commit-msg） | コミットメッセージが `type: 説明` の日本語1行か、AI ツール表記が含まれていないか                                                                                                                            | コミットが中止される |
+| `git push`（pre-push）     | push 先のブランチ名（`feature/PascalCase`、`main` / `develop` への直接 push 禁止）、push するコミットのメッセージ、型チェック（`npx tsc --noEmit`）、Lint（`npm run lint`）、整形（`npm run format:check`） | push が中止される    |
 
-GitHub 上でも CI（GitHub Actions）が同じチェックを実行します。
+どうしてもスキップしたい場合は `git commit --no-verify` / `git push --no-verify` を使う（CI では同じチェックが走るので、PR で引っかかる）。
+
+### CI（GitHub Actions）
+
+`develop` / `main` 向けの PR と、`develop` / `main` への push で `.github/workflows/ci.yml` が実行される。
+
+- PR タイトルが `prefix: 日本語` 形式か
+- PR に含まれるコミットのメッセージ
+- 型チェック・Lint・整形
+
+CI が失敗している PR はマージしない。
 
 ## 開発ルール
 
@@ -107,4 +124,4 @@ GitHub 上でも CI（GitHub Actions）が同じチェックを実行します�
 - ファイル名・変数名に日本語を使用しない
 - ファイル名・変数名に特殊文字（`: !@#$%^&*()+=[]{}|;:'",<>/?`）を使用しない
 - AI ツール表記（Made with Cursor、Made-with: Cursor、Co-Authored-By 等）をコード・コミット・PR のいずれにも含めない（co-working 時も同様）
-  - commit-msg フックでコミット拒否、pre-push フックで push 拒否される（準備中）
+  - commit-msg フックでコミット拒否、pre-push フックで push 拒否される
