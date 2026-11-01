@@ -32,7 +32,7 @@
 
 > **Windows では iOS シミュレーターを使えない**（Xcode が macOS 専用のため）。Windows の人は Android エミュレーターで開発し、iPhone での確認は Expo Go か、macOS のメンバーに頼む。
 
-参考: 環境構築時点（2026-11-01）に macOS で動作を確認したバージョンは Node.js v22.21.0 / npm 10.9.4 / Supabase CLI 2.105.0 / Docker 29.3.1 / Expo SDK 58。
+参考: 環境構築時点（2026-11-01）に macOS で動作を確認したバージョンは Node.js v22.21.0 / npm 10.9.4 / Supabase CLI 2.122.0 / Docker 29.3.1 / Expo SDK 58 / Xcode 27.2（iOS 26.1 シミュレーター）/ JDK 17 / Android 16 エミュレーター。
 
 ## 1. 共通ツールを入れる
 
@@ -352,6 +352,8 @@ React Native のビルドには **JDK 17** が必要。別のバージョンが�
 brew install --cask zulu@17
 ```
 
+> `zulu@17` のインストールでは Mac のログインパスワードを聞かれる。パスワードなしで入れたい場合は `brew install openjdk@17` でもよい（その場合、下の `JAVA_HOME` は `/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home` にする）。
+
 **Windows**
 
 ```powershell
@@ -366,6 +368,9 @@ winget install --id Microsoft.OpenJDK.17 -e
 2. **Settings > Languages & Frameworks > Android SDK** で次を入れる
    - **SDK Platforms** タブ: Android 16（Baklava）の **Android SDK Platform 36** と **Sources for Android 36**
    - **SDK Tools** タブ: **Android SDK Build-Tools** と **Android Emulator**
+
+   > このプロジェクト（React Native 0.88）は実際には **SDK Platform 37・Build-Tools 37 / 36・NDK 27.1・CMake 3.22.1** を使う。ライセンスに同意していれば、初回の `npx expo run:android` で Gradle が自動でダウンロードするので、手で入れなくてよい（そのぶん初回のビルドは時間がかかる）。
+
 3. 同じ画面の **Android SDK Location** に表示されるパスを控える（既定は macOS: `~/Library/Android/sdk`、Windows: `%LOCALAPPDATA%\Android\Sdk`）
 
 #### 環境変数を設定する
@@ -414,10 +419,12 @@ adb devices     # 起動中のエミュレーターが表示される
 **ビルドして起動**
 
 ```bash
-npx expo run:android
+npx expo run:android   # npm run android でも同じ
 ```
 
-`android/` ディレクトリが自動生成されるが、git 管理外で、直接編集しない。
+- **初回は 15〜20 分ほどかかる**（Gradle 本体・ライブラリ・SDK 37・NDK などのダウンロードと、C++ のコンパイルがあるため）。2 回目以降は数十秒で終わる
+- `android/` ディレクトリが自動生成されるが、git 管理外で、直接編集しない
+- iOS の開発サーバーを同時に動かしている場合はポートがぶつかるので、`npx expo run:android --port 8082` のように別のポートを指定する
 
 **位置情報のテスト**: エミュレーター横の **…（Extended controls）> Location** から現在地を指定できる。
 
@@ -491,6 +498,10 @@ Expo Go のバージョンがプロジェクトの SDK（58）と合っていな
 
 JDK 17 以外が使われている。`java -version` で確認し、`JAVA_HOME` が JDK 17 のフォルダを指しているか確認する。
 Windows で環境変数を変えた直後は、PowerShell・VS Code を開き直さないと反映されない。
+
+### `npx expo run:android` が `Expo stopped waiting for the ADB device property/boot query operation to finish` で終わる
+
+ビルド（`BUILD SUCCESSFUL`）のあと、エミュレーターとの通信が時間切れになった状態。初回の長いビルド中に起こりやすい。エミュレーターが起動していること（`adb devices` に `device` と表示される）を確認して、もう一度 `npx expo run:android` を実行する。ビルド済みなのですぐ終わる。
 
 ### Windows で `npx expo run:android` がパスの長さのエラーで失敗する
 
