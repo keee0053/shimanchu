@@ -1,0 +1,3 @@
+#!/bin/sh
+# push 前にブランチ名・コミットメッセージ・型チェック・Lint・整形を確認する（scripts/git-hooks/pre-push.js）
+exec node scripts/git-hooks/pre-push.js "$@"

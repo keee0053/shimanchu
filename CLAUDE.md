@@ -1,0 +1,78 @@
+# CLAUDE.md
+
+しまんちゅ: 現実の位置情報と連動した仮想の島で、友達のアバターの生活を観察するモバイルアプリ（Expo + Supabase）。
+
+Expo 全般のルール（docs の参照方法、`npx expo install`、`ios/` `android/` を触らない等）は AGENTS.md に従う。
+
+@AGENTS.md
+
+詳細なルールは以下。迷ったら必ず読むこと。
+
+- チーム開発ルール（ブランチ・コミット・PR・レビュー）: [CONTRIBUTING.md](CONTRIBUTING.md)
+- コーディング規約（命名・ディレクトリ・Supabase・状態管理・位置情報・フォーム）: [docs/CODING_GUIDELINES.md](docs/CODING_GUIDELINES.md)
+- アーキテクチャ（全体像・データの流れ・ディレクトリ構成）: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- 環境構築手順: [docs/SETUP.md](docs/SETUP.md)
+
+## Git（厳守）
+
+- **AI ツール表記を一切入れない。** コミット・PR・コードに `Co-Authored-By`、`Generated with Claude Code` などを書かない（hook で拒否される）
+- コミットメッセージは **日本語1行** の `type: 説明`。本文は書かない。1つの目的につき1コミット
+  - type: `add` / `fix` / `refactor` / `test` / `chore` / `perf` / `docs`
+- `main` / `develop` に直接コミットしない。`develop` から `feature/PascalCase`（例: `feature/AvatarDrift`）を切って作業する
+- PR は `develop` 向け。タイトルは `prefix: 日本語`、本文は `.github/pull_request_template.md` に沿う。自己マージしない
+- commit / push / PR 作成はユーザーに頼まれたときだけ行う
+- コミットメッセージとブランチ名は Git フック（`.githooks/`）と CI の両方で検査される。フックに止められたら `--no-verify` や `SKIP_QUALITY_CHECKS` で回避せず、メッセージや変更を直す
+
+## コマンド
+
+```bash
+npx expo start            # 開発サーバー
+npx expo install <pkg>    # パッケージ追加（npm install ではなくこちら）
+npx tsc --noEmit          # 型チェック
+npm run lint              # ESLint（Prettier 連携）
+npm run format            # Prettier で整形（format:check は確認のみ）
+npm run gen:types         # DB の型を src/infrastructure/supabase/database.types.ts に生成（要 supabase start）
+supabase migration new <name>  # マイグレーション作成
+```
+
+作業完了前に `npx tsc --noEmit`・`npm run lint`・`npm run format:check` を通すこと。
+
+## コードを書くときの要点
+
+### 層構成（クリーンアーキテクチャ・ESLint で強制）
+
+依存の向きは `presentation（src/app・src/presentation）→ application → domain ← infrastructure`。層をまたいでつなぐのは `src/container.ts` だけ。
+
+- **domain**（`src/domain/`）: エンティティの型・ルールの純粋関数（エリア判定・漂流判定など）・リポジトリのインターフェース。React・Expo・Supabase を import しない
+- **application**（`src/application/`）: ロジックがある操作だけユースケースにする。依存は `createXxx(deps)` の引数で受け取る
+- **infrastructure**（`src/infrastructure/`）: Supabase・expo-location・expo-task-manager を使うコードはここだけ。リポジトリの実装を書く
+- **presentation**: 画面・コンポーネント・TanStack Query のフック（`queries/`）・Zustand（`stores/`）・フォームの Zod（`schemas/`）。データは `@/container` のユースケースかリポジトリ経由で使う。ロジックのない単純な取得はユースケースを作らずリポジトリを直接呼んでよい
+- クラスや DI コンテナは使わず、関数と型で書く
+- 新しい機能を作るときは、エンティティ → リポジトリのインターフェース → infrastructure の実装 → container への登録 →（必要なら）ユースケース → presentation のフック、の順に作る
+
+### その他
+
+- ファイル名はケバブケース、コンポーネントは PascalCase。画面（`src/app/`）だけ `export default`、他は名前付き export
+- Supabase の `{ data, error }` の `error` は必ず `throw`。`select('*')` ではなく使うカラムを書く
+- サーバーのデータは TanStack Query、端末内の状態だけ Zustand。サーバーデータを Zustand にコピーしない
+- Realtime の購読は infrastructure のリポジトリに実装し、解除関数を返す。presentation のフックはクリーンアップで必ず解除する。受信した変更は TanStack Query のキャッシュに反映する
+- DB 変更は必ずマイグレーションで。新しいテーブルは RLS を有効にしてポリシーを書く。マージ済みマイグレーションは編集しない
+- DB の行の型は手書きせず `npm run gen:types` で生成したもの（infrastructure 内）を使う。domain のエンティティは必要な項目だけ手で定義し、リポジトリの実装で変換する
+- 位置情報: 当面フォアグラウンドのみ。取得失敗・権限拒否は「漂流」状態として扱う（domain のルール）。座標をログに出さない。`TaskManager.defineTask` は `src/infrastructure/location/` のトップレベルで定義し、`src/container.ts` で import する
+- フォームは React Hook Form + Zod（`src/presentation/schemas/`、型は `z.infer`、エラーメッセージは日本語）
+- 秘密情報（`service_role` キー、`.env.local`）をコードやコミットに含めない。`EXPO_PUBLIC_` 付きの環境変数は公開される前提で扱う
+
+## 未決定事項
+
+以下はチームでまだ決まっていない。関係する実装をするときは、勝手に決めずにユーザーに確認すること（一覧は docs/CODING_GUIDELINES.md 末尾）。
+
+- 位置情報を DB にどう保存するか（エリア ID のみ / 緯度経度 / 両方）
+- Realtime を Postgres Changes のままにするか、Broadcast と併用するか
+- バックグラウンド位置情報の導入時期
+- Sign in with Apple への対応
+- テスト方針
+- 認証セッションの保存方法（今は AsyncStorage。Google ログイン実装時に SecureStore を使った暗号化方式へ変更予定）
+
+## 現状メモ
+
+- `src/` の多くは create-expo-app テンプレートのサンプル（docs/ARCHITECTURE.md で 🧪 印）。本実装で置き換える予定で、Web 用ファイルも当面は残す方針
