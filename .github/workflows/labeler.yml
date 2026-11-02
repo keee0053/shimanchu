@@ -60,7 +60,8 @@ jobs:
             const current = labels.map((l) => l.name);
 
             const isTarget = Object.hasOwn(RELEASE_LABELS, pr.base.ref);
-            const match = pr.title.match(/^(\w+): /);
+            // scripts/git-hooks/commit-rules.js の TITLE_PATTERN と同じく「: 」の後に説明を必須にする
+            const match = pr.title.match(/^(\w+): \S/);
             // `constructor` など Object の継承プロパティを拾わないよう Object.hasOwn で確かめる
             const wantedType = isTarget && match && Object.hasOwn(TYPE_LABELS, match[1]) ? TYPE_LABELS[match[1]] : undefined;
             const wanted = [isTarget ? RELEASE_LABELS[pr.base.ref] : undefined, wantedType?.name].filter(Boolean);
