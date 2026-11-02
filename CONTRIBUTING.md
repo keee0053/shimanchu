@@ -119,6 +119,19 @@ npm run setup-hooks
 
 CI が失敗している PR はマージしない。
 
+### PR のラベル（自動）
+
+`develop` / `main` 向けの PR には `.github/workflows/labeler.yml` が自動でラベルを付ける（手で付け外ししてもよい）。
+
+| 条件                                                        | ラベル                                              |
+| ----------------------------------------------------------- | --------------------------------------------------- |
+| `develop` 向け / `main` 向け                                | `develop release` / `main release`                  |
+| タイトルの prefix が `add` / `fix` / `docs`                 | `enhancement` / `bug` / `documentation`             |
+| タイトルの prefix が `refactor` / `test` / `chore` / `perf` | prefix と同じ名前のラベル                           |
+| `.github/`・Git フック・Lint や整形の設定などを変更         | `repository`（対象は `.github/labeler.yml` に記載） |
+
+- タイトルの prefix を変えると、prefix のラベルも付け直される
+
 ### CodeRabbit（AI コードレビュー）
 
 `develop` / `main` 向けの PR を作ると、CodeRabbit が自動でレビューし、日本語でコメントする（設定は `.coderabbit.yaml`）。
