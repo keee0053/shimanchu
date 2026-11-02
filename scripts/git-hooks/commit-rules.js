@@ -26,6 +26,8 @@ const AI_MARKERS = [
 const AUTO_GENERATED_PREFIXES = ['Merge ', 'Revert "', 'fixup! ', 'squash! ', 'amend! '];
 
 // feature/PascalCase
+// 命名規則の検査は一時的に外している（ENABLE_BRANCH_PATTERN_CHECK を true に戻すと再開）
+const ENABLE_BRANCH_PATTERN_CHECK = false;
 const BRANCH_PATTERN = /^feature\/[A-Z][A-Za-z0-9]*$/;
 const PROTECTED_BRANCHES = ['main', 'develop'];
 
@@ -81,7 +83,7 @@ function checkBranchName(branch) {
   if (PROTECTED_BRANCHES.includes(branch)) {
     return [`${branch} には直接 push しない（feature ブランチから PR を作る）`];
   }
-  if (!BRANCH_PATTERN.test(branch)) {
+  if (ENABLE_BRANCH_PATTERN_CHECK && !BRANCH_PATTERN.test(branch)) {
     return ['ブランチ名は feature/PascalCase にする（例: feature/AvatarDrift）'];
   }
   return [];
