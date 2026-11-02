@@ -61,8 +61,9 @@ jobs:
 
             const isTarget = Object.hasOwn(RELEASE_LABELS, pr.base.ref);
             const match = pr.title.match(/^(\w+): /);
-            const wantedType = isTarget && match ? TYPE_LABELS[match[1]] : undefined;
-            const wanted = [RELEASE_LABELS[pr.base.ref], wantedType?.name].filter(Boolean);
+            // `constructor` など Object の継承プロパティを拾わないよう Object.hasOwn で確かめる
+            const wantedType = isTarget && match && Object.hasOwn(TYPE_LABELS, match[1]) ? TYPE_LABELS[match[1]] : undefined;
+            const wanted = [isTarget ? RELEASE_LABELS[pr.base.ref] : undefined, wantedType?.name].filter(Boolean);
             const managed = [...Object.values(RELEASE_LABELS), ...Object.values(TYPE_LABELS).map((l) => l.name)];
 
             // 向き先やタイトルを変えたときのために、合わなくなったラベルを外す
@@ -81,7 +82,13 @@ jobs:
                 await github.rest.issues.getLabel({ owner, repo, name: wantedType.name });
               } catch (error) {
                 if (error.status !== 404) throw error;
-                await github.rest.issues.createLabel({ owner, repo, ...wantedType });
+                try {
+                  await github.rest.issues.createLabel({ owner, repo, ...wantedType });
+                } catch (createError) {
+                  // 別の PR の実行が先に作った場合はそのまま続ける
+                  const alreadyExists = createError.response?.data?.errors?.some((e) => e.code === 'already_exists');
+                  if (createError.status !== 422 || !alreadyExists) throw createError;
+                }
               }
             }
             await github.rest.issues.addLabels({ owner, repo, issue_number, labels: toAdd });
