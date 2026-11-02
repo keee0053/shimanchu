@@ -1,0 +1,26 @@
+# actions/labeler の設定（.github/workflows/labeler.yml から使う）
+# PR タイトルの prefix によるラベルはワークフロー側で付ける
+
+# リリース先（向き先のブランチ）
+develop release:
+  - base-branch: '^develop$'
+
+main release:
+  - base-branch: '^main$'
+
+# リポジトリの設定・開発ツールの変更
+repository:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - '.githooks/**'
+          - 'scripts/git-hooks/**'
+          - 'scripts/setup-hooks.js'
+          - '.coderabbit.yaml'
+          - '.gitattributes'
+          - '.gitignore'
+          - '.nvmrc'
+          - '.prettierrc.json'
+          - '.prettierignore'
+          - 'eslint.config.js'
+          - 'tsconfig.json'

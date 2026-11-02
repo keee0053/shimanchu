@@ -1,0 +1,74 @@
+# PR に自動でラベルを付ける
+# - 向き先のブランチ・変更したファイル: actions/labeler（設定は .github/labeler.yml）
+# - タイトルの prefix（add / fix など）: 下の github-script
+name: PR ラベル
+
+on:
+  # PR のコードは checkout・実行しないため pull_request_target を使う（フォークからの PR にもラベルを付けられる）
+  pull_request_target:
+    branches: [develop, main]
+    # edited: タイトルを変えたときに prefix のラベルを付け直す
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write # ラベルの作成に必要
+
+concurrency:
+  group: labeler-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    name: ラベル付け
+    runs-on: ubuntu-latest
+    steps:
+      - name: 向き先のブランチ・変更したファイル
+        uses: actions/labeler@v5
+        with:
+          configuration-path: .github/labeler.yml
+
+      - name: タイトルの prefix
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // prefix とラベルの対応（scripts/git-hooks/commit-rules.js の TYPES と揃える）
+            const TYPE_LABELS = {
+              add: { name: 'enhancement', color: 'a2eeef', description: 'New feature or request' },
+              fix: { name: 'bug', color: 'd73a4a', description: "Something isn't working" },
+              docs: { name: 'documentation', color: '0075ca', description: 'Improvements or additions to documentation' },
+              refactor: { name: 'refactor', color: 'fbca04', description: '動作を変えないコードの整理' },
+              test: { name: 'test', color: 'bfd4f2', description: 'テストの追加・修正' },
+              chore: { name: 'chore', color: 'c5def5', description: '設定・依存関係などの雑務' },
+              perf: { name: 'perf', color: 'f9d0c4', description: 'パフォーマンス改善' },
+            };
+
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+            const match = pr.title.match(/^(\w+): /);
+            const wanted = match ? TYPE_LABELS[match[1]] : undefined;
+            const typeLabelNames = Object.values(TYPE_LABELS).map((l) => l.name);
+            const current = pr.labels.map((l) => l.name);
+
+            // タイトルを変えたときのために、別の prefix のラベルを外す
+            for (const name of current) {
+              if (typeLabelNames.includes(name) && name !== wanted?.name) {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number: pr.number, name });
+              }
+            }
+
+            if (!wanted) {
+              core.info(`タイトルに対応する prefix がないため、prefix のラベルは付けない: ${pr.title}`);
+              return;
+            }
+            if (current.includes(wanted.name)) return;
+
+            // ラベルがリポジトリになければ作る
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: wanted.name });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.issues.createLabel({ owner, repo, ...wanted });
+            }
+            await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: [wanted.name] });
