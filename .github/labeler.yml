@@ -1,12 +1,5 @@
 # actions/labeler の設定（.github/workflows/labeler.yml から使う）
-# PR タイトルの prefix によるラベルはワークフロー側で付ける
-
-# リリース先（向き先のブランチ）
-develop release:
-  - base-branch: '^develop$'
-
-main release:
-  - base-branch: '^main$'
+# リリース先とタイトルの prefix によるラベルはワークフロー側で付ける
 
 # リポジトリの設定・開発ツールの変更
 repository:

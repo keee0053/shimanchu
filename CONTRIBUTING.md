@@ -121,7 +121,7 @@ CI が失敗している PR はマージしない。
 
 ### PR のラベル（自動）
 
-`develop` / `main` 向けの PR には `.github/workflows/labeler.yml` が自動でラベルを付ける（手で付け外ししてもよい）。
+`develop` / `main` 向けの PR には `.github/workflows/labeler.yml` が自動でラベルを付ける。
 
 | 条件                                                        | ラベル                                              |
 | ----------------------------------------------------------- | --------------------------------------------------- |
@@ -130,7 +130,8 @@ CI が失敗している PR はマージしない。
 | タイトルの prefix が `refactor` / `test` / `chore` / `perf` | prefix と同じ名前のラベル                           |
 | `.github/`・Git フック・Lint や整形の設定などを変更         | `repository`（対象は `.github/labeler.yml` に記載） |
 
-- タイトルの prefix を変えると、prefix のラベルも付け直される
+- タイトルの prefix や向き先を変えると、ラベルも付け直される（`develop` / `main` 以外に向けるとリリース先と prefix のラベルは外れる）
+- リリース先と prefix のラベルは PR を更新するたびに付け直されるため、手で付け外ししても元に戻る。それ以外のラベルは手で付け外ししてよい
 
 ### CodeRabbit（AI コードレビュー）
 
