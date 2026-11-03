@@ -1,0 +1,95 @@
+# PR に自動でラベルを付ける
+# - 変更したファイル: actions/labeler（設定は .github/labeler.yml）
+# - 向き先のブランチ・タイトルの prefix（add / fix など）: 下の github-script
+name: PR ラベル
+
+on:
+  # PR のコードは checkout・実行しないため pull_request_target を使う（フォークからの PR にもラベルを付けられる）
+  # 向き先を develop / main 以外に変えたときにリリース先のラベルを外すため、ブランチでは絞らない
+  pull_request_target:
+    # edited: タイトルや向き先を変えたときにラベルを付け直す
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write # ラベルの作成に必要
+
+# 実行中のものは止めずに順番に実行する（スクリプトは実行時点の PR の状態を取得するため、後の実行が最新の状態に揃える）
+concurrency:
+  group: labeler-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  label:
+    name: ラベル付け
+    runs-on: ubuntu-latest
+    steps:
+      - name: 変更したファイル
+        if: contains(fromJSON('["develop", "main"]'), github.event.pull_request.base.ref)
+        uses: actions/labeler@v5
+        with:
+          configuration-path: .github/labeler.yml
+
+      - name: 向き先のブランチ・タイトルの prefix
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // 向き先のブランチとラベルの対応
+            const RELEASE_LABELS = {
+              develop: 'develop release',
+              main: 'main release',
+            };
+            // prefix とラベルの対応（scripts/git-hooks/commit-rules.js の TYPES と揃える）
+            const TYPE_LABELS = {
+              add: { name: 'enhancement', color: 'a2eeef', description: 'New feature or request' },
+              fix: { name: 'bug', color: 'd73a4a', description: "Something isn't working" },
+              docs: { name: 'documentation', color: '0075ca', description: 'Improvements or additions to documentation' },
+              refactor: { name: 'refactor', color: 'fbca04', description: '動作を変えないコードの整理' },
+              test: { name: 'test', color: 'bfd4f2', description: 'テストの追加・修正' },
+              chore: { name: 'chore', color: 'c5def5', description: '設定・依存関係などの雑務' },
+              perf: { name: 'perf', color: 'f9d0c4', description: 'パフォーマンス改善' },
+            };
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+
+            // イベント発生時ではなく、実行時点のタイトル・向き先・ラベルを使う
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: issue_number });
+            const labels = await github.paginate(github.rest.issues.listLabelsOnIssue, { owner, repo, issue_number });
+            const current = labels.map((l) => l.name);
+
+            const isTarget = Object.hasOwn(RELEASE_LABELS, pr.base.ref);
+            // scripts/git-hooks/commit-rules.js の TITLE_PATTERN と同じく「: 」の後に説明を必須にする
+            const match = pr.title.match(/^(\w+): \S/);
+            // `constructor` など Object の継承プロパティを拾わないよう Object.hasOwn で確かめる
+            const wantedType = isTarget && match && Object.hasOwn(TYPE_LABELS, match[1]) ? TYPE_LABELS[match[1]] : undefined;
+            const wanted = [isTarget ? RELEASE_LABELS[pr.base.ref] : undefined, wantedType?.name].filter(Boolean);
+            const managed = [...Object.values(RELEASE_LABELS), ...Object.values(TYPE_LABELS).map((l) => l.name)];
+
+            // 向き先やタイトルを変えたときのために、合わなくなったラベルを外す
+            for (const name of current) {
+              if (managed.includes(name) && !wanted.includes(name)) {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name });
+              }
+            }
+
+            const toAdd = wanted.filter((name) => !current.includes(name));
+            if (toAdd.length === 0) return;
+
+            // prefix のラベルがリポジトリになければ作る
+            if (wantedType && toAdd.includes(wantedType.name)) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: wantedType.name });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                try {
+                  await github.rest.issues.createLabel({ owner, repo, ...wantedType });
+                } catch (createError) {
+                  // 別の PR の実行が先に作った場合はそのまま続ける
+                  const alreadyExists = createError.response?.data?.errors?.some((e) => e.code === 'already_exists');
+                  if (createError.status !== 422 || !alreadyExists) throw createError;
+                }
+              }
+            }
+            await github.rest.issues.addLabels({ owner, repo, issue_number, labels: toAdd });
