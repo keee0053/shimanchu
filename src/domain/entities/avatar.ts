@@ -51,8 +51,8 @@ export type AvatarConfig = z.infer<typeof avatarConfigSchema>;
  */
 export const DEFAULT_AVATAR_CONFIG: AvatarConfig = {
   skinTone: '#F5CEB3',
-  hairStyle: 'mush',
-  hairColor: '#3E2723',
+  hairStyle: 'short',
+  hairColor: '#433F58',
   eyeType: 'dots',
   outfit: 'stripe',
   hasGlasses: false,

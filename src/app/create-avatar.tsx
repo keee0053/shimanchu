@@ -1,6 +1,14 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  Alert,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import type { AvatarCustomizeTab } from '@/domain/constants/avatar-parts';
 import {
@@ -19,6 +27,7 @@ export default function CreateAvatarScreen() {
   const [config, setConfig] = useState<AvatarConfig>(DEFAULT_AVATAR_CONFIG);
   const [previewMode, setPreviewMode] = useState<AvatarPreviewMode>('standing');
   const [activeTab, setActiveTab] = useState<AvatarCustomizeTab>('hair');
+  const [savedJson, setSavedJson] = useState<string | null>(null);
 
   const handlePartChange = <K extends keyof AvatarConfig>(key: K, value: AvatarConfig[K]) => {
     setConfig((prev) => ({
@@ -28,7 +37,12 @@ export default function CreateAvatarScreen() {
   };
 
   const handleSave = () => {
-    Alert.alert('アバター設定を保存しました', JSON.stringify(config, null, 2), [
+    const jsonString = JSON.stringify(config, null, 2);
+    if (Platform.OS === 'web') {
+      setSavedJson(jsonString);
+      return;
+    }
+    Alert.alert('アバター設定を保存しました', jsonString, [
       {
         text: '島へ移動する',
         onPress: () => {
@@ -79,6 +93,33 @@ export default function CreateAvatarScreen() {
             <ThemedText style={styles.submitButtonText}>このアバターで決定！</ThemedText>
           </Pressable>
         </View>
+
+        {/* 保存完了モーダル（Web確認用） */}
+        {savedJson && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <ThemedText style={styles.modalTitle}>✅ アバター設定を保存しました</ThemedText>
+              <ThemedText style={styles.modalSubtitle}>保存されるJSONデータ (Step 5):</ThemedText>
+              <View style={styles.codeBlock}>
+                <ThemedText style={styles.codeText}>{savedJson}</ThemedText>
+              </View>
+              <View style={styles.modalActions}>
+                <Pressable style={styles.secondaryButton} onPress={() => setSavedJson(null)}>
+                  <ThemedText style={styles.secondaryButtonText}>微調整を続ける</ThemedText>
+                </Pressable>
+                <Pressable
+                  style={styles.primaryButton}
+                  onPress={() => {
+                    setSavedJson(null);
+                    router.replace('/');
+                  }}
+                >
+                  <ThemedText style={styles.primaryButtonText}>島へ移動する 🏝️</ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
@@ -90,6 +131,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === 'web' ? 56 : 0,
   },
   header: {
     height: 48,
@@ -146,5 +188,79 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.5,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.three,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 6,
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 10,
+  },
+  codeBlock: {
+    backgroundColor: '#0F172A',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  codeText: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    color: '#38BDF8',
+    lineHeight: 18,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  secondaryButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  primaryButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#00B4D8',
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

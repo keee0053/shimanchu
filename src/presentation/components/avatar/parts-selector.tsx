@@ -15,6 +15,8 @@ import { ThemedText } from '@/presentation/components/themed-text';
 import { ThemedView } from '@/presentation/components/themed-view';
 import { Spacing } from '@/presentation/constants/theme';
 
+import { AvatarPixelCanvas } from './avatar-pixel-canvas';
+
 interface PartsSelectorProps {
   config: AvatarConfig;
   activeTab: AvatarCustomizeTab;
@@ -82,7 +84,14 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                     style={[styles.gridCard, isSelected && styles.gridCardSelected]}
                     onPress={() => onChange('hairStyle', h.id)}
                   >
-                    <ThemedText style={[styles.cardTitle, isSelected && styles.cardTitleSelected]}>
+                    <AvatarPixelCanvas config={{ ...config, hairStyle: h.id }} size={40} />
+                    <ThemedText
+                      style={[
+                        styles.cardTitle,
+                        { marginTop: 6 },
+                        isSelected && styles.cardTitleSelected,
+                      ]}
+                    >
                       {h.name}
                     </ThemedText>
                   </Pressable>
@@ -105,7 +114,14 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                     style={[styles.gridCard, isSelected && styles.gridCardSelected]}
                     onPress={() => onChange('eyeType', e.id)}
                   >
-                    <ThemedText style={[styles.cardTitle, isSelected && styles.cardTitleSelected]}>
+                    <AvatarPixelCanvas config={{ ...config, eyeType: e.id }} size={40} />
+                    <ThemedText
+                      style={[
+                        styles.cardTitle,
+                        { marginTop: 6 },
+                        isSelected && styles.cardTitleSelected,
+                      ]}
+                    >
                       {e.name}
                     </ThemedText>
                   </Pressable>
@@ -150,7 +166,14 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                     style={[styles.gridCard, isSelected && styles.gridCardSelected]}
                     onPress={() => onChange('outfit', o.id)}
                   >
-                    <ThemedText style={[styles.cardTitle, isSelected && styles.cardTitleSelected]}>
+                    <AvatarPixelCanvas config={{ ...config, outfit: o.id }} size={40} />
+                    <ThemedText
+                      style={[
+                        styles.cardTitle,
+                        { marginTop: 6 },
+                        isSelected && styles.cardTitleSelected,
+                      ]}
+                    >
                       {o.name}
                     </ThemedText>
                     <ThemedText style={styles.cardDesc}>{o.description}</ThemedText>
@@ -170,8 +193,13 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                 style={[styles.gridCard, !config.hasGlasses && styles.gridCardSelected]}
                 onPress={() => onChange('hasGlasses', false)}
               >
+                <AvatarPixelCanvas config={{ ...config, hasGlasses: false }} size={40} />
                 <ThemedText
-                  style={[styles.cardTitle, !config.hasGlasses && styles.cardTitleSelected]}
+                  style={[
+                    styles.cardTitle,
+                    { marginTop: 6 },
+                    !config.hasGlasses && styles.cardTitleSelected,
+                  ]}
                 >
                   メガネなし
                 </ThemedText>
@@ -180,8 +208,13 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                 style={[styles.gridCard, config.hasGlasses && styles.gridCardSelected]}
                 onPress={() => onChange('hasGlasses', true)}
               >
+                <AvatarPixelCanvas config={{ ...config, hasGlasses: true }} size={40} />
                 <ThemedText
-                  style={[styles.cardTitle, config.hasGlasses && styles.cardTitleSelected]}
+                  style={[
+                    styles.cardTitle,
+                    { marginTop: 6 },
+                    config.hasGlasses && styles.cardTitleSelected,
+                  ]}
                 >
                   メガネあり 👓
                 </ThemedText>

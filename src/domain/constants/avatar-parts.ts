@@ -29,12 +29,12 @@ export interface HairColorOption {
 }
 
 export const HAIR_COLOR_OPTIONS: readonly HairColorOption[] = [
-  { id: 'black', name: 'ブラック', hex: '#212121', highlightHex: '#3D3D3D' },
-  { id: 'dark_navy', name: 'ネイビー', hex: '#2C3E50', highlightHex: '#415B76' },
+  { id: 'dark_navy', name: 'ダークネイビー', hex: '#433F58', highlightHex: '#5D5975' },
+  { id: 'black', name: 'ブラック', hex: '#282634', highlightHex: '#3E3C4E' },
   { id: 'dark_brown', name: '焦茶', hex: '#3E2723', highlightHex: '#5D4037' },
-  { id: 'brown', name: 'ブラウン', hex: '#6D4C41', highlightHex: '#8D6E63' },
-  { id: 'blonde', name: 'ゴールド', hex: '#D4A373', highlightHex: '#E9C46A' },
-  { id: 'burgundy', name: 'レッド', hex: '#880E4F', highlightHex: '#AD1457' },
+  { id: 'chestnut', name: 'チェスナット', hex: '#92513E', highlightHex: '#C7784F' },
+  { id: 'blonde', name: 'ハニーブロンド', hex: '#CB8853', highlightHex: '#E19E66' },
+  { id: 'crimson', name: 'ワインレッド', hex: '#C04263', highlightHex: '#D85A7B' },
 ] as const;
 
 /**
@@ -80,10 +80,10 @@ export interface OutfitOption {
 }
 
 export const OUTFIT_OPTIONS: readonly OutfitOption[] = [
-  { id: 'stripe', name: 'ボーダーTシャツ', description: '爽やかな青白ボーダー' },
-  { id: 'plain', name: '無地Tシャツ', description: 'シンプルな白Tシャツ' },
-  { id: 'hoodie', name: 'パーカー', description: 'ブルーのフーディー' },
-  { id: 'jacket', name: 'ジャケット', description: '羽織りジャケット' },
+  { id: 'stripe', name: 'ボーダーTシャツ', description: '爽やかなネイビー×白ボーダー' },
+  { id: 'plain', name: '無地Tシャツ', description: '鮮やかなレッドTシャツ' },
+  { id: 'hoodie', name: 'パーカー', description: 'フード付きブルーパーカー' },
+  { id: 'jacket', name: 'ジャケット', description: 'グリーンの羽織りジャケット' },
 ] as const;
 
 /**
