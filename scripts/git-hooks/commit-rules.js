@@ -124,10 +124,17 @@ function suggestCommitMessage(rawMessage) {
 }
 
 // 表示するコマンドの二重引用符の中に入れても安全か
-// コピーして実行されたときにシェル（sh / zsh / PowerShell / cmd）が解釈する文字や改行を含むものは入れない
-// （例: "feat: 説明 $(rm -rf ~)" のようなメッセージの候補をそのままコマンドにしない）
+// コピーして実行されたときにシェル（sh / zsh / PowerShell / cmd）が解釈する文字を含むものは入れない
+// （例: "feat: 説明 $(rm -rf ~)" や、PowerShell が引用符として扱う “ ” を含む候補をそのままコマンドにしない）
+// 危険な文字を列挙すると漏れが出るため、安全と分かっている文字だけを許可する
+//   - 文字・数字（ひらがな・カタカナ・漢字・英数字など）と半角スペース
+//   - 二重引用符の中でどのシェルでも特別な意味を持たない ASCII 記号（` $ " \ ! % は除く）
+//   - 和文の記号（U+3000〜U+303F の 、。「」 など、・）と全角記号（＂ ＄ ＼ ｀ は除く）
+const SAFE_TO_QUOTE_PATTERN =
+  /^[\p{L}\p{M}\p{N} #&'()*+,\-./:;<=>?@[\]^_{|}~\u3000-\u303F\u30FB\uFF01\uFF03\uFF05-\uFF3B\uFF3D-\uFF3F\uFF41-\uFF5E]*$/u;
+
 function isSafeToQuote(text) {
-  return !/[`$"\\!%\r\n]/.test(text);
+  return SAFE_TO_QUOTE_PATTERN.test(text);
 }
 
 // 引用符なしでコマンドに入れても安全か（ブランチ名・コミットの SHA 用）
