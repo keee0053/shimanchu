@@ -30,7 +30,7 @@ export function AvatarPreviewSection({ config, mode, onModeChange }: AvatarPrevi
 
         {/* ドット絵アバター描画 */}
         <View style={styles.canvasWrapper}>
-          <AvatarPixelCanvas config={config} mode={mode} size={150} />
+          <AvatarPixelCanvas config={config} mode={mode} size={130} />
         </View>
 
         {/* 状態切り替えトグル */}

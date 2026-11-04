@@ -1,7 +1,7 @@
-import type { EyeType, GlassesType, HairStyle, OutfitType } from '../entities/avatar';
+import type { EyeType, GlassesType, HairStyle, MouthType, OutfitType } from '../entities/avatar';
 
 /**
- * 肌色カラーパレット
+ * 肌色カラーパレット（添付画像から抽出した美しいトーン）
  */
 export interface SkinToneOption {
   id: string;
@@ -29,13 +29,12 @@ export interface HairColorOption {
 }
 
 export const HAIR_COLOR_OPTIONS: readonly HairColorOption[] = [
-  { id: 'black', name: 'ブラック', hex: '#212121', highlightHex: '#424242' },
+  { id: 'black', name: 'ブラック', hex: '#1C2833', highlightHex: '#2E4053' },
+  { id: 'dark_navy', name: 'ダークネイビー', hex: '#2C3E50', highlightHex: '#415B76' },
   { id: 'dark_brown', name: '焦茶', hex: '#3E2723', highlightHex: '#5D4037' },
   { id: 'brown', name: 'ブラウン', hex: '#6D4C41', highlightHex: '#8D6E63' },
-  { id: 'ash_blonde', name: 'アッシュ', hex: '#A1887F', highlightHex: '#BCAAA4' },
   { id: 'blonde', name: 'ゴールド', hex: '#D4A373', highlightHex: '#E9C46A' },
-  { id: 'burgundy', name: 'ワインレッド', hex: '#880E4F', highlightHex: '#AD1457' },
-  { id: 'navy', name: 'ネイビー', hex: '#1A237E', highlightHex: '#283593' },
+  { id: 'burgundy', name: 'レッド系', hex: '#880E4F', highlightHex: '#AD1457' },
 ] as const;
 
 /**
@@ -74,6 +73,21 @@ export const EYE_TYPE_OPTIONS: readonly EyeTypeOption[] = [
 ] as const;
 
 /**
+ * 口のタイプオプション
+ */
+export interface MouthTypeOption {
+  id: MouthType;
+  name: string;
+}
+
+export const MOUTH_TYPE_OPTIONS: readonly MouthTypeOption[] = [
+  { id: 'neutral', name: '普通（点）' },
+  { id: 'smile', name: 'ほほえみ' },
+  { id: 'open', name: '開いた口' },
+  { id: 'small', name: 'ひかえめ' },
+] as const;
+
+/**
  * 服装オプション
  */
 export interface OutfitOption {
@@ -83,13 +97,14 @@ export interface OutfitOption {
 }
 
 export const OUTFIT_OPTIONS: readonly OutfitOption[] = [
-  { id: 'border_navy', name: 'ネイビーボーダー', description: '爽やかな青白ボーダー' },
+  { id: 'border_navy', name: 'ネイビーボーダー', description: '青白ストライプT' },
+  { id: 'border_white', name: 'ライトボーダー', description: '爽やかな水色ボーダー' },
   { id: 'hoodie_blue', name: 'ブルーパーカー', description: 'ゆったりフーディー' },
-  { id: 'jacket_green', name: 'グリーンジャケット', description: 'アウトドア風シャツ羽織り' },
-  { id: 'jacket_black', name: 'レザージャケット', description: 'クールな黒ジャケット' },
-  { id: 'tshirt_white', name: '白Tシャツ', description: 'シンプルな白Tシャツ' },
-  { id: 'tshirt_red', name: '赤Tシャツ', description: '鮮やかな赤無地Tシャツ' },
-  { id: 'tshirt_graphic', name: 'グラフィックT', description: 'ワンポイントロゴT' },
+  { id: 'jacket_green', name: 'グリーンシャツ', description: '羽織りジャケット' },
+  { id: 'jacket_black', name: 'レザージャケット', description: '黒ジャケット＋白T' },
+  { id: 'tshirt_white', name: '白Tシャツ', description: '爽やかな白無地T' },
+  { id: 'tshirt_red', name: '赤Tシャツ', description: '鮮やかな赤無地T' },
+  { id: 'tshirt_graphic', name: 'ロゴTシャツ', description: 'ダークロゴT' },
 ] as const;
 
 /**
@@ -111,8 +126,8 @@ export const GLASSES_OPTIONS: readonly GlassesOption[] = [
  */
 export const AVATAR_CUSTOMIZE_TABS = [
   { id: 'hair', label: '髪型・髪色' },
+  { id: 'face', label: '目・口' },
   { id: 'skin', label: '肌色' },
-  { id: 'face', label: '目・表情' },
   { id: 'outfit', label: '服装' },
   { id: 'accessory', label: '小物' },
 ] as const;

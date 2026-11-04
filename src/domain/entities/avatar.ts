@@ -23,10 +23,17 @@ export const EYE_TYPES = ['dots', 'smile', 'calm', 'sparkle'] as const;
 export type EyeType = (typeof EYE_TYPES)[number];
 
 /**
+ * 口・表情の種類
+ */
+export const MOUTH_TYPES = ['neutral', 'smile', 'open', 'small'] as const;
+export type MouthType = (typeof MOUTH_TYPES)[number];
+
+/**
  * 服装の種類
  */
 export const OUTFIT_TYPES = [
   'border_navy',
+  'border_white',
   'hoodie_blue',
   'jacket_green',
   'jacket_black',
@@ -56,6 +63,7 @@ export const avatarConfigSchema = z.object({
   hairStyle: z.enum(HAIR_STYLES),
   hairColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, '有効なHEXカラーコードを指定してください'),
   eyeType: z.enum(EYE_TYPES),
+  mouthType: z.enum(MOUTH_TYPES),
   outfit: z.enum(OUTFIT_TYPES),
   glasses: z.enum(GLASSES_TYPES),
 });
@@ -63,13 +71,14 @@ export const avatarConfigSchema = z.object({
 export type AvatarConfig = z.infer<typeof avatarConfigSchema>;
 
 /**
- * デフォルトのアバター設定
+ * デフォルトのアバター設定（添付画像風）
  */
 export const DEFAULT_AVATAR_CONFIG: AvatarConfig = {
   skinTone: '#F5CEB3',
-  hairStyle: 'mush',
-  hairColor: '#3E2723',
+  hairStyle: 'short_messy',
+  hairColor: '#2C3E50', // 画像2番目のダークネイビー/黒髪
   eyeType: 'dots',
+  mouthType: 'neutral',
   outfit: 'border_navy',
   glasses: 'none',
 };

@@ -8,6 +8,7 @@ import {
   GLASSES_OPTIONS,
   HAIR_COLOR_OPTIONS,
   HAIR_STYLE_OPTIONS,
+  MOUTH_TYPE_OPTIONS,
   OUTFIT_OPTIONS,
   SKIN_TONE_OPTIONS,
 } from '@/domain/constants/avatar-parts';
@@ -92,6 +93,46 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
           </View>
         )}
 
+        {activeTab === 'face' && (
+          <View>
+            <ThemedText style={styles.sectionTitle}>目・目つきを選ぶ</ThemedText>
+            <View style={styles.grid}>
+              {EYE_TYPE_OPTIONS.map((e) => {
+                const isSelected = config.eyeType === e.id;
+                return (
+                  <Pressable
+                    key={e.id}
+                    style={[styles.gridCard, isSelected && styles.gridCardSelected]}
+                    onPress={() => onChange('eyeType', e.id)}
+                  >
+                    <ThemedText style={[styles.cardTitle, isSelected && styles.cardTitleSelected]}>
+                      {e.name}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <ThemedText style={[styles.sectionTitle, { marginTop: 16 }]}>口・表情を選ぶ</ThemedText>
+            <View style={styles.grid}>
+              {MOUTH_TYPE_OPTIONS.map((m) => {
+                const isSelected = config.mouthType === m.id;
+                return (
+                  <Pressable
+                    key={m.id}
+                    style={[styles.gridCard, isSelected && styles.gridCardSelected]}
+                    onPress={() => onChange('mouthType', m.id)}
+                  >
+                    <ThemedText style={[styles.cardTitle, isSelected && styles.cardTitleSelected]}>
+                      {m.name}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
         {activeTab === 'skin' && (
           <View>
             <ThemedText style={styles.sectionTitle}>肌色パレット</ThemedText>
@@ -106,28 +147,6 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                   >
                     <View style={[styles.skinColorPreview, { backgroundColor: s.hex }]} />
                     <ThemedText style={styles.skinName}>{s.name}</ThemedText>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {activeTab === 'face' && (
-          <View>
-            <ThemedText style={styles.sectionTitle}>目・表情を選ぶ</ThemedText>
-            <View style={styles.grid}>
-              {EYE_TYPE_OPTIONS.map((e) => {
-                const isSelected = config.eyeType === e.id;
-                return (
-                  <Pressable
-                    key={e.id}
-                    style={[styles.gridCard, isSelected && styles.gridCardSelected]}
-                    onPress={() => onChange('eyeType', e.id)}
-                  >
-                    <ThemedText style={[styles.cardTitle, isSelected && styles.cardTitleSelected]}>
-                      {e.name}
-                    </ThemedText>
                   </Pressable>
                 );
               })}

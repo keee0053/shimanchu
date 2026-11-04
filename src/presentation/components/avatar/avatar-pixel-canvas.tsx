@@ -18,36 +18,40 @@ interface AvatarPixelCanvasProps {
 }
 
 /**
- * HEXカラーから明るさを少し落としたシャドウ色を計算する
+ * カラーから影（ダークトーン）を算出
  */
 function getShadowColor(hex: string): string {
   const cleanHex = hex.replace('#', '');
-  const r = Math.max(0, parseInt(cleanHex.substring(0, 2), 16) - 35);
-  const g = Math.max(0, parseInt(cleanHex.substring(2, 4), 16) - 35);
-  const b = Math.max(0, parseInt(cleanHex.substring(4, 6), 16) - 35);
+  const r = Math.max(0, parseInt(cleanHex.substring(0, 2), 16) - 40);
+  const g = Math.max(0, parseInt(cleanHex.substring(2, 4), 16) - 40);
+  const b = Math.max(0, parseInt(cleanHex.substring(4, 6), 16) - 40);
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 /**
- * HEXカラーからハイライト色を計算する
+ * カラーからハイライトを算出
  */
 function getHighlightColor(hex: string): string {
   const cleanHex = hex.replace('#', '');
-  const r = Math.min(255, parseInt(cleanHex.substring(0, 2), 16) + 30);
-  const g = Math.min(255, parseInt(cleanHex.substring(2, 4), 16) + 30);
-  const b = Math.min(255, parseInt(cleanHex.substring(4, 6), 16) + 30);
+  const r = Math.min(255, parseInt(cleanHex.substring(0, 2), 16) + 35);
+  const g = Math.min(255, parseInt(cleanHex.substring(2, 4), 16) + 35);
+  const b = Math.min(255, parseInt(cleanHex.substring(4, 6), 16) + 35);
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 /**
- * 24x30ピクセル規格のドット絵アバター描画コンポーネント
+ * 20x38規格の精密ピクセルアートアバター描画コンポーネント
  */
 export function AvatarPixelCanvas({
   config,
   mode = 'standing',
-  size = 180,
+  size = 200,
 }: AvatarPixelCanvasProps) {
-  const { skinTone, hairStyle, hairColor, eyeType, outfit, glasses } = config;
+  const { skinTone, hairStyle, hairColor, eyeType, mouthType, outfit, glasses } = config;
+
+  const outline = '#1C1917'; // 全体の黒枠・アウトライン
+  const eyeColor = '#1A1A1A';
+  const mouthColor = '#B86B52'; // 添付画像の自然な唇・口の色
 
   const skinBase = skinTone;
   const skinShadow = getShadowColor(skinTone);
@@ -59,352 +63,458 @@ export function AvatarPixelCanvas({
 
   const pixels: PixelData[] = [];
 
-  // ==========================================
-  // 1. 体・首（Base Body）
-  // ==========================================
-  // 首 (x: 11-12, y: 15)
-  pixels.push({ x: 11, y: 15, w: 2, h: 1, color: skinShadow });
-
-  // 頭部・顔の輪郭 (x: 7-16, y: 6-14)
-  // 顔のアウトライン・ベース肌
+  // ========================================================
+  // 1. 体・首・頭部のベース（アウトラインと肌）
+  // ========================================================
+  // 首 (x: 9-10, y: 19-20)
   pixels.push(
-    // 額〜顔ベース
-    { x: 8, y: 6, w: 8, h: 1, color: skinHighlight },
-    { x: 7, y: 7, w: 10, h: 6, color: skinBase },
-    { x: 7, y: 13, w: 10, h: 1, color: skinBase },
-    { x: 8, y: 14, w: 8, h: 1, color: skinShadow },
-    // 耳 (x: 6, y: 10-11 / x: 17, y: 10-11)
-    { x: 6, y: 10, w: 1, h: 2, color: skinBase },
-    { x: 17, y: 10, w: 1, h: 2, color: skinBase },
-    { x: 6, y: 11, w: 1, h: 1, color: skinShadow },
-    { x: 17, y: 11, w: 1, h: 1, color: skinShadow },
-    // ほほのチーク
-    { x: 8, y: 12, w: 2, h: 1, color: '#F7A7A6' },
-    { x: 14, y: 12, w: 2, h: 1, color: '#F7A7A6' },
-    // 鼻
-    { x: 11, y: 11, w: 1, h: 1, color: skinShadow },
+    { x: 8, y: 19, w: 4, h: 2, color: outline },
+    { x: 9, y: 19, w: 2, h: 2, color: skinShadow },
   );
 
-  // ==========================================
-  // 2. 目・表情（Eyes）
-  // ==========================================
-  const eyeColor = '#1A1A1A';
+  // 顔の黒枠アウトライン (x: 4〜15, y: 7〜19)
+  pixels.push(
+    // 顎・輪郭ライン
+    { x: 7, y: 19, w: 6, h: 1, color: outline },
+    { x: 5, y: 18, w: 2, h: 1, color: outline },
+    { x: 13, y: 18, w: 2, h: 1, color: outline },
+    { x: 4, y: 16, w: 1, h: 2, color: outline },
+    { x: 15, y: 16, w: 1, h: 2, color: outline },
+    // 側頭部
+    { x: 4, y: 10, w: 1, h: 6, color: outline },
+    { x: 15, y: 10, w: 1, h: 6, color: outline },
+    // 耳のアウトラインと中身
+    { x: 3, y: 13, w: 1, h: 3, color: outline },
+    { x: 16, y: 13, w: 1, h: 3, color: outline },
+    { x: 4, y: 13, w: 1, h: 2, color: skinBase },
+    { x: 15, y: 13, w: 1, h: 2, color: skinBase },
+    { x: 4, y: 15, w: 1, h: 1, color: skinShadow },
+    { x: 15, y: 15, w: 1, h: 1, color: skinShadow },
+  );
+
+  // 顔の肌塗り（ベース・ハイライト・影）
+  pixels.push(
+    // 額・上部
+    { x: 5, y: 8, w: 10, h: 2, color: skinHighlight },
+    // 顔の中心部
+    { x: 5, y: 10, w: 10, h: 6, color: skinBase },
+    // 顎まわりのシャドウ
+    { x: 5, y: 16, w: 10, h: 2, color: skinBase },
+    { x: 6, y: 18, w: 8, h: 1, color: skinShadow },
+    // ほっぺのチーク（淡いピンク）
+    { x: 5, y: 14, w: 2, h: 1, color: '#F8B4B4' },
+    { x: 13, y: 14, w: 2, h: 1, color: '#F8B4B4' },
+  );
+
+  // ========================================================
+  // 2. 目・眉・口のディテール
+  // ========================================================
+  // 眉毛（髪色の影）
+  pixels.push(
+    { x: 6, y: 11, w: 2, h: 1, color: hairShadow },
+    { x: 12, y: 11, w: 2, h: 1, color: hairShadow },
+  );
+
+  // 目
   if (eyeType === 'dots') {
-    // 点目 (2x2ピクセル)
+    // 添付画像の点目（縦2x横2）
     pixels.push(
-      { x: 9, y: 10, w: 2, h: 2, color: eyeColor },
-      { x: 13, y: 10, w: 2, h: 2, color: eyeColor },
+      { x: 6, y: 12, w: 2, h: 2, color: eyeColor },
+      { x: 12, y: 12, w: 2, h: 2, color: eyeColor },
     );
   } else if (eyeType === 'smile') {
-    // にっこり笑顔 (^^)
+    // にっこり目（^^）
     pixels.push(
-      { x: 9, y: 10, w: 2, h: 1, color: eyeColor },
-      { x: 8, y: 11, w: 1, h: 1, color: eyeColor },
-      { x: 10, y: 11, w: 1, h: 1, color: eyeColor },
-      { x: 13, y: 10, w: 2, h: 1, color: eyeColor },
-      { x: 12, y: 11, w: 1, h: 1, color: eyeColor },
-      { x: 14, y: 11, w: 1, h: 1, color: eyeColor },
+      { x: 6, y: 12, w: 2, h: 1, color: eyeColor },
+      { x: 5, y: 13, w: 1, h: 1, color: eyeColor },
+      { x: 8, y: 13, w: 1, h: 1, color: eyeColor },
+      { x: 12, y: 12, w: 2, h: 1, color: eyeColor },
+      { x: 11, y: 13, w: 1, h: 1, color: eyeColor },
+      { x: 14, y: 13, w: 1, h: 1, color: eyeColor },
     );
   } else if (eyeType === 'calm') {
-    // ジト目・細目
+    // ジト目・クール細目
     pixels.push(
-      { x: 8, y: 10, w: 3, h: 1, color: eyeColor },
-      { x: 9, y: 11, w: 2, h: 1, color: eyeColor },
-      { x: 13, y: 10, w: 3, h: 1, color: eyeColor },
-      { x: 13, y: 11, w: 2, h: 1, color: eyeColor },
+      { x: 5, y: 12, w: 3, h: 1, color: eyeColor },
+      { x: 6, y: 13, w: 2, h: 1, color: eyeColor },
+      { x: 12, y: 12, w: 3, h: 1, color: eyeColor },
+      { x: 12, y: 13, w: 2, h: 1, color: eyeColor },
     );
-  } else if (eyeType === 'sparkle') {
+  } else {
     // パッチリきらきら目
     pixels.push(
-      { x: 8, y: 9, w: 3, h: 3, color: eyeColor },
-      { x: 9, y: 9, w: 1, h: 1, color: '#FFFFFF' },
-      { x: 13, y: 9, w: 3, h: 3, color: eyeColor },
-      { x: 14, y: 9, w: 1, h: 1, color: '#FFFFFF' },
+      { x: 6, y: 12, w: 2, h: 3, color: eyeColor },
+      { x: 6, y: 12, w: 1, h: 1, color: '#FFFFFF' },
+      { x: 12, y: 12, w: 2, h: 3, color: eyeColor },
+      { x: 12, y: 12, w: 1, h: 1, color: '#FFFFFF' },
     );
   }
 
-  // ==========================================
-  // 3. 服装・胴体（Outfit）
-  // ==========================================
+  // 口（添付画像にある繊細な口！）
+  if (mouthType === 'neutral') {
+    // 添付画像準拠：横2ドットの控えめな口
+    pixels.push({ x: 9, y: 16, w: 2, h: 1, color: mouthColor });
+  } else if (mouthType === 'smile') {
+    // ほほえみ口（少し口角が上がった口）
+    pixels.push(
+      { x: 9, y: 16, w: 2, h: 1, color: mouthColor },
+      { x: 8, y: 15, w: 1, h: 1, color: mouthColor },
+      { x: 11, y: 15, w: 1, h: 1, color: mouthColor },
+    );
+  } else if (mouthType === 'open') {
+    // 小さく開いた口
+    pixels.push(
+      { x: 9, y: 15, w: 2, h: 2, color: '#7E2A1E' },
+      { x: 9, y: 16, w: 2, h: 1, color: '#E06D53' },
+    );
+  } else {
+    // ひかえめ（1ドット）
+    pixels.push({ x: 9, y: 16, w: 1, h: 1, color: mouthColor });
+  }
+
+  // ========================================================
+  // 3. 服装・胴体・手足（立ち姿 / 漂流姿）
+  // ========================================================
   if (mode === 'standing') {
-    // 通常立ち姿
-    // 脚・ズボン (x: 9-14, y: 22-26)
-    const pantsColor = '#2C3E50'; // ダークデニム
-    const pantsShadow = '#1A252F';
+    // ズボン（デニムジーンズ）
+    const pantsOutline = '#1A252F';
+    const pantsBase = '#2E4053';
+    const pantsHighlight = '#34495E';
     pixels.push(
-      { x: 9, y: 22, w: 6, h: 1, color: pantsColor },
-      { x: 9, y: 23, w: 2, h: 4, color: pantsColor },
-      { x: 13, y: 23, w: 2, h: 4, color: pantsColor },
-      { x: 10, y: 23, w: 1, h: 4, color: pantsShadow },
-      { x: 14, y: 23, w: 1, h: 4, color: pantsShadow },
+      // ズボンのアウトライン
+      { x: 6, y: 29, w: 8, h: 1, color: pantsOutline },
+      { x: 6, y: 30, w: 1, h: 5, color: pantsOutline },
+      { x: 13, y: 30, w: 1, h: 5, color: pantsOutline },
+      { x: 9, y: 31, w: 2, h: 4, color: pantsOutline }, // 股下スリット
+      // デニムの塗り
+      { x: 7, y: 29, w: 6, h: 2, color: pantsBase },
+      { x: 7, y: 31, w: 2, h: 4, color: pantsHighlight },
+      { x: 11, y: 31, w: 2, h: 4, color: pantsHighlight },
+      { x: 7, y: 33, w: 2, h: 2, color: pantsBase },
+      { x: 11, y: 33, w: 2, h: 2, color: pantsBase },
     );
 
-    // 靴 (x: 8-10, y: 27 / x: 13-15, y: 27)
-    const shoeColor = '#FFFFFF';
-    const shoeSole = '#B0BEC5';
+    // 靴（白スニーカー＋グレーの底）
     pixels.push(
-      { x: 8, y: 27, w: 3, h: 1, color: shoeColor },
-      { x: 8, y: 28, w: 3, h: 1, color: shoeSole },
-      { x: 13, y: 27, w: 3, h: 1, color: shoeColor },
-      { x: 13, y: 28, w: 3, h: 1, color: shoeSole },
+      // 左靴
+      { x: 6, y: 35, w: 3, h: 2, color: outline },
+      { x: 6, y: 35, w: 3, h: 1, color: '#FFFFFF' },
+      { x: 6, y: 36, w: 3, h: 1, color: '#BDC3C7' },
+      // 右靴
+      { x: 11, y: 35, w: 3, h: 2, color: outline },
+      { x: 11, y: 35, w: 3, h: 1, color: '#FFFFFF' },
+      { x: 11, y: 36, w: 3, h: 1, color: '#BDC3C7' },
     );
 
-    // 手・腕 (x: 6-7, 16-17, y: 17-21)
+    // 手（左右）
     pixels.push(
-      { x: 6, y: 19, w: 1, h: 2, color: skinBase },
-      { x: 17, y: 19, w: 1, h: 2, color: skinBase },
+      // 左手
+      { x: 4, y: 25, w: 2, h: 3, color: outline },
+      { x: 4, y: 25, w: 2, h: 2, color: skinBase },
+      { x: 4, y: 27, w: 1, h: 1, color: skinShadow },
+      // 右手
+      { x: 14, y: 25, w: 2, h: 3, color: outline },
+      { x: 14, y: 25, w: 2, h: 2, color: skinBase },
+      { x: 15, y: 27, w: 1, h: 1, color: skinShadow },
     );
 
-    // 各トップス
-    if (outfit === 'border_navy') {
-      // 爽やかボーダーTシャツ
+    // トップス（各デザイン）
+    if (outfit === 'border_navy' || outfit === 'border_white') {
+      // 添付画像の爽やかボーダーTシャツ
+      const stripeColor = outfit === 'border_navy' ? '#1B3A4B' : '#5DADE2';
       pixels.push(
-        { x: 8, y: 16, w: 8, h: 6, color: '#FFFFFF' },
-        { x: 7, y: 17, w: 1, h: 2, color: '#FFFFFF' },
-        { x: 16, y: 17, w: 1, h: 2, color: '#FFFFFF' },
-        // ボーダーライン（ネイビー）
-        { x: 8, y: 17, w: 8, h: 1, color: '#1B3A4B' },
-        { x: 8, y: 19, w: 8, h: 1, color: '#1B3A4B' },
-        { x: 8, y: 21, w: 8, h: 1, color: '#1B3A4B' },
+        // 外枠
+        { x: 6, y: 21, w: 8, h: 1, color: outline },
+        { x: 5, y: 22, w: 1, h: 7, color: outline },
+        { x: 14, y: 22, w: 1, h: 7, color: outline },
+        { x: 6, y: 29, w: 8, h: 1, color: outline },
+        // 白ベース
+        { x: 6, y: 22, w: 8, h: 7, color: '#FFFFFF' },
+        // ストライプライン
+        { x: 6, y: 23, w: 8, h: 1, color: stripeColor },
+        { x: 6, y: 25, w: 8, h: 1, color: stripeColor },
+        { x: 6, y: 27, w: 8, h: 1, color: stripeColor },
+        // 袖
+        { x: 4, y: 22, w: 2, h: 3, color: outline },
+        { x: 4, y: 23, w: 2, h: 2, color: '#FFFFFF' },
+        { x: 14, y: 22, w: 2, h: 3, color: outline },
+        { x: 14, y: 23, w: 2, h: 2, color: '#FFFFFF' },
       );
     } else if (outfit === 'hoodie_blue') {
       // ブルーパーカー
+      const hoodieMain = '#3A86FF';
+      const hoodieShadow = '#2667CC';
       pixels.push(
-        { x: 7, y: 16, w: 10, h: 6, color: '#3A86FF' },
-        { x: 6, y: 17, w: 1, h: 3, color: '#2667CC' },
-        { x: 17, y: 17, w: 1, h: 3, color: '#2667CC' },
-        // フードの紐・ポケット
-        { x: 10, y: 17, w: 1, h: 2, color: '#FFFFFF' },
-        { x: 13, y: 17, w: 1, h: 2, color: '#FFFFFF' },
-        { x: 9, y: 20, w: 6, h: 2, color: '#2667CC' },
+        { x: 5, y: 21, w: 10, h: 8, color: outline },
+        { x: 6, y: 22, w: 8, h: 7, color: hoodieMain },
+        // フード周り
+        { x: 8, y: 21, w: 4, h: 1, color: hoodieShadow },
+        // 紐
+        { x: 8, y: 23, w: 1, h: 2, color: '#FFFFFF' },
+        { x: 11, y: 23, w: 1, h: 2, color: '#FFFFFF' },
+        // ポケット
+        { x: 7, y: 26, w: 6, h: 2, color: hoodieShadow },
+        // 袖
+        { x: 4, y: 22, w: 2, h: 4, color: outline },
+        { x: 4, y: 23, w: 2, h: 3, color: hoodieMain },
+        { x: 14, y: 22, w: 2, h: 4, color: outline },
+        { x: 14, y: 23, w: 2, h: 3, color: hoodieMain },
       );
     } else if (outfit === 'jacket_green') {
-      // グリーンジャケット＋インナー
+      // グリーンジャケット羽織り ＋ インナー
+      const jacketColor = '#4CAF50';
+      const jacketShadow = '#2E7D32';
       pixels.push(
-        { x: 10, y: 16, w: 4, h: 6, color: '#333333' }, // 黒インナー
-        { x: 7, y: 16, w: 3, h: 6, color: '#4CAF50' }, // 左ジャケット
-        { x: 14, y: 16, w: 3, h: 6, color: '#388E3C' }, // 右ジャケット
-        { x: 6, y: 17, w: 1, h: 3, color: '#2E7D32' },
-        { x: 17, y: 17, w: 1, h: 3, color: '#2E7D32' },
+        { x: 5, y: 21, w: 10, h: 8, color: outline },
+        // インナー（白）
+        { x: 8, y: 22, w: 4, h: 7, color: '#F2F4F4' },
+        // 左右ジャケット
+        { x: 6, y: 22, w: 2, h: 7, color: jacketColor },
+        { x: 12, y: 22, w: 2, h: 7, color: jacketShadow },
+        // 袖
+        { x: 4, y: 22, w: 2, h: 4, color: outline },
+        { x: 4, y: 23, w: 2, h: 3, color: jacketColor },
+        { x: 14, y: 22, w: 2, h: 4, color: outline },
+        { x: 14, y: 23, w: 2, h: 3, color: jacketShadow },
       );
     } else if (outfit === 'jacket_black') {
-      // 黒レザージャケット＋白インナー
+      // レザージャケット（黒）＋ 白インナー
       pixels.push(
-        { x: 10, y: 16, w: 4, h: 6, color: '#FFFFFF' }, // 白インナー
-        { x: 7, y: 16, w: 3, h: 6, color: '#212121' },
-        { x: 14, y: 16, w: 3, h: 6, color: '#141414' },
-        { x: 6, y: 17, w: 1, h: 3, color: '#141414' },
-        { x: 17, y: 17, w: 1, h: 3, color: '#141414' },
-      );
-    } else if (outfit === 'tshirt_white') {
-      // シンプル白Tシャツ
-      pixels.push(
-        { x: 8, y: 16, w: 8, h: 6, color: '#FFFFFF' },
-        { x: 7, y: 16, w: 1, h: 3, color: '#ECEFF1' },
-        { x: 16, y: 16, w: 1, h: 3, color: '#ECEFF1' },
+        { x: 5, y: 21, w: 10, h: 8, color: outline },
+        { x: 8, y: 22, w: 4, h: 7, color: '#FFFFFF' },
+        { x: 6, y: 22, w: 2, h: 7, color: '#2C3E50' },
+        { x: 12, y: 22, w: 2, h: 7, color: '#1A252F' },
+        { x: 4, y: 22, w: 2, h: 4, color: outline },
+        { x: 4, y: 23, w: 2, h: 3, color: '#2C3E50' },
+        { x: 14, y: 22, w: 2, h: 4, color: outline },
+        { x: 14, y: 23, w: 2, h: 3, color: '#1A252F' },
       );
     } else if (outfit === 'tshirt_red') {
       // 赤Tシャツ
       pixels.push(
-        { x: 8, y: 16, w: 8, h: 6, color: '#E63946' },
-        { x: 7, y: 16, w: 1, h: 3, color: '#C5222F' },
-        { x: 16, y: 16, w: 1, h: 3, color: '#C5222F' },
+        { x: 5, y: 21, w: 10, h: 8, color: outline },
+        { x: 6, y: 22, w: 8, h: 7, color: '#E74C3C' },
+        { x: 7, y: 22, w: 6, h: 1, color: '#C0392B' },
+        { x: 4, y: 22, w: 2, h: 4, color: outline },
+        { x: 4, y: 23, w: 2, h: 3, color: '#E74C3C' },
+        { x: 14, y: 22, w: 2, h: 4, color: outline },
+        { x: 14, y: 23, w: 2, h: 3, color: '#C0392B' },
+      );
+    } else if (outfit === 'tshirt_white') {
+      // 白Tシャツ
+      pixels.push(
+        { x: 5, y: 21, w: 10, h: 8, color: outline },
+        { x: 6, y: 22, w: 8, h: 7, color: '#FFFFFF' },
+        { x: 7, y: 28, w: 6, h: 1, color: '#BDC3C7' },
+        { x: 4, y: 22, w: 2, h: 4, color: outline },
+        { x: 4, y: 23, w: 2, h: 3, color: '#FFFFFF' },
+        { x: 14, y: 22, w: 2, h: 4, color: outline },
+        { x: 14, y: 23, w: 2, h: 3, color: '#BDC3C7' },
       );
     } else {
-      // グラフィックT（ダーク）
+      // ダークロゴT
       pixels.push(
-        { x: 8, y: 16, w: 8, h: 6, color: '#2B2D42' },
-        { x: 7, y: 16, w: 1, h: 3, color: '#1D1E2C' },
-        { x: 16, y: 16, w: 1, h: 3, color: '#1D1E2C' },
-        { x: 11, y: 18, w: 2, h: 2, color: '#48CAE4' }, // ロゴ
+        { x: 5, y: 21, w: 10, h: 8, color: outline },
+        { x: 6, y: 22, w: 8, h: 7, color: '#2C3E50' },
+        { x: 9, y: 24, w: 2, h: 2, color: '#2ECC71' }, // ロゴ
+        { x: 4, y: 22, w: 2, h: 4, color: outline },
+        { x: 4, y: 23, w: 2, h: 3, color: '#2C3E50' },
+        { x: 14, y: 22, w: 2, h: 4, color: outline },
+        { x: 14, y: 23, w: 2, h: 3, color: '#1A252F' },
       );
     }
   } else {
-    // ==========================================
-    // 漂流姿（Drifting: 浮き輪に乗っている）
-    // ==========================================
-    // 上半身（少し水に浸かっている）
-    pixels.push({ x: 8, y: 16, w: 8, h: 4, color: '#3A86FF' });
-
-    // バンザイまたは浮き輪をつかむ手
+    // ========================================================
+    // 漂流姿（浮き輪に乗って海に浮いているモード）
+    // ========================================================
+    // 上半身
     pixels.push(
-      { x: 5, y: 16, w: 2, h: 2, color: skinBase },
-      { x: 17, y: 16, w: 2, h: 2, color: skinBase },
+      { x: 6, y: 21, w: 8, h: 4, color: '#3A86FF' },
+      // 浮き輪をつかむ手
+      { x: 3, y: 21, w: 2, h: 2, color: skinBase },
+      { x: 15, y: 21, w: 2, h: 2, color: skinBase },
     );
 
-    // 浮き輪（赤白ストライプ）
-    const tubeRed = '#FF3366';
+    // 浮き輪（赤白ストライプのドーナツ型）
+    const tubeRed = '#E74C3C';
     const tubeWhite = '#FFFFFF';
     pixels.push(
-      // 浮き輪の上部
-      { x: 5, y: 19, w: 14, h: 3, color: tubeRed },
-      { x: 8, y: 19, w: 2, h: 3, color: tubeWhite },
-      { x: 14, y: 19, w: 2, h: 3, color: tubeWhite },
-      // 浮き輪の下部・厚み
-      { x: 4, y: 21, w: 16, h: 3, color: tubeRed },
-      { x: 7, y: 21, w: 3, h: 3, color: tubeWhite },
-      { x: 14, y: 21, w: 3, h: 3, color: tubeWhite },
+      // 浮き輪のアウトライン
+      { x: 2, y: 23, w: 16, h: 7, color: outline },
+      // 赤白ストライプ
+      { x: 3, y: 24, w: 14, h: 5, color: tubeRed },
+      { x: 6, y: 24, w: 2, h: 5, color: tubeWhite },
+      { x: 12, y: 24, w: 2, h: 5, color: tubeWhite },
+      { x: 3, y: 25, w: 2, h: 3, color: tubeWhite },
+      { x: 15, y: 25, w: 2, h: 3, color: tubeWhite },
+      // 浮き輪の内側の穴（水が見える）
+      { x: 7, y: 26, w: 6, h: 2, color: '#2980B9' },
     );
 
-    // 周りの波・水しぶき
-    const waterColor = '#00B4D8';
-    const foamColor = '#CAF0F8';
+    // 周りの波と水しぶき
     pixels.push(
-      { x: 2, y: 23, w: 20, h: 1, color: waterColor },
-      { x: 1, y: 24, w: 22, h: 2, color: waterColor },
-      { x: 3, y: 23, w: 3, h: 1, color: foamColor },
-      { x: 18, y: 23, w: 3, h: 1, color: foamColor },
-      { x: 2, y: 26, w: 20, h: 2, color: '#0077B6' },
+      { x: 1, y: 30, w: 18, h: 2, color: '#3498DB' },
+      { x: 0, y: 32, w: 20, h: 4, color: '#2980B9' },
+      { x: 2, y: 30, w: 3, h: 1, color: '#EBF5FB' },
+      { x: 15, y: 30, w: 3, h: 1, color: '#EBF5FB' },
     );
   }
 
-  // ==========================================
-  // 4. メガネ・小物（Glasses）
-  // ==========================================
+  // ========================================================
+  // 4. メガネ・小物
+  // ========================================================
   if (glasses === 'glasses_round') {
-    const frameColor = '#8D6E63';
+    const frame = '#5D4037';
     pixels.push(
-      { x: 7, y: 9, w: 4, h: 1, color: frameColor },
-      { x: 7, y: 12, w: 4, h: 1, color: frameColor },
-      { x: 7, y: 10, w: 1, h: 2, color: frameColor },
-      { x: 10, y: 10, w: 1, h: 2, color: frameColor },
-      { x: 11, y: 10, w: 2, h: 1, color: frameColor }, // ブリッジ
-      { x: 13, y: 9, w: 4, h: 1, color: frameColor },
-      { x: 13, y: 12, w: 4, h: 1, color: frameColor },
-      { x: 13, y: 10, w: 1, h: 2, color: frameColor },
-      { x: 16, y: 10, w: 1, h: 2, color: frameColor },
+      // 左レンズ枠
+      { x: 5, y: 11, w: 4, h: 4, color: frame },
+      { x: 6, y: 12, w: 2, h: 2, color: skinBase },
+      // 右レンズ枠
+      { x: 11, y: 11, w: 4, h: 4, color: frame },
+      { x: 12, y: 12, w: 2, h: 2, color: skinBase },
+      // ブリッジ
+      { x: 9, y: 12, w: 2, h: 1, color: frame },
     );
   } else if (glasses === 'glasses_square') {
-    const frameColor = '#1A1A1A';
+    const frame = '#1C1917';
     pixels.push(
-      { x: 7, y: 9, w: 4, h: 3, color: frameColor },
-      { x: 8, y: 10, w: 2, h: 1, color: '#FFFFFF' }, // レンズ光
-      { x: 11, y: 10, w: 2, h: 1, color: frameColor },
-      { x: 13, y: 9, w: 4, h: 3, color: frameColor },
-      { x: 14, y: 10, w: 2, h: 1, color: '#FFFFFF' },
+      { x: 5, y: 11, w: 4, h: 3, color: frame },
+      { x: 6, y: 12, w: 2, h: 1, color: '#FFFFFF' }, // レンズ光
+      { x: 11, y: 11, w: 4, h: 3, color: frame },
+      { x: 12, y: 12, w: 2, h: 1, color: '#FFFFFF' },
+      { x: 9, y: 12, w: 2, h: 1, color: frame },
     );
   }
 
-  // ==========================================
-  // 5. 髪型・帽子（Hair / Hat）
-  // ==========================================
+  // ========================================================
+  // 5. 髪型・帽子（添付画像に忠実な9パターン）
+  // ========================================================
   if (hairStyle === 'cap_forward') {
-    // キャップ前かぶり（赤白）
+    // ベースボールキャップ（ツバ前・赤白）
     pixels.push(
-      // クラウン（帽子本体）
-      { x: 7, y: 3, w: 10, h: 4, color: '#D90429' },
-      { x: 6, y: 5, w: 12, h: 3, color: '#D90429' },
-      { x: 10, y: 4, w: 4, h: 3, color: '#FFFFFF' }, // 白フロントパネル
-      // ツバ
-      { x: 5, y: 7, w: 14, h: 1, color: '#EF233C' },
-      // もみあげ・サイドの毛
-      { x: 6, y: 8, w: 1, h: 3, color: hairBase },
-      { x: 17, y: 8, w: 1, h: 3, color: hairBase },
+      // 帽子アウトライン
+      { x: 4, y: 3, w: 12, h: 6, color: outline },
+      // クラウン（赤）
+      { x: 5, y: 4, w: 10, h: 4, color: '#E74C3C' },
+      // フロントパネル（白）
+      { x: 8, y: 4, w: 4, h: 4, color: '#FFFFFF' },
+      // ツバ（黒枠＋濃赤）
+      { x: 3, y: 8, w: 14, h: 2, color: outline },
+      { x: 4, y: 8, w: 12, h: 1, color: '#C0392B' },
+      // もみあげ
+      { x: 4, y: 10, w: 1, h: 4, color: hairBase },
+      { x: 15, y: 10, w: 1, h: 4, color: hairBase },
     );
   } else if (hairStyle === 'cap_backward') {
-    // キャップ後ろかぶり（ストリート風グリーン）
+    // キャップ（後ろかぶり・緑/ストリート風）
     pixels.push(
-      { x: 7, y: 4, w: 10, h: 4, color: '#2B9348' },
-      { x: 6, y: 6, w: 12, h: 2, color: '#2B9348' },
-      // 後ろのアジャスター
-      { x: 10, y: 7, w: 4, h: 1, color: '#55A630' },
+      { x: 4, y: 4, w: 12, h: 5, color: outline },
+      { x: 5, y: 5, w: 10, h: 3, color: '#27AE60' },
+      { x: 8, y: 7, w: 4, h: 1, color: '#1E8449' }, // 後ろアジャスター
       // 前髪チラ見せ
-      { x: 8, y: 7, w: 2, h: 1, color: hairBase },
-      { x: 14, y: 7, w: 2, h: 1, color: hairBase },
-      { x: 6, y: 8, w: 1, h: 3, color: hairBase },
-      { x: 17, y: 8, w: 1, h: 3, color: hairBase },
+      { x: 6, y: 8, w: 3, h: 2, color: hairBase },
+      { x: 11, y: 8, w: 3, h: 2, color: hairBase },
+      { x: 4, y: 10, w: 1, h: 4, color: hairBase },
+      { x: 15, y: 10, w: 1, h: 4, color: hairBase },
     );
   } else if (hairStyle === 'short_messy') {
-    // 無造作ショート（毛先が遊んでる）
+    // 添付画像2番目：無造作ショート（毛先が跳ねている）
     pixels.push(
-      { x: 7, y: 4, w: 10, h: 4, color: hairBase },
-      { x: 6, y: 5, w: 2, h: 2, color: hairHighlight },
-      { x: 15, y: 3, w: 3, h: 2, color: hairHighlight }, // ハネ毛
-      { x: 6, y: 7, w: 12, h: 2, color: hairBase },
-      // 前髪
-      { x: 7, y: 7, w: 3, h: 2, color: hairShadow },
-      { x: 11, y: 7, w: 2, h: 2, color: hairShadow },
-      { x: 14, y: 7, w: 3, h: 2, color: hairShadow },
+      // アウトライン
+      { x: 4, y: 4, w: 12, h: 7, color: outline },
+      { x: 3, y: 6, w: 2, h: 3, color: outline },
+      { x: 15, y: 3, w: 3, h: 3, color: outline }, // 右上の跳ね毛
+      // メイン髪塗り
+      { x: 5, y: 5, w: 10, h: 5, color: hairBase },
+      { x: 6, y: 4, w: 8, h: 1, color: hairHighlight }, // ハイライト
+      { x: 15, y: 4, w: 2, h: 2, color: hairHighlight },
+      // 前髪ギザギザ
+      { x: 5, y: 9, w: 3, h: 2, color: hairShadow },
+      { x: 9, y: 9, w: 2, h: 2, color: hairShadow },
+      { x: 12, y: 9, w: 3, h: 2, color: hairShadow },
       // もみあげ
-      { x: 6, y: 9, w: 1, h: 3, color: hairShadow },
-      { x: 17, y: 9, w: 1, h: 3, color: hairShadow },
+      { x: 4, y: 10, w: 1, h: 4, color: hairShadow },
+      { x: 15, y: 10, w: 1, h: 4, color: hairShadow },
     );
   } else if (hairStyle === 'mush') {
-    // マッシュルーム（丸みのある前髪）
+    // マッシュ（丸みのある前髪）
     pixels.push(
-      { x: 7, y: 3, w: 10, h: 5, color: hairBase },
-      { x: 6, y: 6, w: 12, h: 3, color: hairBase },
-      // ハイライト（頭頂部）
-      { x: 8, y: 4, w: 7, h: 1, color: hairHighlight },
-      // 前髪ライン（きれいに揃った丸み）
-      { x: 7, y: 8, w: 10, h: 1, color: hairShadow },
-      { x: 6, y: 9, w: 2, h: 2, color: hairShadow },
-      { x: 16, y: 9, w: 2, h: 2, color: hairShadow },
+      { x: 4, y: 4, w: 12, h: 7, color: outline },
+      { x: 5, y: 5, w: 10, h: 5, color: hairBase },
+      { x: 6, y: 5, w: 8, h: 1, color: hairHighlight },
+      // 丸く揃った前髪
+      { x: 5, y: 9, w: 10, h: 2, color: hairShadow },
+      { x: 4, y: 10, w: 2, h: 4, color: hairShadow },
+      { x: 14, y: 10, w: 2, h: 4, color: hairShadow },
     );
   } else if (hairStyle === 'center_part') {
     // センターパート（真ん中分け・サラサラ）
     pixels.push(
-      { x: 7, y: 4, w: 10, h: 4, color: hairBase },
-      { x: 6, y: 5, w: 4, h: 4, color: hairHighlight },
-      { x: 14, y: 5, w: 4, h: 4, color: hairHighlight },
-      // センターの分け目
-      { x: 11, y: 6, w: 2, h: 2, color: skinBase },
-      // 左右に流れる前髪
-      { x: 7, y: 7, w: 3, h: 3, color: hairShadow },
-      { x: 14, y: 7, w: 3, h: 3, color: hairShadow },
-      { x: 6, y: 9, w: 1, h: 3, color: hairShadow },
-      { x: 17, y: 9, w: 1, h: 3, color: hairShadow },
+      { x: 4, y: 4, w: 12, h: 7, color: outline },
+      { x: 5, y: 5, w: 10, h: 4, color: hairBase },
+      { x: 5, y: 5, w: 4, h: 2, color: hairHighlight },
+      { x: 11, y: 5, w: 4, h: 2, color: hairHighlight },
+      // センターの分け目（肌が見える）
+      { x: 9, y: 7, w: 2, h: 3, color: skinBase },
+      // サイドに流れる前髪
+      { x: 5, y: 8, w: 3, h: 3, color: hairShadow },
+      { x: 12, y: 8, w: 3, h: 3, color: hairShadow },
+      { x: 4, y: 10, w: 1, h: 4, color: hairShadow },
+      { x: 15, y: 10, w: 1, h: 4, color: hairShadow },
     );
   } else if (hairStyle === 'long_straight') {
-    // ロングストレート（肩まで届く髪）
+    // 添付画像5番目：ロングストレート（肩まで届く髪）
     pixels.push(
-      { x: 7, y: 3, w: 10, h: 5, color: hairBase },
-      { x: 6, y: 5, w: 12, h: 3, color: hairBase },
-      { x: 8, y: 4, w: 7, h: 1, color: hairHighlight },
-      // 前髪
-      { x: 8, y: 7, w: 8, h: 2, color: hairShadow },
-      // 両サイドのロングヘア（肩下まで）
-      { x: 5, y: 8, w: 2, h: 12, color: hairBase },
-      { x: 6, y: 10, w: 1, h: 10, color: hairShadow },
-      { x: 17, y: 8, w: 2, h: 12, color: hairBase },
-      { x: 17, y: 10, w: 1, h: 10, color: hairShadow },
+      { x: 4, y: 4, w: 12, h: 7, color: outline },
+      { x: 5, y: 5, w: 10, h: 5, color: hairBase },
+      { x: 6, y: 5, w: 8, h: 1, color: hairHighlight },
+      { x: 6, y: 9, w: 8, h: 2, color: hairShadow },
+      // 肩にかかる長いサイドヘア
+      { x: 3, y: 9, w: 2, h: 15, color: outline },
+      { x: 3, y: 10, w: 2, h: 13, color: hairBase },
+      { x: 4, y: 11, w: 1, h: 12, color: hairShadow },
+      { x: 15, y: 9, w: 2, h: 15, color: outline },
+      { x: 15, y: 10, w: 2, h: 13, color: hairBase },
+      { x: 15, y: 11, w: 1, h: 12, color: hairShadow },
     );
   } else if (hairStyle === 'wavy') {
-    // ウェーブ・パーマ
+    // 添付画像11番目：ウェーブ・パーマ
     pixels.push(
-      { x: 6, y: 3, w: 12, h: 5, color: hairBase },
-      { x: 5, y: 5, w: 3, h: 3, color: hairHighlight },
-      { x: 16, y: 5, w: 3, h: 3, color: hairHighlight },
-      { x: 7, y: 7, w: 10, h: 2, color: hairShadow },
-      // もこもこサイド
-      { x: 5, y: 8, w: 2, h: 7, color: hairBase },
-      { x: 17, y: 8, w: 2, h: 7, color: hairBase },
+      { x: 3, y: 4, w: 14, h: 8, color: outline },
+      { x: 4, y: 5, w: 12, h: 6, color: hairBase },
+      { x: 5, y: 5, w: 4, h: 2, color: hairHighlight },
+      { x: 11, y: 5, w: 4, h: 2, color: hairHighlight },
+      { x: 5, y: 9, w: 10, h: 2, color: hairShadow },
+      // もこもこウェーブサイド
+      { x: 3, y: 9, w: 2, h: 10, color: hairBase },
+      { x: 15, y: 9, w: 2, h: 10, color: hairBase },
     );
   } else if (hairStyle === 'spiky') {
-    // ツンツンスパイキー
+    // スパイキー（ツンツン）
     pixels.push(
-      { x: 8, y: 3, w: 2, h: 2, color: hairHighlight },
-      { x: 11, y: 2, w: 2, h: 3, color: hairHighlight },
-      { x: 14, y: 3, w: 2, h: 2, color: hairHighlight },
-      { x: 7, y: 5, w: 10, h: 4, color: hairBase },
-      { x: 6, y: 7, w: 12, h: 2, color: hairShadow },
-      { x: 6, y: 9, w: 1, h: 2, color: hairShadow },
-      { x: 17, y: 9, w: 1, h: 2, color: hairShadow },
+      { x: 6, y: 2, w: 2, h: 3, color: hairHighlight },
+      { x: 9, y: 1, w: 2, h: 4, color: hairHighlight },
+      { x: 12, y: 2, w: 2, h: 3, color: hairHighlight },
+      { x: 4, y: 5, w: 12, h: 6, color: outline },
+      { x: 5, y: 5, w: 10, h: 5, color: hairBase },
+      { x: 5, y: 9, w: 10, h: 2, color: hairShadow },
+      { x: 4, y: 10, w: 1, h: 3, color: hairShadow },
+      { x: 15, y: 10, w: 1, h: 3, color: hairShadow },
     );
   } else {
     // ボブ
     pixels.push(
-      { x: 7, y: 3, w: 10, h: 5, color: hairBase },
-      { x: 6, y: 6, w: 12, h: 4, color: hairBase },
-      { x: 8, y: 4, w: 7, h: 1, color: hairHighlight },
-      { x: 7, y: 8, w: 10, h: 1, color: hairShadow },
-      { x: 5, y: 8, w: 2, h: 6, color: hairBase },
-      { x: 17, y: 8, w: 2, h: 6, color: hairBase },
+      { x: 4, y: 4, w: 12, h: 7, color: outline },
+      { x: 5, y: 5, w: 10, h: 5, color: hairBase },
+      { x: 6, y: 5, w: 8, h: 1, color: hairHighlight },
+      { x: 5, y: 9, w: 10, h: 2, color: hairShadow },
+      { x: 3, y: 10, w: 2, h: 8, color: hairBase },
+      { x: 15, y: 10, w: 2, h: 8, color: hairBase },
     );
   }
 
   return (
-    <Svg width={size} height={(size * 30) / 24} viewBox="0 0 24 30">
+    <Svg width={size} height={(size * 38) / 20} viewBox="0 0 20 38">
       {pixels.map((p, index) => (
         <Rect
           key={`${p.x}-${p.y}-${index}`}
