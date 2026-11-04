@@ -18,7 +18,7 @@ export default function CreateAvatarScreen() {
   const router = useRouter();
   const [config, setConfig] = useState<AvatarConfig>(DEFAULT_AVATAR_CONFIG);
   const [previewMode, setPreviewMode] = useState<AvatarPreviewMode>('standing');
-  const [activeTab, setActiveTab] = useState<AvatarCustomizeTab>('style');
+  const [activeTab, setActiveTab] = useState<AvatarCustomizeTab>('hair');
 
   const handlePartChange = <K extends keyof AvatarConfig>(key: K, value: AvatarConfig[K]) => {
     setConfig((prev) => ({
@@ -28,18 +28,14 @@ export default function CreateAvatarScreen() {
   };
 
   const handleSave = () => {
-    Alert.alert(
-      'アバターが完成しました！',
-      `スタイル: ${config.baseStyle}\n目: ${config.eyeType}\n口: ${config.mouthType}\nメガネ: ${config.glasses}`,
-      [
-        {
-          text: '島へ移動する',
-          onPress: () => {
-            router.replace('/');
-          },
+    Alert.alert('アバター設定を保存しました', JSON.stringify(config, null, 2), [
+      {
+        text: '島へ移動する',
+        onPress: () => {
+          router.replace('/');
         },
-      ],
-    );
+      },
+    ]);
   };
 
   return (
