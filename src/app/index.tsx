@@ -1,5 +1,5 @@
 import * as Device from 'expo-device';
-import { Link } from 'expo-router';
+import { router } from 'expo-router';
 import { Platform, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -45,13 +45,14 @@ export default function HomeScreen() {
         </ThemedText>
 
         <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <Link href="/create-avatar" asChild>
-            <Pressable style={styles.createAvatarButton}>
-              <ThemedText style={styles.createAvatarButtonText}>
-                🏝️ アバターを作成する（カスタマイズ）
-              </ThemedText>
-            </Pressable>
-          </Link>
+          <Pressable
+            style={styles.createAvatarButton}
+            onPress={() => router.push('/create-avatar')}
+          >
+            <ThemedText style={styles.createAvatarButtonText}>
+              🏝️ アバターを作成する（カスタマイズ）
+            </ThemedText>
+          </Pressable>
           <HintRow
             title="Try editing"
             hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}

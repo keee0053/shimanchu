@@ -47,7 +47,16 @@ export default function CreateAvatarScreen() {
       <SafeAreaView style={styles.safeArea}>
         {/* ヘッダー */}
         <View style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/');
+              }
+            }}
+          >
             <ThemedText style={styles.backButtonText}>← 戻る</ThemedText>
           </Pressable>
           <ThemedText style={styles.headerTitle}>アバター作成</ThemedText>
