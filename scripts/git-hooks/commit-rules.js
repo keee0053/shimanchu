@@ -142,9 +142,14 @@ function isSafeBareWord(text) {
   return /^[A-Za-z0-9._/-]+$/.test(text);
 }
 
+// 直接コミット・push しないブランチか
+function isProtectedBranch(branch) {
+  return PROTECTED_BRANCHES.includes(branch);
+}
+
 // push 先のブランチ名を検査する
 function checkBranchName(branch) {
-  if (PROTECTED_BRANCHES.includes(branch)) {
+  if (isProtectedBranch(branch)) {
     return [`${branch} には直接 push しない（feature ブランチから PR を作る）`];
   }
   if (ENABLE_BRANCH_PATTERN_CHECK && !BRANCH_PATTERN.test(branch)) {
@@ -158,6 +163,7 @@ module.exports = {
   checkTitle,
   checkCommitMessage,
   checkBranchName,
+  isProtectedBranch,
   findAiMarkers,
   suggestTitle,
   suggestCommitMessage,

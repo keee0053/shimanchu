@@ -7,6 +7,7 @@ const { execFileSync } = require('child_process');
 
 const {
   checkCommitMessage,
+  isProtectedBranch,
   isSafeBareWord,
   isSafeToQuote,
   suggestCommitMessage,
@@ -47,7 +48,12 @@ function checkRange(range) {
 // pushed: すでにリモートにあるコミットか（CI から呼ぶとき）。書き換えた後に強制 push が必要になる
 //         CI では HEAD が PR のマージコミットになるため、利用者の手元では先端のコミットにいるとみなす
 // branch: push しようとしたローカルのブランチ（pre-push から呼ぶとき）。今いるブランチと違えば切り替えを案内する
-function printRewordHint(failures, { tipSha, pushed, branch = null }) {
+// pushedTo: CI で push されたブランチ（main / develop に直接入ったコミットを検査するとき）
+function printRewordHint(failures, { tipSha, pushed, branch = null, pushedTo = null }) {
+  if (pushedTo && isProtectedBranch(pushedTo)) {
+    printProtectedBranchHint(pushedTo);
+    return;
+  }
   const oldest = failures[0].sha;
   const short = (sha) => sha.slice(0, 7);
   const onTip = pushed || tryGit(['rev-parse', 'HEAD']) === tipSha;
@@ -67,7 +73,7 @@ function printRewordHint(failures, { tipSha, pushed, branch = null }) {
   }
   if (isTipOnly) {
     const { suggestion } = failures[0];
-    const example = suggestion && isSafeToQuote(suggestion) ? suggestion : 'type: 日本語の説明';
+    const example = suggestion && isSafeToQuote(suggestion) ? suggestion : 'add: 日本語の説明';
     console.error('    直すのは最新のコミットだけなので、メッセージを上書きする');
     console.error(`      git commit --amend -m "${example}"`);
   } else {
@@ -100,6 +106,23 @@ function printRewordHint(failures, { tipSha, pushed, branch = null }) {
   console.error('  詳しくは CONTRIBUTING.md の「Git フックと CI による自動チェック」を参照');
 }
 
+// main / develop に入ってしまったコミットの扱いを表示する
+// 共有のブランチなので、履歴の書き換え（rebase・amend・force push）は案内しない
+function printProtectedBranchHint(branch) {
+  console.error(`\n  ${branch} はみんなで使うブランチなので、入ってしまったコミットは書き換えない`);
+  console.error('  （force push すると、他の人の手元の履歴と食い違って作業が壊れるため）');
+  console.error('\n  次から同じことが起きないように、原因を確認する:');
+  console.error(
+    '    - PR を「Squash and merge」でマージしていないか（「Create a merge commit」を使う）',
+  );
+  console.error(
+    '    - git push --no-verify でフックを飛ばしていないか、フックが有効か（npm run setup-hooks）',
+  );
+  console.error(
+    '  詳しくは CONTRIBUTING.md の「プルリクエスト」「Git フックと CI による自動チェック」を参照',
+  );
+}
+
 module.exports = { checkRange, printRewordHint };
 
 if (require.main === module) {
@@ -113,7 +136,12 @@ if (require.main === module) {
     console.error(
       `\n${total} 件中 ${failed} 件のコミットメッセージがルールに沿っていません（CONTRIBUTING.md 参照）`,
     );
-    printRewordHint(failures, { tipSha: tryGit(['rev-parse', head]), pushed: true });
+    printRewordHint(failures, {
+      tipSha: tryGit(['rev-parse', head]),
+      pushed: true,
+      // GitHub Actions の push イベント（main / develop に直接入ったコミットの検査）では push 先のブランチが入る
+      pushedTo: process.env.GITHUB_EVENT_NAME === 'push' ? process.env.GITHUB_REF_NAME : null,
+    });
     process.exit(1);
   }
   console.log(`✔ ${total} 件のコミットメッセージを確認しました`);

@@ -53,13 +53,13 @@ function printCommitHint(suggestion) {
     console.error(`    git commit -m "${suggestion}"`);
     console.error('  （上のメッセージは自動で直した候補です。内容が合っているか確認してください）');
   } else if (suggestion) {
-    console.error('    git commit -m "type: 日本語の説明"');
+    console.error('    git commit -m "add: 日本語の説明"');
     console.error(`  候補: ${suggestion}`);
     console.error(
       '  （記号を含むため、候補はコマンドに入れていません。確認して書き直してください）',
     );
   } else {
-    console.error('    git commit -m "type: 日本語の説明"');
+    console.error('    git commit -m "add: 日本語の説明"');
     console.error(`  例: ${EXAMPLE}`);
   }
   console.error('  git commit --amend の途中だった場合は git commit --amend -m "..." で直す');
