@@ -1,15 +1,8 @@
 import React from 'react';
+import { Image, type ImageSourcePropType, StyleSheet, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 
-import type { AvatarConfig, AvatarPreviewMode } from '@/domain/entities/avatar';
-
-interface PixelData {
-  x: number;
-  y: number;
-  w?: number;
-  h?: number;
-  color: string;
-}
+import type { AvatarBaseStyle, AvatarConfig, AvatarPreviewMode } from '@/domain/entities/avatar';
 
 interface AvatarPixelCanvasProps {
   config: AvatarConfig;
@@ -17,514 +10,209 @@ interface AvatarPixelCanvasProps {
   size?: number;
 }
 
-/**
- * カラーから影（ダークトーン）を算出
- */
-function getShadowColor(hex: string): string {
-  const cleanHex = hex.replace('#', '');
-  const r = Math.max(0, parseInt(cleanHex.substring(0, 2), 16) - 40);
-  const g = Math.max(0, parseInt(cleanHex.substring(2, 4), 16) - 40);
-  const b = Math.max(0, parseInt(cleanHex.substring(4, 6), 16) - 40);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
+// 添付画像からピクセル完全抽出した全12体のアセットマップ
+const AVATAR_IMAGE_MAP: Record<AvatarBaseStyle, ImageSourcePropType> = {
+  char1_cap_red: require('@/assets/avatar/char1_cap_red.png'),
+  char2_border_navy: require('@/assets/avatar/char2_border_navy.png'),
+  char3_cap_blue: require('@/assets/avatar/char3_cap_blue.png'),
+  char4_cap_green: require('@/assets/avatar/char4_cap_green.png'),
+  char5_long_hair: require('@/assets/avatar/char5_long_hair.png'),
+  char6_jacket_green: require('@/assets/avatar/char6_jacket_green.png'),
+  char7_jacket_teal: require('@/assets/avatar/char7_jacket_teal.png'),
+  char8_jacket_black: require('@/assets/avatar/char8_jacket_black.png'),
+  char9_tshirt_red: require('@/assets/avatar/char9_tshirt_red.png'),
+  char10_jacket_olive: require('@/assets/avatar/char10_jacket_olive.png'),
+  char11_graphic_dark: require('@/assets/avatar/char11_graphic_dark.png'),
+  char12_wavy_hair: require('@/assets/avatar/char12_wavy_hair.png'),
+};
 
 /**
- * カラーからハイライトを算出
- */
-function getHighlightColor(hex: string): string {
-  const cleanHex = hex.replace('#', '');
-  const r = Math.min(255, parseInt(cleanHex.substring(0, 2), 16) + 35);
-  const g = Math.min(255, parseInt(cleanHex.substring(2, 4), 16) + 35);
-  const b = Math.min(255, parseInt(cleanHex.substring(4, 6), 16) + 35);
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
-
-/**
- * 20x38規格の精密ピクセルアートアバター描画コンポーネント
+ * 添付画像（Simple Human Avatars）の本物のドット絵を描画するレンダラー
  */
 export function AvatarPixelCanvas({
   config,
   mode = 'standing',
-  size = 200,
+  size = 180,
 }: AvatarPixelCanvasProps) {
-  const { skinTone, hairStyle, hairColor, eyeType, mouthType, outfit, glasses } = config;
+  const { baseStyle, eyeType, mouthType, glasses } = config;
+  const isDrifting = mode === 'drifting';
 
-  const outline = '#1C1917'; // 全体の黒枠・アウトライン
-  const eyeColor = '#1A1A1A';
-  const mouthColor = '#B86B52'; // 添付画像の自然な唇・口の色
+  const avatarSource = AVATAR_IMAGE_MAP[baseStyle] ?? AVATAR_IMAGE_MAP.char2_border_navy;
 
-  const skinBase = skinTone;
-  const skinShadow = getShadowColor(skinTone);
-  const skinHighlight = getHighlightColor(skinTone);
-
-  const hairBase = hairColor;
-  const hairShadow = getShadowColor(hairColor);
-  const hairHighlight = getHighlightColor(hairColor);
-
-  const pixels: PixelData[] = [];
-
-  // ========================================================
-  // 1. 体・首・頭部のベース（アウトラインと肌）
-  // ========================================================
-  // 首 (x: 9-10, y: 19-20)
-  pixels.push(
-    { x: 8, y: 19, w: 4, h: 2, color: outline },
-    { x: 9, y: 19, w: 2, h: 2, color: skinShadow },
-  );
-
-  // 顔の黒枠アウトライン (x: 4〜15, y: 7〜19)
-  pixels.push(
-    // 顎・輪郭ライン
-    { x: 7, y: 19, w: 6, h: 1, color: outline },
-    { x: 5, y: 18, w: 2, h: 1, color: outline },
-    { x: 13, y: 18, w: 2, h: 1, color: outline },
-    { x: 4, y: 16, w: 1, h: 2, color: outline },
-    { x: 15, y: 16, w: 1, h: 2, color: outline },
-    // 側頭部
-    { x: 4, y: 10, w: 1, h: 6, color: outline },
-    { x: 15, y: 10, w: 1, h: 6, color: outline },
-    // 耳のアウトラインと中身
-    { x: 3, y: 13, w: 1, h: 3, color: outline },
-    { x: 16, y: 13, w: 1, h: 3, color: outline },
-    { x: 4, y: 13, w: 1, h: 2, color: skinBase },
-    { x: 15, y: 13, w: 1, h: 2, color: skinBase },
-    { x: 4, y: 15, w: 1, h: 1, color: skinShadow },
-    { x: 15, y: 15, w: 1, h: 1, color: skinShadow },
-  );
-
-  // 顔の肌塗り（ベース・ハイライト・影）
-  pixels.push(
-    // 額・上部
-    { x: 5, y: 8, w: 10, h: 2, color: skinHighlight },
-    // 顔の中心部
-    { x: 5, y: 10, w: 10, h: 6, color: skinBase },
-    // 顎まわりのシャドウ
-    { x: 5, y: 16, w: 10, h: 2, color: skinBase },
-    { x: 6, y: 18, w: 8, h: 1, color: skinShadow },
-    // ほっぺのチーク（淡いピンク）
-    { x: 5, y: 14, w: 2, h: 1, color: '#F8B4B4' },
-    { x: 13, y: 14, w: 2, h: 1, color: '#F8B4B4' },
-  );
-
-  // ========================================================
-  // 2. 目・眉・口のディテール
-  // ========================================================
-  // 眉毛（髪色の影）
-  pixels.push(
-    { x: 6, y: 11, w: 2, h: 1, color: hairShadow },
-    { x: 12, y: 11, w: 2, h: 1, color: hairShadow },
-  );
-
-  // 目
-  if (eyeType === 'dots') {
-    // 添付画像の点目（縦2x横2）
-    pixels.push(
-      { x: 6, y: 12, w: 2, h: 2, color: eyeColor },
-      { x: 12, y: 12, w: 2, h: 2, color: eyeColor },
-    );
-  } else if (eyeType === 'smile') {
-    // にっこり目（^^）
-    pixels.push(
-      { x: 6, y: 12, w: 2, h: 1, color: eyeColor },
-      { x: 5, y: 13, w: 1, h: 1, color: eyeColor },
-      { x: 8, y: 13, w: 1, h: 1, color: eyeColor },
-      { x: 12, y: 12, w: 2, h: 1, color: eyeColor },
-      { x: 11, y: 13, w: 1, h: 1, color: eyeColor },
-      { x: 14, y: 13, w: 1, h: 1, color: eyeColor },
-    );
-  } else if (eyeType === 'calm') {
-    // ジト目・クール細目
-    pixels.push(
-      { x: 5, y: 12, w: 3, h: 1, color: eyeColor },
-      { x: 6, y: 13, w: 2, h: 1, color: eyeColor },
-      { x: 12, y: 12, w: 3, h: 1, color: eyeColor },
-      { x: 12, y: 13, w: 2, h: 1, color: eyeColor },
-    );
-  } else {
-    // パッチリきらきら目
-    pixels.push(
-      { x: 6, y: 12, w: 2, h: 3, color: eyeColor },
-      { x: 6, y: 12, w: 1, h: 1, color: '#FFFFFF' },
-      { x: 12, y: 12, w: 2, h: 3, color: eyeColor },
-      { x: 12, y: 12, w: 1, h: 1, color: '#FFFFFF' },
-    );
-  }
-
-  // 口（添付画像にある繊細な口！）
-  if (mouthType === 'neutral') {
-    // 添付画像準拠：横2ドットの控えめな口
-    pixels.push({ x: 9, y: 16, w: 2, h: 1, color: mouthColor });
-  } else if (mouthType === 'smile') {
-    // ほほえみ口（少し口角が上がった口）
-    pixels.push(
-      { x: 9, y: 16, w: 2, h: 1, color: mouthColor },
-      { x: 8, y: 15, w: 1, h: 1, color: mouthColor },
-      { x: 11, y: 15, w: 1, h: 1, color: mouthColor },
-    );
-  } else if (mouthType === 'open') {
-    // 小さく開いた口
-    pixels.push(
-      { x: 9, y: 15, w: 2, h: 2, color: '#7E2A1E' },
-      { x: 9, y: 16, w: 2, h: 1, color: '#E06D53' },
-    );
-  } else {
-    // ひかえめ（1ドット）
-    pixels.push({ x: 9, y: 16, w: 1, h: 1, color: mouthColor });
-  }
-
-  // ========================================================
-  // 3. 服装・胴体・手足（立ち姿 / 漂流姿）
-  // ========================================================
-  if (mode === 'standing') {
-    // ズボン（デニムジーンズ）
-    const pantsOutline = '#1A252F';
-    const pantsBase = '#2E4053';
-    const pantsHighlight = '#34495E';
-    pixels.push(
-      // ズボンのアウトライン
-      { x: 6, y: 29, w: 8, h: 1, color: pantsOutline },
-      { x: 6, y: 30, w: 1, h: 5, color: pantsOutline },
-      { x: 13, y: 30, w: 1, h: 5, color: pantsOutline },
-      { x: 9, y: 31, w: 2, h: 4, color: pantsOutline }, // 股下スリット
-      // デニムの塗り
-      { x: 7, y: 29, w: 6, h: 2, color: pantsBase },
-      { x: 7, y: 31, w: 2, h: 4, color: pantsHighlight },
-      { x: 11, y: 31, w: 2, h: 4, color: pantsHighlight },
-      { x: 7, y: 33, w: 2, h: 2, color: pantsBase },
-      { x: 11, y: 33, w: 2, h: 2, color: pantsBase },
-    );
-
-    // 靴（白スニーカー＋グレーの底）
-    pixels.push(
-      // 左靴
-      { x: 6, y: 35, w: 3, h: 2, color: outline },
-      { x: 6, y: 35, w: 3, h: 1, color: '#FFFFFF' },
-      { x: 6, y: 36, w: 3, h: 1, color: '#BDC3C7' },
-      // 右靴
-      { x: 11, y: 35, w: 3, h: 2, color: outline },
-      { x: 11, y: 35, w: 3, h: 1, color: '#FFFFFF' },
-      { x: 11, y: 36, w: 3, h: 1, color: '#BDC3C7' },
-    );
-
-    // 手（左右）
-    pixels.push(
-      // 左手
-      { x: 4, y: 25, w: 2, h: 3, color: outline },
-      { x: 4, y: 25, w: 2, h: 2, color: skinBase },
-      { x: 4, y: 27, w: 1, h: 1, color: skinShadow },
-      // 右手
-      { x: 14, y: 25, w: 2, h: 3, color: outline },
-      { x: 14, y: 25, w: 2, h: 2, color: skinBase },
-      { x: 15, y: 27, w: 1, h: 1, color: skinShadow },
-    );
-
-    // トップス（各デザイン）
-    if (outfit === 'border_navy' || outfit === 'border_white') {
-      // 添付画像の爽やかボーダーTシャツ
-      const stripeColor = outfit === 'border_navy' ? '#1B3A4B' : '#5DADE2';
-      pixels.push(
-        // 外枠
-        { x: 6, y: 21, w: 8, h: 1, color: outline },
-        { x: 5, y: 22, w: 1, h: 7, color: outline },
-        { x: 14, y: 22, w: 1, h: 7, color: outline },
-        { x: 6, y: 29, w: 8, h: 1, color: outline },
-        // 白ベース
-        { x: 6, y: 22, w: 8, h: 7, color: '#FFFFFF' },
-        // ストライプライン
-        { x: 6, y: 23, w: 8, h: 1, color: stripeColor },
-        { x: 6, y: 25, w: 8, h: 1, color: stripeColor },
-        { x: 6, y: 27, w: 8, h: 1, color: stripeColor },
-        // 袖
-        { x: 4, y: 22, w: 2, h: 3, color: outline },
-        { x: 4, y: 23, w: 2, h: 2, color: '#FFFFFF' },
-        { x: 14, y: 22, w: 2, h: 3, color: outline },
-        { x: 14, y: 23, w: 2, h: 2, color: '#FFFFFF' },
-      );
-    } else if (outfit === 'hoodie_blue') {
-      // ブルーパーカー
-      const hoodieMain = '#3A86FF';
-      const hoodieShadow = '#2667CC';
-      pixels.push(
-        { x: 5, y: 21, w: 10, h: 8, color: outline },
-        { x: 6, y: 22, w: 8, h: 7, color: hoodieMain },
-        // フード周り
-        { x: 8, y: 21, w: 4, h: 1, color: hoodieShadow },
-        // 紐
-        { x: 8, y: 23, w: 1, h: 2, color: '#FFFFFF' },
-        { x: 11, y: 23, w: 1, h: 2, color: '#FFFFFF' },
-        // ポケット
-        { x: 7, y: 26, w: 6, h: 2, color: hoodieShadow },
-        // 袖
-        { x: 4, y: 22, w: 2, h: 4, color: outline },
-        { x: 4, y: 23, w: 2, h: 3, color: hoodieMain },
-        { x: 14, y: 22, w: 2, h: 4, color: outline },
-        { x: 14, y: 23, w: 2, h: 3, color: hoodieMain },
-      );
-    } else if (outfit === 'jacket_green') {
-      // グリーンジャケット羽織り ＋ インナー
-      const jacketColor = '#4CAF50';
-      const jacketShadow = '#2E7D32';
-      pixels.push(
-        { x: 5, y: 21, w: 10, h: 8, color: outline },
-        // インナー（白）
-        { x: 8, y: 22, w: 4, h: 7, color: '#F2F4F4' },
-        // 左右ジャケット
-        { x: 6, y: 22, w: 2, h: 7, color: jacketColor },
-        { x: 12, y: 22, w: 2, h: 7, color: jacketShadow },
-        // 袖
-        { x: 4, y: 22, w: 2, h: 4, color: outline },
-        { x: 4, y: 23, w: 2, h: 3, color: jacketColor },
-        { x: 14, y: 22, w: 2, h: 4, color: outline },
-        { x: 14, y: 23, w: 2, h: 3, color: jacketShadow },
-      );
-    } else if (outfit === 'jacket_black') {
-      // レザージャケット（黒）＋ 白インナー
-      pixels.push(
-        { x: 5, y: 21, w: 10, h: 8, color: outline },
-        { x: 8, y: 22, w: 4, h: 7, color: '#FFFFFF' },
-        { x: 6, y: 22, w: 2, h: 7, color: '#2C3E50' },
-        { x: 12, y: 22, w: 2, h: 7, color: '#1A252F' },
-        { x: 4, y: 22, w: 2, h: 4, color: outline },
-        { x: 4, y: 23, w: 2, h: 3, color: '#2C3E50' },
-        { x: 14, y: 22, w: 2, h: 4, color: outline },
-        { x: 14, y: 23, w: 2, h: 3, color: '#1A252F' },
-      );
-    } else if (outfit === 'tshirt_red') {
-      // 赤Tシャツ
-      pixels.push(
-        { x: 5, y: 21, w: 10, h: 8, color: outline },
-        { x: 6, y: 22, w: 8, h: 7, color: '#E74C3C' },
-        { x: 7, y: 22, w: 6, h: 1, color: '#C0392B' },
-        { x: 4, y: 22, w: 2, h: 4, color: outline },
-        { x: 4, y: 23, w: 2, h: 3, color: '#E74C3C' },
-        { x: 14, y: 22, w: 2, h: 4, color: outline },
-        { x: 14, y: 23, w: 2, h: 3, color: '#C0392B' },
-      );
-    } else if (outfit === 'tshirt_white') {
-      // 白Tシャツ
-      pixels.push(
-        { x: 5, y: 21, w: 10, h: 8, color: outline },
-        { x: 6, y: 22, w: 8, h: 7, color: '#FFFFFF' },
-        { x: 7, y: 28, w: 6, h: 1, color: '#BDC3C7' },
-        { x: 4, y: 22, w: 2, h: 4, color: outline },
-        { x: 4, y: 23, w: 2, h: 3, color: '#FFFFFF' },
-        { x: 14, y: 22, w: 2, h: 4, color: outline },
-        { x: 14, y: 23, w: 2, h: 3, color: '#BDC3C7' },
-      );
-    } else {
-      // ダークロゴT
-      pixels.push(
-        { x: 5, y: 21, w: 10, h: 8, color: outline },
-        { x: 6, y: 22, w: 8, h: 7, color: '#2C3E50' },
-        { x: 9, y: 24, w: 2, h: 2, color: '#2ECC71' }, // ロゴ
-        { x: 4, y: 22, w: 2, h: 4, color: outline },
-        { x: 4, y: 23, w: 2, h: 3, color: '#2C3E50' },
-        { x: 14, y: 22, w: 2, h: 4, color: outline },
-        { x: 14, y: 23, w: 2, h: 3, color: '#1A252F' },
-      );
-    }
-  } else {
-    // ========================================================
-    // 漂流姿（浮き輪に乗って海に浮いているモード）
-    // ========================================================
-    // 上半身
-    pixels.push(
-      { x: 6, y: 21, w: 8, h: 4, color: '#3A86FF' },
-      // 浮き輪をつかむ手
-      { x: 3, y: 21, w: 2, h: 2, color: skinBase },
-      { x: 15, y: 21, w: 2, h: 2, color: skinBase },
-    );
-
-    // 浮き輪（赤白ストライプのドーナツ型）
-    const tubeRed = '#E74C3C';
-    const tubeWhite = '#FFFFFF';
-    pixels.push(
-      // 浮き輪のアウトライン
-      { x: 2, y: 23, w: 16, h: 7, color: outline },
-      // 赤白ストライプ
-      { x: 3, y: 24, w: 14, h: 5, color: tubeRed },
-      { x: 6, y: 24, w: 2, h: 5, color: tubeWhite },
-      { x: 12, y: 24, w: 2, h: 5, color: tubeWhite },
-      { x: 3, y: 25, w: 2, h: 3, color: tubeWhite },
-      { x: 15, y: 25, w: 2, h: 3, color: tubeWhite },
-      // 浮き輪の内側の穴（水が見える）
-      { x: 7, y: 26, w: 6, h: 2, color: '#2980B9' },
-    );
-
-    // 周りの波と水しぶき
-    pixels.push(
-      { x: 1, y: 30, w: 18, h: 2, color: '#3498DB' },
-      { x: 0, y: 32, w: 20, h: 4, color: '#2980B9' },
-      { x: 2, y: 30, w: 3, h: 1, color: '#EBF5FB' },
-      { x: 15, y: 30, w: 3, h: 1, color: '#EBF5FB' },
-    );
-  }
-
-  // ========================================================
-  // 4. メガネ・小物
-  // ========================================================
-  if (glasses === 'glasses_round') {
-    const frame = '#5D4037';
-    pixels.push(
-      // 左レンズ枠
-      { x: 5, y: 11, w: 4, h: 4, color: frame },
-      { x: 6, y: 12, w: 2, h: 2, color: skinBase },
-      // 右レンズ枠
-      { x: 11, y: 11, w: 4, h: 4, color: frame },
-      { x: 12, y: 12, w: 2, h: 2, color: skinBase },
-      // ブリッジ
-      { x: 9, y: 12, w: 2, h: 1, color: frame },
-    );
-  } else if (glasses === 'glasses_square') {
-    const frame = '#1C1917';
-    pixels.push(
-      { x: 5, y: 11, w: 4, h: 3, color: frame },
-      { x: 6, y: 12, w: 2, h: 1, color: '#FFFFFF' }, // レンズ光
-      { x: 11, y: 11, w: 4, h: 3, color: frame },
-      { x: 12, y: 12, w: 2, h: 1, color: '#FFFFFF' },
-      { x: 9, y: 12, w: 2, h: 1, color: frame },
-    );
-  }
-
-  // ========================================================
-  // 5. 髪型・帽子（添付画像に忠実な9パターン）
-  // ========================================================
-  if (hairStyle === 'cap_forward') {
-    // ベースボールキャップ（ツバ前・赤白）
-    pixels.push(
-      // 帽子アウトライン
-      { x: 4, y: 3, w: 12, h: 6, color: outline },
-      // クラウン（赤）
-      { x: 5, y: 4, w: 10, h: 4, color: '#E74C3C' },
-      // フロントパネル（白）
-      { x: 8, y: 4, w: 4, h: 4, color: '#FFFFFF' },
-      // ツバ（黒枠＋濃赤）
-      { x: 3, y: 8, w: 14, h: 2, color: outline },
-      { x: 4, y: 8, w: 12, h: 1, color: '#C0392B' },
-      // もみあげ
-      { x: 4, y: 10, w: 1, h: 4, color: hairBase },
-      { x: 15, y: 10, w: 1, h: 4, color: hairBase },
-    );
-  } else if (hairStyle === 'cap_backward') {
-    // キャップ（後ろかぶり・緑/ストリート風）
-    pixels.push(
-      { x: 4, y: 4, w: 12, h: 5, color: outline },
-      { x: 5, y: 5, w: 10, h: 3, color: '#27AE60' },
-      { x: 8, y: 7, w: 4, h: 1, color: '#1E8449' }, // 後ろアジャスター
-      // 前髪チラ見せ
-      { x: 6, y: 8, w: 3, h: 2, color: hairBase },
-      { x: 11, y: 8, w: 3, h: 2, color: hairBase },
-      { x: 4, y: 10, w: 1, h: 4, color: hairBase },
-      { x: 15, y: 10, w: 1, h: 4, color: hairBase },
-    );
-  } else if (hairStyle === 'short_messy') {
-    // 添付画像2番目：無造作ショート（毛先が跳ねている）
-    pixels.push(
-      // アウトライン
-      { x: 4, y: 4, w: 12, h: 7, color: outline },
-      { x: 3, y: 6, w: 2, h: 3, color: outline },
-      { x: 15, y: 3, w: 3, h: 3, color: outline }, // 右上の跳ね毛
-      // メイン髪塗り
-      { x: 5, y: 5, w: 10, h: 5, color: hairBase },
-      { x: 6, y: 4, w: 8, h: 1, color: hairHighlight }, // ハイライト
-      { x: 15, y: 4, w: 2, h: 2, color: hairHighlight },
-      // 前髪ギザギザ
-      { x: 5, y: 9, w: 3, h: 2, color: hairShadow },
-      { x: 9, y: 9, w: 2, h: 2, color: hairShadow },
-      { x: 12, y: 9, w: 3, h: 2, color: hairShadow },
-      // もみあげ
-      { x: 4, y: 10, w: 1, h: 4, color: hairShadow },
-      { x: 15, y: 10, w: 1, h: 4, color: hairShadow },
-    );
-  } else if (hairStyle === 'mush') {
-    // マッシュ（丸みのある前髪）
-    pixels.push(
-      { x: 4, y: 4, w: 12, h: 7, color: outline },
-      { x: 5, y: 5, w: 10, h: 5, color: hairBase },
-      { x: 6, y: 5, w: 8, h: 1, color: hairHighlight },
-      // 丸く揃った前髪
-      { x: 5, y: 9, w: 10, h: 2, color: hairShadow },
-      { x: 4, y: 10, w: 2, h: 4, color: hairShadow },
-      { x: 14, y: 10, w: 2, h: 4, color: hairShadow },
-    );
-  } else if (hairStyle === 'center_part') {
-    // センターパート（真ん中分け・サラサラ）
-    pixels.push(
-      { x: 4, y: 4, w: 12, h: 7, color: outline },
-      { x: 5, y: 5, w: 10, h: 4, color: hairBase },
-      { x: 5, y: 5, w: 4, h: 2, color: hairHighlight },
-      { x: 11, y: 5, w: 4, h: 2, color: hairHighlight },
-      // センターの分け目（肌が見える）
-      { x: 9, y: 7, w: 2, h: 3, color: skinBase },
-      // サイドに流れる前髪
-      { x: 5, y: 8, w: 3, h: 3, color: hairShadow },
-      { x: 12, y: 8, w: 3, h: 3, color: hairShadow },
-      { x: 4, y: 10, w: 1, h: 4, color: hairShadow },
-      { x: 15, y: 10, w: 1, h: 4, color: hairShadow },
-    );
-  } else if (hairStyle === 'long_straight') {
-    // 添付画像5番目：ロングストレート（肩まで届く髪）
-    pixels.push(
-      { x: 4, y: 4, w: 12, h: 7, color: outline },
-      { x: 5, y: 5, w: 10, h: 5, color: hairBase },
-      { x: 6, y: 5, w: 8, h: 1, color: hairHighlight },
-      { x: 6, y: 9, w: 8, h: 2, color: hairShadow },
-      // 肩にかかる長いサイドヘア
-      { x: 3, y: 9, w: 2, h: 15, color: outline },
-      { x: 3, y: 10, w: 2, h: 13, color: hairBase },
-      { x: 4, y: 11, w: 1, h: 12, color: hairShadow },
-      { x: 15, y: 9, w: 2, h: 15, color: outline },
-      { x: 15, y: 10, w: 2, h: 13, color: hairBase },
-      { x: 15, y: 11, w: 1, h: 12, color: hairShadow },
-    );
-  } else if (hairStyle === 'wavy') {
-    // 添付画像11番目：ウェーブ・パーマ
-    pixels.push(
-      { x: 3, y: 4, w: 14, h: 8, color: outline },
-      { x: 4, y: 5, w: 12, h: 6, color: hairBase },
-      { x: 5, y: 5, w: 4, h: 2, color: hairHighlight },
-      { x: 11, y: 5, w: 4, h: 2, color: hairHighlight },
-      { x: 5, y: 9, w: 10, h: 2, color: hairShadow },
-      // もこもこウェーブサイド
-      { x: 3, y: 9, w: 2, h: 10, color: hairBase },
-      { x: 15, y: 9, w: 2, h: 10, color: hairBase },
-    );
-  } else if (hairStyle === 'spiky') {
-    // スパイキー（ツンツン）
-    pixels.push(
-      { x: 6, y: 2, w: 2, h: 3, color: hairHighlight },
-      { x: 9, y: 1, w: 2, h: 4, color: hairHighlight },
-      { x: 12, y: 2, w: 2, h: 3, color: hairHighlight },
-      { x: 4, y: 5, w: 12, h: 6, color: outline },
-      { x: 5, y: 5, w: 10, h: 5, color: hairBase },
-      { x: 5, y: 9, w: 10, h: 2, color: hairShadow },
-      { x: 4, y: 10, w: 1, h: 3, color: hairShadow },
-      { x: 15, y: 10, w: 1, h: 3, color: hairShadow },
-    );
-  } else {
-    // ボブ
-    pixels.push(
-      { x: 4, y: 4, w: 12, h: 7, color: outline },
-      { x: 5, y: 5, w: 10, h: 5, color: hairBase },
-      { x: 6, y: 5, w: 8, h: 1, color: hairHighlight },
-      { x: 5, y: 9, w: 10, h: 2, color: hairShadow },
-      { x: 3, y: 10, w: 2, h: 8, color: hairBase },
-      { x: 15, y: 10, w: 2, h: 8, color: hairBase },
-    );
-  }
+  const width = size;
+  const height = (size * 125) / 58;
 
   return (
-    <Svg width={size} height={(size * 38) / 20} viewBox="0 0 20 38">
-      {pixels.map((p, index) => (
-        <Rect
-          key={`${p.x}-${p.y}-${index}`}
-          x={p.x}
-          y={p.y}
-          width={p.w ?? 1}
-          height={p.h ?? 1}
-          fill={p.color}
-        />
-      ))}
-    </Svg>
+    <View style={[styles.container, { width, height }]}>
+      {/* 添付画像のオリジナルアバター（ピクセルパーフェクト） */}
+      <Image
+        source={avatarSource}
+        style={[styles.avatarImage, { width, height }]}
+        resizeMode="contain"
+      />
+
+      {/* 目・口・表情の上書きオーバーレイ（デフォルトのdots/neutral以外が選ばれた場合） */}
+      {(eyeType !== 'dots' || mouthType !== 'neutral') && (
+        <View style={styles.overlayLayer}>
+          <Svg width={width} height={height} viewBox="0 0 58 125">
+            {/* 目のカスタマイズ */}
+            {eyeType === 'smile' && (
+              <>
+                {/* 既存の目を肌色でカバー */}
+                <Rect x="20" y="47" width="4" height="6" fill="#F8BC9C" />
+                <Rect x="34" y="47" width="4" height="6" fill="#F8BC9C" />
+                {/* にっこり目 ^^ */}
+                <Rect x="20" y="48" width="4" height="2" fill="#1C1917" />
+                <Rect x="19" y="50" width="2" height="2" fill="#1C1917" />
+                <Rect x="23" y="50" width="2" height="2" fill="#1C1917" />
+                <Rect x="34" y="48" width="4" height="2" fill="#1C1917" />
+                <Rect x="33" y="50" width="2" height="2" fill="#1C1917" />
+                <Rect x="37" y="50" width="2" height="2" fill="#1C1917" />
+              </>
+            )}
+
+            {eyeType === 'calm' && (
+              <>
+                <Rect x="20" y="47" width="4" height="6" fill="#F8BC9C" />
+                <Rect x="34" y="47" width="4" height="6" fill="#F8BC9C" />
+                {/* ジト目 */}
+                <Rect x="19" y="49" width="6" height="2" fill="#1C1917" />
+                <Rect x="21" y="51" width="3" height="2" fill="#1C1917" />
+                <Rect x="33" y="49" width="6" height="2" fill="#1C1917" />
+                <Rect x="34" y="51" width="3" height="2" fill="#1C1917" />
+              </>
+            )}
+
+            {eyeType === 'sparkle' && (
+              <>
+                <Rect x="20" y="47" width="4" height="6" fill="#F8BC9C" />
+                <Rect x="34" y="47" width="4" height="6" fill="#F8BC9C" />
+                {/* パッチリ丸目 ＋ 白目ハイライト */}
+                <Rect x="20" y="47" width="4" height="6" fill="#1C1917" />
+                <Rect x="21" y="48" width="2" height="2" fill="#FFFFFF" />
+                <Rect x="34" y="47" width="4" height="6" fill="#1C1917" />
+                <Rect x="35" y="48" width="2" height="2" fill="#FFFFFF" />
+              </>
+            )}
+
+            {/* 口のカスタマイズ */}
+            {mouthType === 'smile' && (
+              <>
+                <Rect x="27" y="58" width="4" height="3" fill="#F8BC9C" />
+                <Rect x="27" y="59" width="4" height="2" fill="#B86B52" />
+                <Rect x="25" y="57" width="2" height="2" fill="#B86B52" />
+                <Rect x="31" y="57" width="2" height="2" fill="#B86B52" />
+              </>
+            )}
+
+            {mouthType === 'open' && (
+              <>
+                <Rect x="27" y="57" width="4" height="5" fill="#F8BC9C" />
+                <Rect x="27" y="58" width="4" height="4" fill="#6A1B14" />
+                <Rect x="27" y="60" width="4" height="2" fill="#E57373" />
+              </>
+            )}
+
+            {mouthType === 'small' && (
+              <>
+                <Rect x="27" y="57" width="4" height="4" fill="#F8BC9C" />
+                <Rect x="28" y="58" width="2" height="2" fill="#B86B52" />
+              </>
+            )}
+          </Svg>
+        </View>
+      )}
+
+      {/* メガネ・小物のオーバーレイ */}
+      {glasses !== 'none' && (
+        <View style={styles.overlayLayer}>
+          <Svg width={width} height={height} viewBox="0 0 58 125">
+            {glasses === 'glasses_round' && (
+              <>
+                {/* 左丸フレーム */}
+                <Rect
+                  x="17"
+                  y="45"
+                  width="10"
+                  height="10"
+                  fill="none"
+                  stroke="#5D4037"
+                  strokeWidth="2"
+                />
+                {/* 右丸フレーム */}
+                <Rect
+                  x="31"
+                  y="45"
+                  width="10"
+                  height="10"
+                  fill="none"
+                  stroke="#5D4037"
+                  strokeWidth="2"
+                />
+                {/* ブリッジ */}
+                <Rect x="27" y="49" width="4" height="2" fill="#5D4037" />
+              </>
+            )}
+            {glasses === 'glasses_square' && (
+              <>
+                {/* 黒縁メガネ */}
+                <Rect x="16" y="46" width="11" height="8" fill="#1C1917" />
+                <Rect x="18" y="48" width="7" height="4" fill="#F8BC9C" />
+                <Rect x="31" y="46" width="11" height="8" fill="#1C1917" />
+                <Rect x="33" y="48" width="7" height="4" fill="#F8BC9C" />
+                <Rect x="27" y="48" width="4" height="2" fill="#1C1917" />
+              </>
+            )}
+          </Svg>
+        </View>
+      )}
+
+      {/* 漂流姿（浮き輪 ＋ 波しぶき）のドット絵オーバーレイ */}
+      {isDrifting && (
+        <View style={styles.overlayLayer}>
+          <Svg width={width} height={height} viewBox="0 0 58 125">
+            {/* 下半身を水面でカバー */}
+            <Rect x="8" y="88" width="42" height="37" fill="#38BDF8" opacity={0.92} />
+
+            {/* 赤白ストライプの浮き輪（ピクセルアート） */}
+            <Rect x="6" y="80" width="46" height="18" fill="#1C1917" />
+            <Rect x="8" y="82" width="42" height="14" fill="#EF4444" />
+            {/* 白ストライプ */}
+            <Rect x="16" y="82" width="6" height="14" fill="#FFFFFF" />
+            <Rect x="36" y="82" width="6" height="14" fill="#FFFFFF" />
+            <Rect x="8" y="84" width="4" height="10" fill="#FFFFFF" />
+            <Rect x="46" y="84" width="4" height="10" fill="#FFFFFF" />
+            {/* 浮き輪の影 */}
+            <Rect x="8" y="93" width="42" height="3" fill="#B91C1C" />
+
+            {/* 波のしぶきとハイライト */}
+            <Rect x="2" y="98" width="54" height="4" fill="#0284C7" />
+            <Rect x="0" y="102" width="58" height="23" fill="#0369A1" />
+            <Rect x="4" y="97" width="8" height="2" fill="#E0F2FE" />
+            <Rect x="44" y="97" width="10" height="2" fill="#E0F2FE" />
+          </Svg>
+        </View>
+      )}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  avatarImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  overlayLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+});

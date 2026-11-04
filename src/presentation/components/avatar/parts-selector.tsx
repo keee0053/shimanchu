@@ -1,18 +1,15 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
+  AVATAR_BASE_STYLE_OPTIONS,
   AVATAR_CUSTOMIZE_TABS,
   type AvatarCustomizeTab,
   EYE_TYPE_OPTIONS,
   GLASSES_OPTIONS,
-  HAIR_COLOR_OPTIONS,
-  HAIR_STYLE_OPTIONS,
   MOUTH_TYPE_OPTIONS,
-  OUTFIT_OPTIONS,
-  SKIN_TONE_OPTIONS,
 } from '@/domain/constants/avatar-parts';
-import type { AvatarConfig } from '@/domain/entities/avatar';
+import type { AvatarBaseStyle, AvatarConfig } from '@/domain/entities/avatar';
 import { ThemedText } from '@/presentation/components/themed-text';
 import { ThemedView } from '@/presentation/components/themed-view';
 import { Spacing } from '@/presentation/constants/theme';
@@ -24,10 +21,25 @@ interface PartsSelectorProps {
   onChange: <K extends keyof AvatarConfig>(key: K, value: AvatarConfig[K]) => void;
 }
 
+const THUMBNAIL_MAP: Record<AvatarBaseStyle, number> = {
+  char1_cap_red: require('@/assets/avatar/char1_cap_red.png'),
+  char2_border_navy: require('@/assets/avatar/char2_border_navy.png'),
+  char3_cap_blue: require('@/assets/avatar/char3_cap_blue.png'),
+  char4_cap_green: require('@/assets/avatar/char4_cap_green.png'),
+  char5_long_hair: require('@/assets/avatar/char5_long_hair.png'),
+  char6_jacket_green: require('@/assets/avatar/char6_jacket_green.png'),
+  char7_jacket_teal: require('@/assets/avatar/char7_jacket_teal.png'),
+  char8_jacket_black: require('@/assets/avatar/char8_jacket_black.png'),
+  char9_tshirt_red: require('@/assets/avatar/char9_tshirt_red.png'),
+  char10_jacket_olive: require('@/assets/avatar/char10_jacket_olive.png'),
+  char11_graphic_dark: require('@/assets/avatar/char11_graphic_dark.png'),
+  char12_wavy_hair: require('@/assets/avatar/char12_wavy_hair.png'),
+};
+
 export function PartsSelector({ config, activeTab, onTabChange, onChange }: PartsSelectorProps) {
   return (
     <ThemedView style={styles.container}>
-      {/* カテゴリ別タブバー */}
+      {/* タブバー */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -49,42 +61,33 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
         })}
       </ScrollView>
 
-      {/* タブ別の選択コンテンツ */}
+      {/* タブコンテンツ */}
       <View style={styles.contentContainer}>
-        {activeTab === 'hair' && (
+        {/* スタイル一覧タブ（添付画像の全12体） */}
+        {activeTab === 'style' && (
           <View>
-            <ThemedText style={styles.sectionTitle}>髪色を選ぶ</ThemedText>
-            <View style={styles.paletteRow}>
-              {HAIR_COLOR_OPTIONS.map((c) => {
-                const isSelected = config.hairColor.toLowerCase() === c.hex.toLowerCase();
+            <ThemedText style={styles.sectionTitle}>
+              ベーススタイルを選ぶ（添付画像デザイン）
+            </ThemedText>
+            <View style={styles.styleGrid}>
+              {AVATAR_BASE_STYLE_OPTIONS.map((s) => {
+                const isSelected = config.baseStyle === s.id;
                 return (
                   <Pressable
-                    key={c.id}
-                    style={[
-                      styles.colorCircle,
-                      { backgroundColor: c.hex },
-                      isSelected && styles.colorCircleSelected,
-                    ]}
-                    onPress={() => onChange('hairColor', c.hex)}
+                    key={s.id}
+                    style={[styles.styleCard, isSelected && styles.styleCardSelected]}
+                    onPress={() => onChange('baseStyle', s.id)}
                   >
-                    {isSelected && <View style={styles.innerDot} />}
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <ThemedText style={[styles.sectionTitle, { marginTop: 16 }]}>髪型を選ぶ</ThemedText>
-            <View style={styles.grid}>
-              {HAIR_STYLE_OPTIONS.map((h) => {
-                const isSelected = config.hairStyle === h.id;
-                return (
-                  <Pressable
-                    key={h.id}
-                    style={[styles.gridCard, isSelected && styles.gridCardSelected]}
-                    onPress={() => onChange('hairStyle', h.id)}
-                  >
-                    <ThemedText style={[styles.cardTitle, isSelected && styles.cardTitleSelected]}>
-                      {h.name}
+                    <Image
+                      source={THUMBNAIL_MAP[s.id]}
+                      style={styles.thumbnailImage}
+                      resizeMode="contain"
+                    />
+                    <ThemedText
+                      style={[styles.styleName, isSelected && styles.styleNameSelected]}
+                      numberOfLines={1}
+                    >
+                      {s.name}
                     </ThemedText>
                   </Pressable>
                 );
@@ -93,9 +96,10 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
           </View>
         )}
 
+        {/* 表情タブ（目・口） */}
         {activeTab === 'face' && (
           <View>
-            <ThemedText style={styles.sectionTitle}>目・目つきを選ぶ</ThemedText>
+            <ThemedText style={styles.sectionTitle}>目つき・表情を選ぶ</ThemedText>
             <View style={styles.grid}>
               {EYE_TYPE_OPTIONS.map((e) => {
                 const isSelected = config.eyeType === e.id;
@@ -113,7 +117,7 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
               })}
             </View>
 
-            <ThemedText style={[styles.sectionTitle, { marginTop: 16 }]}>口・表情を選ぶ</ThemedText>
+            <ThemedText style={[styles.sectionTitle, { marginTop: 16 }]}>口・口元を選ぶ</ThemedText>
             <View style={styles.grid}>
               {MOUTH_TYPE_OPTIONS.map((m) => {
                 const isSelected = config.mouthType === m.id;
@@ -133,53 +137,10 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
           </View>
         )}
 
-        {activeTab === 'skin' && (
-          <View>
-            <ThemedText style={styles.sectionTitle}>肌色パレット</ThemedText>
-            <View style={styles.skinList}>
-              {SKIN_TONE_OPTIONS.map((s) => {
-                const isSelected = config.skinTone.toLowerCase() === s.hex.toLowerCase();
-                return (
-                  <Pressable
-                    key={s.id}
-                    style={[styles.skinCard, isSelected && styles.skinCardSelected]}
-                    onPress={() => onChange('skinTone', s.hex)}
-                  >
-                    <View style={[styles.skinColorPreview, { backgroundColor: s.hex }]} />
-                    <ThemedText style={styles.skinName}>{s.name}</ThemedText>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {activeTab === 'outfit' && (
-          <View>
-            <ThemedText style={styles.sectionTitle}>服装を選ぶ</ThemedText>
-            <View style={styles.grid}>
-              {OUTFIT_OPTIONS.map((o) => {
-                const isSelected = config.outfit === o.id;
-                return (
-                  <Pressable
-                    key={o.id}
-                    style={[styles.gridCard, isSelected && styles.gridCardSelected]}
-                    onPress={() => onChange('outfit', o.id)}
-                  >
-                    <ThemedText style={[styles.cardTitle, isSelected && styles.cardTitleSelected]}>
-                      {o.name}
-                    </ThemedText>
-                    <ThemedText style={styles.cardDesc}>{o.description}</ThemedText>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
+        {/* メガネ・小物タブ */}
         {activeTab === 'accessory' && (
           <View>
-            <ThemedText style={styles.sectionTitle}>メガネを選ぶ</ThemedText>
+            <ThemedText style={styles.sectionTitle}>メガネ・小物を合わせる</ThemedText>
             <View style={styles.grid}>
               {GLASSES_OPTIONS.map((g) => {
                 const isSelected = config.glasses === g.id;
@@ -241,30 +202,41 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  paletteRow: {
+  styleGrid: {
     flexDirection: 'row',
-    gap: 12,
     flexWrap: 'wrap',
+    gap: 10,
   },
-  colorCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  styleCard: {
+    flexBasis: '31%',
+    flexGrow: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderWidth: 2,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(0, 0, 0, 0.12)',
   },
-  colorCircleSelected: {
+  styleCardSelected: {
     borderColor: '#00B4D8',
-    borderWidth: 3,
-    transform: [{ scale: 1.1 }],
+    backgroundColor: 'rgba(0, 180, 216, 0.08)',
   },
-  innerDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#FFFFFF',
+  thumbnailImage: {
+    width: 44,
+    height: 80,
+    marginBottom: 6,
+  },
+  styleName: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    color: '#37474F',
+  },
+  styleNameSelected: {
+    color: '#0077B6',
+    fontWeight: '700',
   },
   grid: {
     flexDirection: 'row',
@@ -272,10 +244,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   gridCard: {
-    flexBasis: '31%',
+    flexBasis: '47%',
     flexGrow: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     borderRadius: 14,
     backgroundColor: 'rgba(0, 0, 0, 0.03)',
     borderWidth: 1.5,
@@ -288,7 +260,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 180, 216, 0.08)',
   },
   cardTitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
     color: '#37474F',
@@ -296,44 +268,5 @@ const styles = StyleSheet.create({
   cardTitleSelected: {
     color: '#0077B6',
     fontWeight: '700',
-  },
-  cardDesc: {
-    fontSize: 10,
-    color: '#78909C',
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  skinList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  skinCard: {
-    flexBasis: '47%',
-    flexGrow: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    gap: 10,
-  },
-  skinCardSelected: {
-    borderColor: '#00B4D8',
-    backgroundColor: 'rgba(0, 180, 216, 0.08)',
-  },
-  skinColorPreview: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  skinName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#37474F',
   },
 });
