@@ -5,7 +5,12 @@
 
 const { execFileSync } = require('child_process');
 
-const { checkCommitMessage, suggestCommitMessage } = require('./commit-rules');
+const {
+  checkCommitMessage,
+  isSafeBareWord,
+  isSafeToQuote,
+  suggestCommitMessage,
+} = require('./commit-rules');
 
 function git(args) {
   return execFileSync('git', args, { encoding: 'utf8' });
@@ -38,18 +43,31 @@ function checkRange(range) {
 }
 
 // ルールに沿っていないコミットの直し方を表示する
-// pushed: すでにリモートにあるコミットか（書き換えた後に強制 push が必要になる）
-function printRewordHint(failures, { pushed }) {
+// tipSha: 検査したコミットの先端（push しようとしたコミット / PR の先頭のコミット）
+// pushed: すでにリモートにあるコミットか（CI から呼ぶとき）。書き換えた後に強制 push が必要になる
+//         CI では HEAD が PR のマージコミットになるため、利用者の手元では先端のコミットにいるとみなす
+// branch: push しようとしたローカルのブランチ（pre-push から呼ぶとき）。今いるブランチと違えば切り替えを案内する
+function printRewordHint(failures, { tipSha, pushed, branch = null }) {
   const oldest = failures[0].sha;
   const short = (sha) => sha.slice(0, 7);
-  const isHeadOnly = failures.length === 1 && tryGit(['rev-parse', 'HEAD']) === oldest;
+  const onTip = pushed || tryGit(['rev-parse', 'HEAD']) === tipSha;
+  const isTipOnly = failures.length === 1 && oldest === tipSha;
   const rebaseBase = tryGit(['rev-parse', '--verify', '--quiet', `${oldest}^`])
     ? `${short(oldest)}^`
     : '--root';
 
   console.error('\n  直し方:');
-  if (isHeadOnly) {
-    const example = failures[0].suggestion ?? 'add: 説明を日本語で書く';
+  if (!onTip) {
+    console.error('    まず push しようとしたブランチに切り替える');
+    console.error(
+      branch && isSafeBareWord(branch)
+        ? `      git switch ${branch}`
+        : '      git switch <push しようとしたブランチ>',
+    );
+  }
+  if (isTipOnly) {
+    const { suggestion } = failures[0];
+    const example = suggestion && isSafeToQuote(suggestion) ? suggestion : 'type: 日本語の説明';
     console.error('    直すのは最新のコミットだけなので、メッセージを上書きする');
     console.error(`      git commit --amend -m "${example}"`);
   } else {
@@ -95,7 +113,7 @@ if (require.main === module) {
     console.error(
       `\n${total} 件中 ${failed} 件のコミットメッセージがルールに沿っていません（CONTRIBUTING.md 参照）`,
     );
-    printRewordHint(failures, { pushed: true });
+    printRewordHint(failures, { tipSha: tryGit(['rev-parse', head]), pushed: true });
     process.exit(1);
   }
   console.log(`✔ ${total} 件のコミットメッセージを確認しました`);

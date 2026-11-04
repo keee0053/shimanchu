@@ -9,6 +9,7 @@ const {
   checkCommitMessage,
   checkTitle,
   findAiMarkers,
+  isSafeToQuote,
   suggestCommitMessage,
   suggestTitle,
 } = require('./commit-rules');
@@ -48,9 +49,15 @@ function report(target, errors) {
 function printCommitHint(suggestion) {
   console.error('\n  直し方: コミットは作られていません。変更はステージされたままなので、');
   console.error('  メッセージを直してもう一度コミットする');
-  if (suggestion) {
+  if (suggestion && isSafeToQuote(suggestion)) {
     console.error(`    git commit -m "${suggestion}"`);
     console.error('  （上のメッセージは自動で直した候補です。内容が合っているか確認してください）');
+  } else if (suggestion) {
+    console.error('    git commit -m "type: 日本語の説明"');
+    console.error(`  候補: ${suggestion}`);
+    console.error(
+      '  （記号を含むため、候補はコマンドに入れていません。確認して書き直してください）',
+    );
   } else {
     console.error('    git commit -m "type: 日本語の説明"');
     console.error(`  例: ${EXAMPLE}`);

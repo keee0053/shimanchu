@@ -9,7 +9,7 @@
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 
-const { checkBranchName } = require('./commit-rules');
+const { checkBranchName, isSafeBareWord } = require('./commit-rules');
 const { checkRange, printRewordHint } = require('./check-commits');
 
 const ZERO_SHA = /^0+$/;
@@ -37,13 +37,17 @@ let ok = true;
 for (const { localRef, localSha, remoteRef, remoteSha } of updates) {
   if (!remoteRef.startsWith('refs/heads/')) continue; // タグなどは対象外
   const branch = remoteRef.replace('refs/heads/', '');
+  // push しようとしたローカルのブランチ（git push origin <SHA>:<ブランチ> のようにブランチ以外を push した場合は null）
+  const localBranch = localRef.startsWith('refs/heads/')
+    ? localRef.replace('refs/heads/', '')
+    : null;
 
   const branchErrors = checkBranchName(branch);
   if (branchErrors.length > 0) {
     ok = false;
     console.error(`\n✖ ブランチ「${branch}」:`);
     for (const error of branchErrors) console.error(`  - ${error}`);
-    printBranchHint(branch, localRef.replace('refs/heads/', ''));
+    printBranchHint(branch, localBranch, localSha);
   }
 
   // まだリモートにないコミットだけを検査する
@@ -54,7 +58,7 @@ for (const { localRef, localSha, remoteRef, remoteSha } of updates) {
   if (failed > 0) {
     ok = false;
     console.error(`\n✖ ルールに沿っていないコミットメッセージが ${failed} 件あります`);
-    printRewordHint(failures, { pushed: false });
+    printRewordHint(failures, { tipSha: localSha, pushed: false, branch: localBranch });
   }
 }
 
@@ -115,11 +119,14 @@ for (const { name, command, hints } of checks) {
 console.log('\n✔ すべてのチェックを通過しました\n');
 
 // ブランチ名の直し方を表示する
-function printBranchHint(branch, localBranch) {
+// localSha: push しようとしたコミット。今いるブランチと違うものを push した場合もそのコミットからブランチを作る
+function printBranchHint(branch, localBranch, localSha) {
   console.error('\n  直し方:');
   if (branch === 'main' || branch === 'develop') {
-    console.error('    今のコミットを feature ブランチに移して push し、PR を作る');
-    console.error('      git switch -c feature/作業内容  （例: feature/AvatarDrift）');
+    console.error('    push しようとしたコミットから feature ブランチを作って push し、PR を作る');
+    console.error(
+      `      git switch -c feature/作業内容 ${localSha.slice(0, 7)}  （例: feature/AvatarDrift）`,
+    );
     console.error(`      git push -u ${remoteLabel} feature/作業内容`);
     console.error(
       `    ローカルの ${branch} は、必要なら次で元に戻す（コミットは feature ブランチに残る）`,
@@ -127,9 +134,8 @@ function printBranchHint(branch, localBranch) {
     console.error(`      git branch -f ${branch} ${remoteLabel}/${branch}`);
   } else {
     console.error('    ブランチ名を変えてから push する');
-    console.error(
-      `      git branch -m ${localBranch} feature/作業内容  （例: feature/AvatarDrift）`,
-    );
+    const from = localBranch && isSafeBareWord(localBranch) ? localBranch : '<今のブランチ名>';
+    console.error(`      git branch -m ${from} feature/作業内容  （例: feature/AvatarDrift）`);
     console.error(`      git push -u ${remoteLabel} feature/作業内容`);
   }
 }

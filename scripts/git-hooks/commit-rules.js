@@ -123,6 +123,18 @@ function suggestCommitMessage(rawMessage) {
   return checkCommitMessage(suggestion).length === 0 ? suggestion : null;
 }
 
+// 表示するコマンドの二重引用符の中に入れても安全か
+// コピーして実行されたときにシェル（sh / zsh / PowerShell / cmd）が解釈する文字や改行を含むものは入れない
+// （例: "feat: 説明 $(rm -rf ~)" のようなメッセージの候補をそのままコマンドにしない）
+function isSafeToQuote(text) {
+  return !/[`$"\\!%\r\n]/.test(text);
+}
+
+// 引用符なしでコマンドに入れても安全か（ブランチ名・コミットの SHA 用）
+function isSafeBareWord(text) {
+  return /^[A-Za-z0-9._/-]+$/.test(text);
+}
+
 // push 先のブランチ名を検査する
 function checkBranchName(branch) {
   if (PROTECTED_BRANCHES.includes(branch)) {
@@ -142,4 +154,6 @@ module.exports = {
   findAiMarkers,
   suggestTitle,
   suggestCommitMessage,
+  isSafeToQuote,
+  isSafeBareWord,
 };
