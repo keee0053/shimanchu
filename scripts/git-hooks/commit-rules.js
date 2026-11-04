@@ -22,6 +22,19 @@ const AI_MARKERS = [
   { pattern: /🤖/u, label: '🤖' },
 ];
 
+// よくある書き間違いの type を正しい type に読み替える（直し方の候補を出すときに使う）
+const TYPE_ALIASES = {
+  feat: 'add',
+  feature: 'add',
+  new: 'add',
+  bugfix: 'fix',
+  hotfix: 'fix',
+  doc: 'docs',
+  tests: 'test',
+  build: 'chore',
+  ci: 'chore',
+};
+
 // ルールの対象外にするメッセージ（git が自動で作るもの）
 const AUTO_GENERATED_PREFIXES = ['Merge ', 'Revert "', 'fixup! ', 'squash! ', 'amend! '];
 
@@ -47,15 +60,19 @@ function checkTitle(title) {
   return errors;
 }
 
-// コミットメッセージ全体を検査する。違反内容の配列を返す（空なら OK）
-function checkCommitMessage(rawMessage) {
-  // git commit -v の差分表示以降と、# で始まるコメント行を除く
-  const message = rawMessage
+// git commit -v の差分表示以降と、# で始まるコメント行を除く
+function normalizeMessage(rawMessage) {
+  return rawMessage
     .split(/^# -+ >8 -+$/m)[0]
     .split(/\r?\n/)
     .filter((line) => !line.startsWith('#'))
     .join('\n')
     .trim();
+}
+
+// コミットメッセージ全体を検査する。違反内容の配列を返す（空なら OK）
+function checkCommitMessage(rawMessage) {
+  const message = normalizeMessage(rawMessage);
 
   const errors = [];
   const markers = findAiMarkers(message);
@@ -78,6 +95,34 @@ function checkCommitMessage(rawMessage) {
   return errors;
 }
 
+// ルールに沿うように直した1行を推測して返す。推測できなければ null
+// 例: "feat: ログイン画面を追加" → "add: ログイン画面を追加"、"Fix：誤字を修正" → "fix: 誤字を修正"
+function suggestTitle(title) {
+  const trimmed = title.trim();
+  const match = trimmed.match(/^([A-Za-z]+)\s*(?:\([^)]*\))?\s*[:：]\s*(.+)$/);
+  if (!match) return null;
+  const type = match[1].toLowerCase();
+  const fixedType = TYPES.includes(type) ? type : TYPE_ALIASES[type];
+  if (!fixedType) return null;
+  const suggestion = `${fixedType}: ${match[2].trim()}`;
+  const ok = checkTitle(suggestion).length === 0 && findAiMarkers(suggestion).length === 0;
+  return ok && suggestion !== title ? suggestion : null;
+}
+
+// ルールに沿うように直したコミットメッセージを推測して返す。推測できなければ null
+// AI ツール表記の行と2行目以降（本文）を消し、1行目の type の書き間違いを直す
+function suggestCommitMessage(rawMessage) {
+  const message = normalizeMessage(rawMessage);
+  const firstLine = message
+    .split('\n')
+    .filter((line) => line.trim() !== '' && findAiMarkers(line).length === 0)[0]
+    ?.trim();
+  if (!firstLine) return null;
+  const suggestion = checkTitle(firstLine).length === 0 ? firstLine : suggestTitle(firstLine);
+  if (!suggestion || suggestion === message) return null;
+  return checkCommitMessage(suggestion).length === 0 ? suggestion : null;
+}
+
 // push 先のブランチ名を検査する
 function checkBranchName(branch) {
   if (PROTECTED_BRANCHES.includes(branch)) {
@@ -95,4 +140,6 @@ module.exports = {
   checkCommitMessage,
   checkBranchName,
   findAiMarkers,
+  suggestTitle,
+  suggestCommitMessage,
 };

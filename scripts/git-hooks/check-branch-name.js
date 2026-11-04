@@ -22,6 +22,12 @@ const errors = checkBranchName(head);
 if (errors.length > 0) {
   console.error(`\n✖ ブランチ「${head}」:`);
   for (const error of errors) console.error(`  - ${error}`);
+  console.error(
+    '\n  直し方: PR のブランチ名は後から変えられないため、ブランチ名を変えて PR を作り直す',
+  );
+  console.error(`    git branch -m ${head} feature/作業内容  （例: feature/AvatarDrift）`);
+  console.error('    git push -u origin feature/作業内容');
+  console.error('    → 新しいブランチで PR を作り、今の PR は閉じる');
   console.error('\n  ブランチ名のルールは CONTRIBUTING.md の「feature ブランチ」を参照\n');
   process.exit(1);
 }
