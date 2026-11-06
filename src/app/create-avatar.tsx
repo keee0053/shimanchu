@@ -7,12 +7,12 @@ import type { AvatarCustomizeTab } from '@/presentation/constants/avatar-customi
 import {
   type AvatarConfig,
   type AvatarPreviewMode,
+  avatarConfigSchema,
   DEFAULT_AVATAR_CONFIG,
 } from '@/domain/entities/avatar';
+import { AvatarPreviewSection, PartsSelector } from '@/presentation/components/avatar';
 import { ThemedText } from '@/presentation/components/themed-text';
 import { ThemedView } from '@/presentation/components/themed-view';
-import { AvatarPreviewSection } from '@/presentation/components/avatar/avatar-preview-section';
-import { PartsSelector } from '@/presentation/components/avatar/parts-selector';
 import { Spacing } from '@/presentation/constants/theme';
 
 /**
@@ -33,7 +33,12 @@ export default function CreateAvatarScreen() {
   };
 
   const handleSave = () => {
-    const jsonString = JSON.stringify(config, null, 2);
+    const parsed = avatarConfigSchema.safeParse(config);
+    if (!parsed.success) {
+      Alert.alert('入力エラー', 'アバター設定が正しくありません。');
+      return;
+    }
+    const jsonString = JSON.stringify(parsed.data, null, 2);
     if (Platform.OS === 'web') {
       setSavedJson(jsonString);
       return;
@@ -54,6 +59,8 @@ export default function CreateAvatarScreen() {
         {/* ヘッダー */}
         <View style={styles.header}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="戻る"
             style={styles.backButton}
             onPress={() => {
               if (router.canGoBack()) {
@@ -85,7 +92,12 @@ export default function CreateAvatarScreen() {
 
         {/* フッター固定: 決定ボタン */}
         <View style={styles.footer}>
-          <Pressable style={styles.submitButton} onPress={handleSave}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="このアバターで決定"
+            style={styles.submitButton}
+            onPress={handleSave}
+          >
             <ThemedText style={styles.submitButtonText}>このアバターで決定！</ThemedText>
           </Pressable>
         </View>
@@ -106,10 +118,17 @@ export default function CreateAvatarScreen() {
                   <ThemedText style={styles.codeText}>{savedJson}</ThemedText>
                 </View>
                 <View style={styles.modalActions}>
-                  <Pressable style={styles.secondaryButton} onPress={() => setSavedJson(null)}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="微調整を続ける"
+                    style={styles.secondaryButton}
+                    onPress={() => setSavedJson(null)}
+                  >
                     <ThemedText style={styles.secondaryButtonText}>微調整を続ける</ThemedText>
                   </Pressable>
                   <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="島へ移動する"
                     style={styles.primaryButton}
                     onPress={() => {
                       setSavedJson(null);
@@ -131,6 +150,7 @@ export default function CreateAvatarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   safeArea: {
     flex: 1,

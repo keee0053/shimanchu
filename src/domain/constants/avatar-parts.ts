@@ -7,15 +7,14 @@ export interface SkinToneOption {
   id: string;
   name: string;
   hex: string;
-  shadowHex: string;
 }
 
 export const SKIN_TONE_OPTIONS: readonly SkinToneOption[] = [
-  { id: 'fair', name: '色白', hex: '#FDE8D7', shadowHex: '#E8C4A2' },
-  { id: 'natural', name: '標準', hex: '#F5CEB3', shadowHex: '#DCA485' },
-  { id: 'warm', name: '健康肌', hex: '#E0AC69', shadowHex: '#C08B4B' },
-  { id: 'tan', name: '小麦肌', hex: '#C68642', shadowHex: '#A06429' },
-  { id: 'deep', name: '褐色', hex: '#8D5524', shadowHex: '#6E3E15' },
+  { id: 'fair', name: '色白', hex: '#FDE8D7' },
+  { id: 'natural', name: '標準', hex: '#F5CEB3' },
+  { id: 'warm', name: '健康肌', hex: '#E0AC69' },
+  { id: 'tan', name: '小麦肌', hex: '#C68642' },
+  { id: 'deep', name: '褐色', hex: '#8D5524' },
 ] as const;
 
 /**
@@ -25,16 +24,15 @@ export interface HairColorOption {
   id: string;
   name: string;
   hex: string;
-  highlightHex: string;
 }
 
 export const HAIR_COLOR_OPTIONS: readonly HairColorOption[] = [
-  { id: 'dark_navy', name: 'ダークネイビー', hex: '#433F58', highlightHex: '#5D5975' },
-  { id: 'black', name: 'ブラック', hex: '#282634', highlightHex: '#3E3C4E' },
-  { id: 'dark_brown', name: '焦茶', hex: '#3E2723', highlightHex: '#5D4037' },
-  { id: 'chestnut', name: 'チェスナット', hex: '#92513E', highlightHex: '#C7784F' },
-  { id: 'blonde', name: 'ハニーブロンド', hex: '#CB8853', highlightHex: '#E19E66' },
-  { id: 'crimson', name: 'ワインレッド', hex: '#C04263', highlightHex: '#D85A7B' },
+  { id: 'dark_navy', name: 'ダークネイビー', hex: '#433F58' },
+  { id: 'black', name: 'ブラック', hex: '#282634' },
+  { id: 'dark_brown', name: '焦茶', hex: '#3E2723' },
+  { id: 'chestnut', name: 'チェスナット', hex: '#92513E' },
+  { id: 'blonde', name: 'ハニーブロンド', hex: '#CB8853' },
+  { id: 'crimson', name: 'ワインレッド', hex: '#C04263' },
 ] as const;
 
 /**

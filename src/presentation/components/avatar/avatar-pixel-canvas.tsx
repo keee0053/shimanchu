@@ -759,9 +759,15 @@ export function AvatarPixelCanvas({
   const svgHeight = Math.round((size * GRID_H) / GRID_W);
 
   return (
-    <Svg width={size} height={svgHeight} viewBox={`0 0 ${GRID_W} ${GRID_H}`}>
-      {rects.map((r, i) => (
-        <Rect key={`${r.x}-${r.y}-${i}`} x={r.x} y={r.y} width={r.w} height={1} fill={r.color} />
+    <Svg
+      width={size}
+      height={svgHeight}
+      viewBox={`0 0 ${GRID_W} ${GRID_H}`}
+      accessibilityRole="image"
+      accessibilityLabel={mode === 'drifting' ? '浮き輪で漂流中のアバター' : '立ち姿のアバター'}
+    >
+      {rects.map((r) => (
+        <Rect key={`${r.x}-${r.y}`} x={r.x} y={r.y} width={r.w} height={1} fill={r.color} />
       ))}
     </Svg>
   );

@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { AvatarConfig, AvatarPreviewMode } from '@/domain/entities/avatar';
 import { ThemedText } from '@/presentation/components/themed-text';
-import { ThemedView } from '@/presentation/components/themed-view';
 import { Spacing } from '@/presentation/constants/theme';
 
 import { AvatarPixelCanvas } from './avatar-pixel-canvas';
@@ -21,7 +20,7 @@ export function AvatarPreviewSection({ config, mode, onModeChange }: AvatarPrevi
   const isDrifting = mode === 'drifting';
 
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
       {/* プレビュー背景カード */}
       <View style={[styles.card, isDrifting ? styles.oceanBackground : styles.islandBackground]}>
         {/* 背景の装飾ラベル */}
@@ -39,6 +38,9 @@ export function AvatarPreviewSection({ config, mode, onModeChange }: AvatarPrevi
         {/* 状態切り替えトグル */}
         <View style={styles.toggleRow}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="通常の姿に切り替え"
+            accessibilityState={{ selected: !isDrifting }}
             style={[styles.toggleButton, !isDrifting && styles.toggleButtonActive]}
             onPress={() => onModeChange('standing')}
           >
@@ -50,6 +52,9 @@ export function AvatarPreviewSection({ config, mode, onModeChange }: AvatarPrevi
           </Pressable>
 
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="漂流姿（浮き輪）に切り替え"
+            accessibilityState={{ selected: isDrifting }}
             style={[styles.toggleButton, isDrifting && styles.toggleButtonActive]}
             onPress={() => onModeChange('drifting')}
           >
@@ -61,7 +66,7 @@ export function AvatarPreviewSection({ config, mode, onModeChange }: AvatarPrevi
           </Pressable>
         </View>
       </View>
-    </ThemedView>
+    </View>
   );
 }
 

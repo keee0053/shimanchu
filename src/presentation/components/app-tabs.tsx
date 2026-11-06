@@ -3,6 +3,9 @@ import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/presentation/constants/theme';
 
+/**
+ * ネイティブ環境向けのボトムタブナビゲーションコンポーネント
+ */
 export default function AppTabs() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];

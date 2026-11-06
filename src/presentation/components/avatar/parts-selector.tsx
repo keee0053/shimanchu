@@ -10,7 +10,6 @@ import {
 } from '@/domain/constants/avatar-parts';
 import type { AvatarConfig } from '@/domain/entities/avatar';
 import { ThemedText } from '@/presentation/components/themed-text';
-import { ThemedView } from '@/presentation/components/themed-view';
 import {
   AVATAR_CUSTOMIZE_TABS,
   type AvatarCustomizeTab,
@@ -31,7 +30,7 @@ interface PartsSelectorProps {
  */
 export function PartsSelector({ config, activeTab, onTabChange, onChange }: PartsSelectorProps) {
   return (
-    <ThemedView style={styles.container}>
+    <View style={styles.container}>
       {/* 仕様通りのカテゴリ別タブバー */}
       <ScrollView
         horizontal
@@ -207,7 +206,7 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
           </View>
         )}
       </View>
-    </ThemedView>
+    </View>
   );
 }
 

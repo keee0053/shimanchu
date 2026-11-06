@@ -10,6 +10,9 @@ import { ThemedView } from '@/presentation/components/themed-view';
 import { WebBadge } from '@/presentation/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/presentation/constants/theme';
 
+/**
+ * プラットフォームに応じた開発メニューの起動ヒントを返す
+ */
 function getDevMenuHint() {
   if (Platform.OS === 'web') {
     return <ThemedText type="small">use browser devtools</ThemedText>;
@@ -29,6 +32,9 @@ function getDevMenuHint() {
   );
 }
 
+/**
+ * ホーム画面コンポーネント
+ */
 export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
@@ -46,6 +52,8 @@ export default function HomeScreen() {
 
         <ThemedView type="backgroundElement" style={styles.stepContainer}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="アバターを作成する"
             style={styles.createAvatarButton}
             onPress={() => router.push('/create-avatar')}
           >
