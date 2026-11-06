@@ -63,6 +63,9 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                 return (
                   <Pressable
                     key={c.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`髪色: ${c.name}`}
+                    accessibilityState={{ selected: isSelected }}
                     style={[
                       styles.colorCircle,
                       { backgroundColor: c.hex },

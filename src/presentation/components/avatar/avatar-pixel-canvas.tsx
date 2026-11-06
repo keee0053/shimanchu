@@ -321,9 +321,9 @@ const OUTFIT_TEMPLATES: Record<
       '.#nBdBBWBBBWBHBdn#..', // r24
       '.#BB#BBBBBBBBB#BB#..', // r25
       '#nBB#BBdddddBB#BBn#.', // r26
-      '##nn#BdBBBBBdb#nn##.', // r27
+      '##nn#BdBBBBBdd#nn##.', // r27
       '#BSD#dBBBBBBBd#DSB#.', // r28
-      '#SSS#dddddddddd#SSS#.', // r29
+      '#SSS#ddddddddd#SSS#.', // r29
     ],
     palette: {
       '#': '#060A24',
