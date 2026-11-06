@@ -41,7 +41,6 @@ export const avatarConfigSchema = z.object({
   hairColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, '有効なHEXカラーコードを指定してください'),
   eyeType: z.enum(EYE_TYPES),
   outfit: z.enum(OUTFIT_TYPES),
-  hasGlasses: z.boolean(),
 });
 
 export type AvatarConfig = z.infer<typeof avatarConfigSchema>;
@@ -55,5 +54,4 @@ export const DEFAULT_AVATAR_CONFIG: AvatarConfig = {
   hairColor: '#433F58',
   eyeType: 'dots',
   outfit: 'stripe',
-  hasGlasses: false,
 };

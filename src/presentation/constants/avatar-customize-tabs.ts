@@ -6,7 +6,6 @@ export const AVATAR_CUSTOMIZE_TABS = [
   { id: 'face', label: '目・表情' },
   { id: 'skin', label: '肌色' },
   { id: 'outfit', label: '服（胴体）' },
-  { id: 'glasses', label: 'メガネ・小物' },
 ] as const;
 
 export type AvatarCustomizeTab = (typeof AVATAR_CUSTOMIZE_TABS)[number]['id'];

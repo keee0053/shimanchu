@@ -203,51 +203,6 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
             </View>
           </View>
         )}
-
-        {/* 5. メガネ・小物 */}
-        {activeTab === 'glasses' && (
-          <View>
-            <ThemedText style={styles.sectionTitle}>メガネの有無を選ぶ</ThemedText>
-            <View style={styles.grid}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="メガネなし"
-                accessibilityState={{ selected: !config.hasGlasses }}
-                style={[styles.gridCard, !config.hasGlasses && styles.gridCardSelected]}
-                onPress={() => onChange('hasGlasses', false)}
-              >
-                <AvatarPixelCanvas config={{ ...config, hasGlasses: false }} size={40} />
-                <ThemedText
-                  style={[
-                    styles.cardTitle,
-                    { marginTop: 6 },
-                    !config.hasGlasses && styles.cardTitleSelected,
-                  ]}
-                >
-                  メガネなし
-                </ThemedText>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="メガネあり"
-                accessibilityState={{ selected: config.hasGlasses }}
-                style={[styles.gridCard, config.hasGlasses && styles.gridCardSelected]}
-                onPress={() => onChange('hasGlasses', true)}
-              >
-                <AvatarPixelCanvas config={{ ...config, hasGlasses: true }} size={40} />
-                <ThemedText
-                  style={[
-                    styles.cardTitle,
-                    { marginTop: 6 },
-                    config.hasGlasses && styles.cardTitleSelected,
-                  ]}
-                >
-                  メガネあり 👓
-                </ThemedText>
-              </Pressable>
-            </View>
-          </View>
-        )}
       </View>
     </ThemedView>
   );

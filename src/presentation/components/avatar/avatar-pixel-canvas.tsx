@@ -386,35 +386,33 @@ const LOWER_BODY_PALETTE: Record<string, string> = {
 };
 
 /**
- * 漂流モード（浮き輪＆波）（rows 24..37, 20文字幅）
+ * 漂流モード（立体的な楕円形の赤×白ストライプ浮き輪＆水面の波紋）（rows 26..35, 20文字幅）
+ * 中央の透明領域（'.'）からは選択中の服装（胴体）がそのまま覗く構造
  */
 const DRIFTING_LOWER_ROWS: readonly string[] = [
-  '..####RRRRRRRR####..', // r24: 浮き輪上縁
-  '.#RRRRWWWWWWWWRRRR#.', // r25: 浮き輪ハイライト
-  '#RRRRW########WRRRR#', // r26: 浮き輪中央
-  '#RRRWW#BBBBBB#WWRRR#', // r27: 浮き輪＆お腹
-  '#ssRWW########WWRss#', // r28: 浮き輪下部影
-  '.#ssRRRWWWWWRRRRss#.', // r29: 浮き輪底面
-  '..################..', // r30: 水面境界
-  '.WWWWooOOOOOOooWWWW.', // r31: 白波しぶき
-  'ooOOOOOOooooOOOOOOoo', // r32: 海面
-  'OOOOddDDDDDDDDddOOOO', // r33: 波の陰影
-  'OOddDDDDWWWWWDDDddOO', // r34: 波間のきらめき
-  'ddDDDDDDDDDDDDDDDDdd', // r35: 深海グラデーション
-  '.ddDDDDDDDDDDDDDDdd.', // r36
-  '...dddddddddddddd...', // r37
+  '.###...........###..', // r26: 浮き輪の左右上縁アウトライン
+  '#RRR##.......##RRR#.', // r27: 浮き輪の左右カーブ＋内穴への段差アウトライン（中央gx=6..12は服）
+  '#RRRRW#######WRRRR#.', // r28: 浮き輪の手前内穴アウトライン＋赤白ストライプ
+  '#HRRWWWWRHRWWWWRRH#.', // r29: 浮き輪のぷっくり前面（ハイライト）
+  '#sRRWWWWsRsWWWWRRs#.', // r30: 浮き輪のぷっくり前面（ミドル）
+  '.#ssRwwwdddwwwRss#..', // r31: 浮き輪の下部シェーディング
+  '..###############...', // r32: 浮き輪の底アウトライン
+  '.qWWoooOOOOOoooWWq..', // r33: 水面の白波＆しぶき
+  '..oooOOOOOOOOOooo...', // r34: 水面の波紋
+  '.....ooooooooo......', // r35: 波紋フェード
 ];
 
 const DRIFTING_PALETTE: Record<string, string> = {
   '#': '#141020',
+  H: '#FF7A7E',
   R: '#EF474B',
-  s: '#B82E38',
-  W: '#FAF9FF',
-  B: '#5684C8',
+  s: '#C42B36',
+  d: '#8E1D28',
+  W: '#FFFFFF',
+  w: '#DCE6F2',
   O: '#38BDF8',
   o: '#7DD3FC',
-  D: '#0284C7',
-  d: '#0369A1',
+  q: '#E0F2FE',
 };
 
 /**
@@ -425,7 +423,7 @@ export function AvatarPixelCanvas({
   mode = 'standing',
   size = 140,
 }: AvatarPixelCanvasProps) {
-  const { skinTone, hairStyle, hairColor, eyeType, outfit, hasGlasses } = config;
+  const { skinTone, hairStyle, hairColor, eyeType, outfit } = config;
 
   const rects = useMemo(() => {
     // 20x38 の2次元カラーグリッド（null は透明）
@@ -563,40 +561,7 @@ export function AvatarPixelCanvas({
     }
 
     // ==========================================
-    // 4. メガネ（hasGlasses = true のとき目に馴染むドットメガネ）
-    // ==========================================
-    if (hasGlasses) {
-      const frame = '#22181C';
-      const frameLight = '#4A3B42';
-      const lens = shiftRgb(skinTone, 14, 16, 22);
-      // 左フレーム (gx=4..8, gy=12..16)
-      for (let x = 5; x <= 7; x++) {
-        setPx(x, 12, frame);
-        setPx(x, 16, frameLight);
-      }
-      for (let y = 13; y <= 15; y++) {
-        setPx(4, y, frame);
-        setPx(8, y, frame);
-      }
-      setPx(5, 13, lens);
-      // 右フレーム (gx=10..14, gy=12..16)
-      for (let x = 11; x <= 13; x++) {
-        setPx(x, 12, frame);
-        setPx(x, 16, frameLight);
-      }
-      for (let y = 13; y <= 15; y++) {
-        setPx(10, y, frame);
-        setPx(14, y, frame);
-      }
-      setPx(11, 13, lens);
-      // ブリッジ＆テンプル
-      setPx(9, 13, frame);
-      setPx(3, 13, frameLight);
-      setPx(15, 13, frameLight);
-    }
-
-    // ==========================================
-    // 5. 髪型・帽子（前面レイヤー）
+    // 4. 髪型・帽子（前面レイヤー）
     // ==========================================
     if (hairStyle === 'cap_forward') {
       CAP_FORWARD_TEMPLATE.forEach((rowStr, idx) => {
@@ -671,11 +636,13 @@ export function AvatarPixelCanvas({
     }
 
     // ==========================================
-    // 6. 服装（胴体・腕 rows 20..29）
+    // 5. 服装（胴体・腕 rows 20..29）
     // ==========================================
     const outfitData = OUTFIT_TEMPLATES[outfit];
+    const maxOutfitRow = mode === 'drifting' ? 27 : 29;
     outfitData.rows.forEach((rowStr, idx) => {
       const gy = idx + 20;
+      if (gy > maxOutfitRow) return;
       for (let gx = 0; gx < GRID_W; gx++) {
         const ch = rowStr[gx];
         if (!ch || ch === '.') continue;
@@ -723,7 +690,7 @@ export function AvatarPixelCanvas({
     }
 
     // ==========================================
-    // 7. 下半身（立ち姿 or 浮き輪で漂流姿）
+    // 6. 下半身（立ち姿 or 浮き輪で漂流姿）
     // ==========================================
     if (mode === 'standing') {
       LOWER_BODY_ROWS.forEach((rowStr, idx) => {
@@ -735,8 +702,16 @@ export function AvatarPixelCanvas({
         }
       });
     } else {
+      // 浮き輪の左右上部にちょこんと添える両手（全服装共通で肌色を反映）
+      setPx(1, 25, '#141020');
+      setPx(2, 25, skin.shadow);
+      setPx(3, 25, skin.base);
+      setPx(15, 25, skin.base);
+      setPx(16, 25, skin.shadow);
+      setPx(17, 25, '#141020');
+
       DRIFTING_LOWER_ROWS.forEach((rowStr, idx) => {
-        const gy = idx + 24;
+        const gy = idx + 26;
         for (let gx = 0; gx < GRID_W; gx++) {
           const ch = rowStr[gx];
           if (!ch || ch === '.') continue;
@@ -764,7 +739,7 @@ export function AvatarPixelCanvas({
       }
     }
     return merged;
-  }, [skinTone, hairStyle, hairColor, eyeType, outfit, hasGlasses, mode]);
+  }, [skinTone, hairStyle, hairColor, eyeType, outfit, mode]);
 
   const svgHeight = Math.round((size * GRID_H) / GRID_W);
 
