@@ -85,16 +85,3 @@ export const OUTFIT_OPTIONS: readonly OutfitOption[] = [
   { id: 'hoodie', name: 'パーカー', description: 'フード付きブルーパーカー' },
   { id: 'jacket', name: 'ジャケット', description: 'グリーンの羽織りジャケット' },
 ] as const;
-
-/**
- * カテゴリ別タブ
- */
-export const AVATAR_CUSTOMIZE_TABS = [
-  { id: 'hair', label: '髪型・髪色' },
-  { id: 'face', label: '目・表情' },
-  { id: 'skin', label: '肌色' },
-  { id: 'outfit', label: '服（胴体）' },
-  { id: 'glasses', label: 'メガネ・小物' },
-] as const;
-
-export type AvatarCustomizeTab = (typeof AVATAR_CUSTOMIZE_TABS)[number]['id'];

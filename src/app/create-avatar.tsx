@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 
-import type { AvatarCustomizeTab } from '@/domain/constants/avatar-parts';
+import type { AvatarCustomizeTab } from '@/presentation/constants/avatar-customize-tabs';
 import {
   type AvatarConfig,
   type AvatarPreviewMode,

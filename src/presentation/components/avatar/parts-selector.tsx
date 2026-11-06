@@ -2,8 +2,6 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
-  AVATAR_CUSTOMIZE_TABS,
-  type AvatarCustomizeTab,
   EYE_TYPE_OPTIONS,
   HAIR_COLOR_OPTIONS,
   HAIR_STYLE_OPTIONS,
@@ -13,6 +11,10 @@ import {
 import type { AvatarConfig } from '@/domain/entities/avatar';
 import { ThemedText } from '@/presentation/components/themed-text';
 import { ThemedView } from '@/presentation/components/themed-view';
+import {
+  AVATAR_CUSTOMIZE_TABS,
+  type AvatarCustomizeTab,
+} from '@/presentation/constants/avatar-customize-tabs';
 import { Spacing } from '@/presentation/constants/theme';
 
 import { AvatarPixelCanvas } from './avatar-pixel-canvas';
