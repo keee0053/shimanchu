@@ -26,6 +26,9 @@ interface PartsSelectorProps {
   onChange: <K extends keyof AvatarConfig>(key: K, value: AvatarConfig[K]) => void;
 }
 
+/**
+ * アバターの各カテゴリ（髪型・髪色・目・肌色・服）を選択するUIコンポーネント
+ */
 export function PartsSelector({ config, activeTab, onTabChange, onChange }: PartsSelectorProps) {
   return (
     <ThemedView style={styles.container}>

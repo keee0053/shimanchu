@@ -15,6 +15,9 @@ import { AvatarPreviewSection } from '@/presentation/components/avatar/avatar-pr
 import { PartsSelector } from '@/presentation/components/avatar/parts-selector';
 import { Spacing } from '@/presentation/constants/theme';
 
+/**
+ * アバター作成・パーツカスタマイズ画面
+ */
 export default function CreateAvatarScreen() {
   const router = useRouter();
   const [config, setConfig] = useState<AvatarConfig>(DEFAULT_AVATAR_CONFIG);
@@ -190,11 +193,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.55)',
     alignItems: 'center',
     justifyContent: 'center',

@@ -36,10 +36,16 @@ interface SkinRamp {
 const GRID_W = 20;
 const GRID_H = 38;
 
+/**
+ * 数値を 0〜255 の整数範囲に丸める
+ */
 function clampByte(n: number): number {
   return Math.max(0, Math.min(255, Math.round(n)));
 }
 
+/**
+ * HEXカラーコード（#RRGGBB）を RGB 配列に変換する
+ */
 function parseHex(hex: string): [number, number, number] {
   const clean = hex.replace('#', '');
   const r = parseInt(clean.substring(0, 2), 16) || 0;
@@ -48,15 +54,24 @@ function parseHex(hex: string): [number, number, number] {
   return [r, g, b];
 }
 
+/**
+ * RGB の各チャンネル値を HEXカラーコード（#rrggbb）に変換する
+ */
 function toHex(r: number, g: number, b: number): string {
   return `#${clampByte(r).toString(16).padStart(2, '0')}${clampByte(g).toString(16).padStart(2, '0')}${clampByte(b).toString(16).padStart(2, '0')}`;
 }
 
+/**
+ * HEXカラーコードの各RGBチャンネルにオフセットを加算して明暗を調整する
+ */
 function shiftRgb(hex: string, dr: number, dg: number, db: number): string {
   const [r, g, b] = parseHex(hex);
   return toHex(r + dr, g + dg, b + db);
 }
 
+/**
+ * HEXカラーコードの各RGBチャンネルを倍率スケーリングして陰影色を生成する
+ */
 function scaleRgb(hex: string, factor: number, add = 0): string {
   const [r, g, b] = parseHex(hex);
   return toHex(r * factor + add, g * factor + add, b * factor + add);

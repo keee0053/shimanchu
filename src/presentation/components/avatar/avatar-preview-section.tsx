@@ -14,6 +14,9 @@ interface AvatarPreviewSectionProps {
   onModeChange: (mode: AvatarPreviewMode) => void;
 }
 
+/**
+ * アバターのプレビュー表示と状態切り替え（通常姿 / 浮き輪の漂流姿）を行うセクション
+ */
 export function AvatarPreviewSection({ config, mode, onModeChange }: AvatarPreviewSectionProps) {
   const isDrifting = mode === 'drifting';
 
