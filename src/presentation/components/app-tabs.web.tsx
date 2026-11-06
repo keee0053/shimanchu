@@ -15,6 +15,9 @@ import { ExternalLink } from './external-link';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
+/**
+ * Web環境向けのカスタムタブナビゲーションコンポーネント
+ */
 export default function AppTabs() {
   return (
     <Tabs>
@@ -23,6 +26,9 @@ export default function AppTabs() {
         <CustomTabList>
           <TabTrigger name="home" href="/" asChild>
             <TabButton>Home</TabButton>
+          </TabTrigger>
+          <TabTrigger name="create-avatar" href="/create-avatar" asChild>
+            <TabButton>アバター作成</TabButton>
           </TabTrigger>
           <TabTrigger name="explore" href="/explore" asChild>
             <TabButton>Explore</TabButton>
@@ -33,6 +39,9 @@ export default function AppTabs() {
   );
 }
 
+/**
+ * Webタブバーの各タブボタンコンポーネント
+ */
 export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
   // TabTriggerSlotProps の ref の型が Pressable と合わないため、Pressable の props として渡す
   return (
@@ -49,6 +58,9 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
   );
 }
 
+/**
+ * Web上部ナビゲーションのタブリストコンテナコンポーネント
+ */
 export function CustomTabList(props: TabListProps) {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];

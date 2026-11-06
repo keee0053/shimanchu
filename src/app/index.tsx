@@ -1,5 +1,6 @@
 import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
+import { Platform, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedIcon } from '@/presentation/components/animated-icon';
@@ -9,6 +10,9 @@ import { ThemedView } from '@/presentation/components/themed-view';
 import { WebBadge } from '@/presentation/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/presentation/constants/theme';
 
+/**
+ * プラットフォームに応じた開発メニューの起動ヒントを返す
+ */
 function getDevMenuHint() {
   if (Platform.OS === 'web') {
     return <ThemedText type="small">use browser devtools</ThemedText>;
@@ -28,6 +32,9 @@ function getDevMenuHint() {
   );
 }
 
+/**
+ * ホーム画面コンポーネント
+ */
 export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
@@ -44,6 +51,16 @@ export default function HomeScreen() {
         </ThemedText>
 
         <ThemedView type="backgroundElement" style={styles.stepContainer}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="アバターを作成する"
+            style={styles.createAvatarButton}
+            onPress={() => router.push('/create-avatar')}
+          >
+            <ThemedText style={styles.createAvatarButtonText}>
+              🏝️ アバターを作成する（カスタマイズ）
+            </ThemedText>
+          </Pressable>
           <HintRow
             title="Try editing"
             hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
@@ -90,5 +107,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.four,
     borderRadius: Spacing.four,
+  },
+  createAvatarButton: {
+    backgroundColor: '#00B4D8',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#00B4D8',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  createAvatarButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
   },
 });
