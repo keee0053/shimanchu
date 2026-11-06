@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { AvatarCustomizeTab } from '@/presentation/constants/avatar-customize-tabs';
@@ -89,29 +89,36 @@ export default function CreateAvatarScreen() {
 
         {/* 保存完了モーダル（Web確認用） */}
         {savedJson && (
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalCard}>
-              <ThemedText style={styles.modalTitle}>✅ アバター設定を保存しました</ThemedText>
-              <ThemedText style={styles.modalSubtitle}>保存されるJSONデータ (Step 5):</ThemedText>
-              <View style={styles.codeBlock}>
-                <ThemedText style={styles.codeText}>{savedJson}</ThemedText>
-              </View>
-              <View style={styles.modalActions}>
-                <Pressable style={styles.secondaryButton} onPress={() => setSavedJson(null)}>
-                  <ThemedText style={styles.secondaryButtonText}>微調整を続ける</ThemedText>
-                </Pressable>
-                <Pressable
-                  style={styles.primaryButton}
-                  onPress={() => {
-                    setSavedJson(null);
-                    router.replace('/');
-                  }}
-                >
-                  <ThemedText style={styles.primaryButtonText}>島へ移動する 🏝️</ThemedText>
-                </Pressable>
+          <Modal
+            transparent
+            animationType="fade"
+            onRequestClose={() => setSavedJson(null)}
+            accessibilityLabel="アバター設定を保存しました"
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalCard}>
+                <ThemedText style={styles.modalTitle}>✅ アバター設定を保存しました</ThemedText>
+                <ThemedText style={styles.modalSubtitle}>保存されるJSONデータ (Step 5):</ThemedText>
+                <View style={styles.codeBlock}>
+                  <ThemedText style={styles.codeText}>{savedJson}</ThemedText>
+                </View>
+                <View style={styles.modalActions}>
+                  <Pressable style={styles.secondaryButton} onPress={() => setSavedJson(null)}>
+                    <ThemedText style={styles.secondaryButtonText}>微調整を続ける</ThemedText>
+                  </Pressable>
+                  <Pressable
+                    style={styles.primaryButton}
+                    onPress={() => {
+                      setSavedJson(null);
+                      router.replace('/');
+                    }}
+                  >
+                    <ThemedText style={styles.primaryButtonText}>島へ移動する 🏝️</ThemedText>
+                  </Pressable>
+                </View>
               </View>
             </View>
-          </View>
+          </Modal>
         )}
       </SafeAreaView>
     </ThemedView>

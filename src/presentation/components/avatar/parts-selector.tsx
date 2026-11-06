@@ -40,6 +40,9 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
           return (
             <Pressable
               key={tab.id}
+              accessibilityRole="tab"
+              accessibilityLabel={tab.label}
+              accessibilityState={{ selected: isActive }}
               style={[styles.tabItem, isActive && styles.tabItemActive]}
               onPress={() => onTabChange(tab.id)}
             >
@@ -86,6 +89,9 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                 return (
                   <Pressable
                     key={h.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`髪型: ${h.name}`}
+                    accessibilityState={{ selected: isSelected }}
                     style={[styles.gridCard, isSelected && styles.gridCardSelected]}
                     onPress={() => onChange('hairStyle', h.id)}
                   >
@@ -116,6 +122,9 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                 return (
                   <Pressable
                     key={e.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`目・表情: ${e.name}`}
+                    accessibilityState={{ selected: isSelected }}
                     style={[styles.gridCard, isSelected && styles.gridCardSelected]}
                     onPress={() => onChange('eyeType', e.id)}
                   >
@@ -146,6 +155,9 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                 return (
                   <Pressable
                     key={s.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`肌色: ${s.name}`}
+                    accessibilityState={{ selected: isSelected }}
                     style={[styles.skinCard, isSelected && styles.skinCardSelected]}
                     onPress={() => onChange('skinTone', s.hex)}
                   >
@@ -168,6 +180,9 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                 return (
                   <Pressable
                     key={o.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`服: ${o.name}`}
+                    accessibilityState={{ selected: isSelected }}
                     style={[styles.gridCard, isSelected && styles.gridCardSelected]}
                     onPress={() => onChange('outfit', o.id)}
                   >
@@ -195,6 +210,9 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
             <ThemedText style={styles.sectionTitle}>メガネの有無を選ぶ</ThemedText>
             <View style={styles.grid}>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="メガネなし"
+                accessibilityState={{ selected: !config.hasGlasses }}
                 style={[styles.gridCard, !config.hasGlasses && styles.gridCardSelected]}
                 onPress={() => onChange('hasGlasses', false)}
               >
@@ -210,6 +228,9 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                 </ThemedText>
               </Pressable>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="メガネあり"
+                accessibilityState={{ selected: config.hasGlasses }}
                 style={[styles.gridCard, config.hasGlasses && styles.gridCardSelected]}
                 onPress={() => onChange('hasGlasses', true)}
               >
