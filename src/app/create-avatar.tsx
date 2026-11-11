@@ -47,6 +47,7 @@ export default function CreateAvatarScreen() {
       'アバター設定を確認しました（保存は未実装）',
       `※DBへの保存処理は #16・#17 で対応予定です。\n\n${jsonString}`,
       [
+        { text: '微調整を続ける', style: 'cancel' },
         {
           text: '島へ移動する',
           onPress: () => {
