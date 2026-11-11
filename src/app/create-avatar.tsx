@@ -13,7 +13,7 @@ import {
 import { AvatarPreviewSection, PartsSelector } from '@/presentation/components/avatar';
 import { ThemedText } from '@/presentation/components/themed-text';
 import { ThemedView } from '@/presentation/components/themed-view';
-import { Spacing } from '@/presentation/constants/theme';
+import { BottomTabInset, Spacing } from '@/presentation/constants/theme';
 
 /**
  * アバター作成・パーツカスタマイズ画面
@@ -23,7 +23,7 @@ export default function CreateAvatarScreen() {
   const [config, setConfig] = useState<AvatarConfig>(DEFAULT_AVATAR_CONFIG);
   const [previewMode, setPreviewMode] = useState<AvatarPreviewMode>('standing');
   const [activeTab, setActiveTab] = useState<AvatarCustomizeTab>('hair');
-  const [savedJson, setSavedJson] = useState<string | null>(null);
+  const [confirmedJson, setConfirmedJson] = useState<string | null>(null);
 
   const handlePartChange = <K extends keyof AvatarConfig>(key: K, value: AvatarConfig[K]) => {
     setConfig((prev) => ({
@@ -32,7 +32,7 @@ export default function CreateAvatarScreen() {
     }));
   };
 
-  const handleSave = () => {
+  const handleConfirm = () => {
     const parsed = avatarConfigSchema.safeParse(config);
     if (!parsed.success) {
       Alert.alert('入力エラー', 'アバター設定が正しくありません。');
@@ -40,17 +40,21 @@ export default function CreateAvatarScreen() {
     }
     const jsonString = JSON.stringify(parsed.data, null, 2);
     if (Platform.OS === 'web') {
-      setSavedJson(jsonString);
+      setConfirmedJson(jsonString);
       return;
     }
-    Alert.alert('アバター設定を保存しました', jsonString, [
-      {
-        text: '島へ移動する',
-        onPress: () => {
-          router.replace('/');
+    Alert.alert(
+      'アバター設定を確認しました（保存は未実装）',
+      `※DBへの保存処理は #16・#17 で対応予定です。\n\n${jsonString}`,
+      [
+        {
+          text: '島へ移動する',
+          onPress: () => {
+            router.replace('/');
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   return (
@@ -58,22 +62,7 @@ export default function CreateAvatarScreen() {
       <SafeAreaView style={styles.safeArea}>
         {/* ヘッダー */}
         <View style={styles.header}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="戻る"
-            style={styles.backButton}
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace('/');
-              }
-            }}
-          >
-            <ThemedText style={styles.backButtonText}>← 戻る</ThemedText>
-          </Pressable>
           <ThemedText style={styles.headerTitle}>アバター作成</ThemedText>
-          <View style={styles.headerPlaceholder} />
         </View>
 
         {/* スクロールコンテンツ */}
@@ -96,33 +85,37 @@ export default function CreateAvatarScreen() {
             accessibilityRole="button"
             accessibilityLabel="このアバターで決定"
             style={styles.submitButton}
-            onPress={handleSave}
+            onPress={handleConfirm}
           >
             <ThemedText style={styles.submitButtonText}>このアバターで決定！</ThemedText>
           </Pressable>
         </View>
 
-        {/* 保存完了モーダル（Web確認用） */}
-        {savedJson && (
+        {/* 設定確認モーダル（Web確認用・保存は未実装） */}
+        {confirmedJson && (
           <Modal
             transparent
             animationType="fade"
-            onRequestClose={() => setSavedJson(null)}
-            accessibilityLabel="アバター設定を保存しました"
+            onRequestClose={() => setConfirmedJson(null)}
+            accessibilityLabel="アバター設定の確認（保存は未実装）"
           >
             <View style={styles.modalOverlay}>
               <View style={styles.modalCard}>
-                <ThemedText style={styles.modalTitle}>✅ アバター設定を保存しました</ThemedText>
-                <ThemedText style={styles.modalSubtitle}>保存されるJSONデータ (Step 5):</ThemedText>
+                <ThemedText style={styles.modalTitle}>
+                  📋 アバター設定を確認しました（保存は未実装）
+                </ThemedText>
+                <ThemedText style={styles.modalSubtitle}>
+                  ※DBへの保存処理は #16・#17 で対応予定です。現在の設定JSON:
+                </ThemedText>
                 <View style={styles.codeBlock}>
-                  <ThemedText style={styles.codeText}>{savedJson}</ThemedText>
+                  <ThemedText style={styles.codeText}>{confirmedJson}</ThemedText>
                 </View>
                 <View style={styles.modalActions}>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="微調整を続ける"
                     style={styles.secondaryButton}
-                    onPress={() => setSavedJson(null)}
+                    onPress={() => setConfirmedJson(null)}
                   >
                     <ThemedText style={styles.secondaryButtonText}>微調整を続ける</ThemedText>
                   </Pressable>
@@ -131,7 +124,7 @@ export default function CreateAvatarScreen() {
                     accessibilityLabel="島へ移動する"
                     style={styles.primaryButton}
                     onPress={() => {
-                      setSavedJson(null);
+                      setConfirmedJson(null);
                       router.replace('/');
                     }}
                   >
@@ -160,27 +153,15 @@ const styles = StyleSheet.create({
     height: 48,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: Spacing.three,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
-  },
-  backButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-  },
-  backButtonText: {
-    fontSize: 14,
-    color: '#0077B6',
-    fontWeight: '600',
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#263238',
-  },
-  headerPlaceholder: {
-    width: 48,
   },
   scrollView: {
     flex: 1,
@@ -189,7 +170,9 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   footer: {
-    padding: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
+    paddingBottom: BottomTabInset + Spacing.three,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(0, 0, 0, 0.08)',
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
