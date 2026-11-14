@@ -23,13 +23,31 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            [_ in never]: never
+            "profiles": {
+                  Row: {
+                    "avatar_config": NonNullable<Json>,"created_at": string,"discoverable": boolean,"display_name": string,"id": string,"public_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "avatar_config": NonNullable<Json>,"created_at"?: string,"discoverable"?: boolean,"display_name": string,"id": string,"public_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "avatar_config"?: NonNullable<Json>,"created_at"?: string,"discoverable"?: boolean,"display_name"?: string,"id"?: string,"public_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                }
           }
           Views: {
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "find_profile_by_public_id":
+{ Args: { "p_public_id": string }; Returns: {
+              "avatar_config": Json,"display_name": string,"id": string,"public_id": string
+            }[]
+                           }
           }
           Enums: {
             [_ in never]: never
