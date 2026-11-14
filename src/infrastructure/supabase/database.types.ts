@@ -23,13 +23,60 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            [_ in never]: never
+            "friendships": {
+                  Row: {
+                    "created_at": string,"friend_id": string,"share_presence": boolean,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"friend_id": string,"share_presence"?: boolean,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"friend_id"?: string,"share_presence"?: boolean,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "friendships_friend_id_fkey"
+      columns: ["friend_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "friendships_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
+                  Row: {
+                    "avatar_config": NonNullable<Json>,"created_at": string,"discoverable": boolean,"display_name": string,"id": string,"public_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "avatar_config": NonNullable<Json>,"created_at"?: string,"discoverable"?: boolean,"display_name": string,"id": string,"public_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "avatar_config"?: NonNullable<Json>,"created_at"?: string,"discoverable"?: boolean,"display_name"?: string,"id"?: string,"public_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                }
           }
           Views: {
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "find_profile_by_public_id":
+{ Args: { "p_public_id": string }; Returns: {
+              "avatar_config": Json,"display_name": string,"id": string,"public_id": string
+            }[]
+                           },
+"remove_friend":
+{ Args: { "p_friend_id": string }; Returns: undefined
+                           }
           }
           Enums: {
             [_ in never]: never
