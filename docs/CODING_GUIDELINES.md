@@ -40,13 +40,13 @@ presentation（src/app・src/presentation） → application → domain ← infr
                          └──────── src/container.ts がすべてをつなぐ ────────┘
 ```
 
-| 層             | 場所                            | 書くもの                                                                                             | import してよいもの                           |
-| -------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| domain         | `src/domain/`                   | アプリのルール。エンティティの型、純粋関数（エリア判定・漂流判定など）、リポジトリのインターフェース | domain のみ（Zod などの純粋なライブラリは可） |
-| application    | `src/application/`              | ユースケース。domain のルールとリポジトリを組み合わせて1つの操作を行う                               | domain                                        |
-| infrastructure | `src/infrastructure/`           | 外部とのやり取り。Supabase・expo-location などを使ったリポジトリの実装                               | domain、外部ライブラリ                        |
-| presentation   | `src/app/`・`src/presentation/` | 画面・コンポーネント・フック・TanStack Query・Zustand・フォーム                                      | application、domain、`@/container`            |
-| （つなぎ役）   | `src/container.ts`              | infrastructure の実装を domain のインターフェースに当てはめ、ユースケースを組み立てる                | すべて                                        |
+| 層             | 場所                            | 書くもの                                                                                           | import してよいもの                           |
+| -------------- | ------------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| domain         | `src/domain/`                   | アプリのルール。エンティティの型、純粋関数（島の判定・漂流判定など）、リポジトリのインターフェース | domain のみ（Zod などの純粋なライブラリは可） |
+| application    | `src/application/`              | ユースケース。domain のルールとリポジトリを組み合わせて1つの操作を行う                             | domain                                        |
+| infrastructure | `src/infrastructure/`           | 外部とのやり取り。Supabase・expo-location などを使ったリポジトリの実装                             | domain、外部ライブラリ                        |
+| presentation   | `src/app/`・`src/presentation/` | 画面・コンポーネント・フック・TanStack Query・Zustand・フォーム                                    | application、domain、`@/container`            |
+| （つなぎ役）   | `src/container.ts`              | infrastructure の実装を domain のインターフェースに当てはめ、ユースケースを組み立てる              | すべて                                        |
 
 この依存ルールは **ESLint（`eslint.config.js`）で強制**している。違反すると `npm run lint`・pre-push・CI で止まる。
 
@@ -75,7 +75,7 @@ src/
 ### コード量を増やしすぎないための決まり
 
 - **ロジックがない単純な取得・更新は、ユースケースを作らない。** presentation のフックから `@/container` のリポジトリを直接呼んでよい
-- **ユースケースはロジックがあるときだけ作る**（例: エリアを判定してから保存する、複数のリポジトリをまたぐ）
+- **ユースケースはロジックがあるときだけ作る**（例: 島を判定してから保存する、複数のリポジトリをまたぐ）
 - 依存はクラスではなく**関数の引数**で渡す（下の例を参照）
 
 ## 4. データの取得と更新
@@ -120,15 +120,15 @@ export function useMyGroups() {
 ### ロジックがある操作（ユースケースあり）
 
 ```ts
-// src/domain/services/area.ts … ルール（純粋関数。テストしやすい）
-export function detectArea(coords: Coords, areas: Area[]): Area | null { ... }
+// src/domain/services/island.ts … ルール（純粋関数。テストしやすい）
+export function detectIsland(coords: Coords | null, places: Place[]): IslandType { ... }
 
 // src/application/update-my-location.ts … 依存は引数で受け取る
 import type { LocationRepository } from '@/domain/repositories/location-repository';
-import { detectArea } from '@/domain/services/area';
+import { detectIsland } from '@/domain/services/island';
 export function createUpdateMyLocation(deps: { locationRepository: LocationRepository }) {
-  return async (coords: Coords, areas: Area[]) => {
-    await deps.locationRepository.saveMyArea(detectArea(coords, areas)?.id ?? null);
+  return async (coords: Coords | null, places: Place[]) => {
+    await deps.locationRepository.saveMyIsland(detectIsland(coords, places)); // 座標は送らない
   };
 }
 
@@ -137,11 +137,11 @@ export const updateMyLocation = createUpdateMyLocation({ locationRepository: sup
 
 // src/presentation/queries/location.ts
 export function useUpdateMyLocation() {
-  return useMutation({ mutationFn: (input: { coords: Coords; areas: Area[] }) => updateMyLocation(input.coords, input.areas) });
+  return useMutation({ mutationFn: (input: { coords: Coords | null; places: Place[] }) => updateMyLocation(input.coords, input.places) });
 }
 ```
 
-（上の位置情報の例は書き方の説明用。⚠️ **未決定**: 実際に何を保存するかは「未決定事項」を参照）
+（上の位置情報の例は書き方の説明用。何を保存するかは「6. 位置情報」を参照）
 
 ### Supabase のルール（infrastructure の中だけで使う）
 
@@ -185,11 +185,16 @@ export function useUpdateMyLocation() {
 - **まずはフォアグラウンドのみで実装する。** バックグラウンド取得は必要性が固まってから追加する（⚠️ **未決定**: 導入時期）
 - `expo-location`・`expo-task-manager` は **`src/infrastructure/location/` の中だけで使う**（presentation からの import は ESLint で禁止）。domain に位置取得のインターフェースを置き、infrastructure で実装する
 - 精度（accuracy）・更新間隔・距離のしきい値は `src/infrastructure/location/constants.ts` に定数として置く（バッテリー消費に直結するため、散らばらせない）
-- **エリア判定・漂流の判定は domain の純粋関数にする**（`src/domain/services/`）。位置が取れない・権限がないときに「漂流」状態にするのも domain のルール（エラー画面にしない）
+- **島の判定・漂流の判定は domain の純粋関数にする**（`src/domain/services/`）。位置が取れない・権限がないときに「漂流」状態にするのも domain のルール（エラー画面にしない）
 - 権限は使う直前に要求する
 - `TaskManager.defineTask` はコンポーネントの中ではなく `src/infrastructure/location/` のファイルのトップレベルで呼び、そのファイルを `src/container.ts` で import する（container はルートの `_layout.tsx` から読み込まれるので、アプリ起動時に登録される）
 - 座標を `console.log` などのログに出さない
-- ⚠️ **未決定**: DB に何を保存するか（下の「未決定事項」参照）
+- **座標は DB に保存せず、サーバーにも送らない。** 島は端末で判定し、`user_presence` に島の種類（`island_type`）だけを upsert する
+  - 島の種類: `home`（家）/ `school`（学校）/ `outside`（外出中: 位置は取れたが登録した場所のどこにもいない）/ `drifting`（漂流: 位置が取れない・権限がない）
+  - 表示はユーザーごとの場所に関係なく共通の島にする（誰の学校でも同じ「学校島」）
+- 自宅・学校など、ユーザーが登録した場所の座標は**端末の中だけ**に保存する（サーバーには送らない。機種変更時は登録し直し）
+- 端末からの更新が止まった友達（`user_presence.updated_at` から24時間以上）は、表示する側で漂流として扱う。しきい値は domain の定数にする
+- 島の移動履歴（`presence_history`）は DB のトリガーが記録する。アプリから書き込まない
 
 ## 7. フォーム
 
@@ -219,7 +224,6 @@ export type ProfileInput = z.infer<typeof profileSchema>;
 
 | 項目                                 | 選択肢                                                                                                                                                                                            | 影響する箇所                                                      |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| 位置情報の保存形式                   | ① 端末でエリア判定し、エリア ID だけ保存 ② 緯度経度を保存し PostGIS で判定 ③ 緯度経度は本人だけ読めるテーブルに保存し、友達にはエリアだけ公開                                                     | DB 設計、RLS、位置情報のリポジトリとユースケース                  |
 | Realtime の方式                      | Postgres Changes のまま／位置の更新は Broadcast で流し、一定間隔で DB に保存するハイブリッド                                                                                                      | Realtime の購読（infrastructure のリポジトリ）、DB の書き込み頻度 |
 | バックグラウンド位置情報の導入時期   | フォアグラウンドのみで作り、必要性が固まったら追加                                                                                                                                                | `src/infrastructure/location/`、`app.json` の権限設定、ストア審査 |
 | Sign in with Apple への対応          | Google ログインを置く場合、iOS の審査で求められることがある                                                                                                                                       | 認証画面、`AuthRepository` の実装、Supabase Auth の設定           |

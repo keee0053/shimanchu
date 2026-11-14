@@ -43,7 +43,7 @@ supabase migration new <name>  # マイグレーション作成
 
 依存の向きは `presentation（src/app・src/presentation）→ application → domain ← infrastructure`。層をまたいでつなぐのは `src/container.ts` だけ。
 
-- **domain**（`src/domain/`）: エンティティの型・ルールの純粋関数（エリア判定・漂流判定など）・リポジトリのインターフェース。React・Expo・Supabase を import しない
+- **domain**（`src/domain/`）: エンティティの型・ルールの純粋関数（島の判定・漂流判定など）・リポジトリのインターフェース。React・Expo・Supabase を import しない
 - **application**（`src/application/`）: ロジックがある操作だけユースケースにする。依存は `createXxx(deps)` の引数で受け取る
 - **infrastructure**（`src/infrastructure/`）: Supabase・expo-location・expo-task-manager を使うコードはここだけ。リポジトリの実装を書く
 - **presentation**: 画面・コンポーネント・TanStack Query のフック（`queries/`）・Zustand（`stores/`）・フォームの Zod（`schemas/`）。データは `@/container` のユースケースかリポジトリ経由で使う。ロジックのない単純な取得はユースケースを作らずリポジトリを直接呼んでよい
@@ -58,7 +58,7 @@ supabase migration new <name>  # マイグレーション作成
 - Realtime の購読は infrastructure のリポジトリに実装し、解除関数を返す。presentation のフックはクリーンアップで必ず解除する。受信した変更は TanStack Query のキャッシュに反映する
 - DB 変更は必ずマイグレーションで。新しいテーブルは RLS を有効にしてポリシーを書く。マージ済みマイグレーションは編集しない
 - DB の行の型は手書きせず `npm run gen:types` で生成したもの（infrastructure 内）を使う。domain のエンティティは必要な項目だけ手で定義し、リポジトリの実装で変換する
-- 位置情報: 当面フォアグラウンドのみ。取得失敗・権限拒否は「漂流」状態として扱う（domain のルール）。座標をログに出さない。`TaskManager.defineTask` は `src/infrastructure/location/` のトップレベルで定義し、`src/container.ts` で import する
+- 位置情報: 当面フォアグラウンドのみ。座標は DB に保存せずサーバーにも送らない（端末で島を判定し、`user_presence` に島の種類だけ送る。登録した場所の座標も端末内だけ）。取得失敗・権限拒否は「漂流」状態として扱う（domain のルール）。座標をログに出さない。`TaskManager.defineTask` は `src/infrastructure/location/` のトップレベルで定義し、`src/container.ts` で import する
 - フォームは React Hook Form + Zod（`src/presentation/schemas/`、型は `z.infer`、エラーメッセージは日本語）
 - 秘密情報（`service_role` キー、`.env.local`）をコードやコミットに含めない。`EXPO_PUBLIC_` 付きの環境変数は公開される前提で扱う
 
@@ -66,7 +66,6 @@ supabase migration new <name>  # マイグレーション作成
 
 以下はチームでまだ決まっていない。関係する実装をするときは、勝手に決めずにユーザーに確認すること（一覧は docs/CODING_GUIDELINES.md 末尾）。
 
-- 位置情報を DB にどう保存するか（エリア ID のみ / 緯度経度 / 両方）
 - Realtime を Postgres Changes のままにするか、Broadcast と併用するか
 - バックグラウンド位置情報の導入時期
 - Sign in with Apple への対応

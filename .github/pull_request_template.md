@@ -52,7 +52,7 @@ prefix: add / fix / refactor / test / chore / perf / docs
 - [ ] コミットメッセージがルール（`type: 説明`、1目的1コミット）に沿っている
 - [ ] 型チェック（`npx tsc --noEmit`）と Lint（`npx expo lint`）が通る
 - [ ] 不要なファイル・コメント・`console.log` を残していない
-- [ ] 位置情報がグループの共有設定どおりにしか見えないようになっている（位置情報を扱う場合）
+- [ ] 島（今いる島・移動履歴）が友達ごとの公開設定どおりにしか見えないようになっている（位置情報を扱う場合）
 - [ ] 秘密情報（`service_role` キー、`.env.local` など）を含めていない
 - [ ] AI ツール表記（Co-Authored-By 等）を含めていない
 
