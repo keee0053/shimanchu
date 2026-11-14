@@ -75,6 +75,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"presence_history": {
+                  Row: {
+                    "changed_at": string,"from_island": string | null,"id": string,"to_island": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "changed_at"?: string,"from_island"?: string | null,"id"?: string,"to_island": string,"user_id": string
+                  }
+                  Update: {
+                    "changed_at"?: string,"from_island"?: string | null,"id"?: string,"to_island"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "presence_history_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"profiles": {
                   Row: {
                     "avatar_config": NonNullable<Json>,"created_at": string,"discoverable": boolean,"display_name": string,"id": string,"public_id": string,"updated_at": string
