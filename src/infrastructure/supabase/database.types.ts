@@ -89,6 +89,26 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"user_presence": {
+                  Row: {
+                    "island_type": string,"status_text": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "island_type": string,"status_text"?: string | null,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "island_type"?: string,"status_text"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "user_presence_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -97,6 +117,9 @@ isOneToOne: false
           Functions: {
             "accept_friend_request":
 { Args: { "p_request_id": string }; Returns: undefined
+                           },
+"can_view_presence_of":
+{ Args: { "p_user_id": string }; Returns: boolean
                            },
 "cancel_friend_request":
 { Args: { "p_request_id": string }; Returns: undefined
