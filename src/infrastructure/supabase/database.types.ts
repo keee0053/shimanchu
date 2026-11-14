@@ -75,6 +75,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"group_members": {
+                  Row: {
+                    "group_id": string,"joined_at": string,"role": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "group_id": string,"joined_at"?: string,"role"?: string,"user_id": string
+                  }
+                  Update: {
+                    "group_id"?: string,"joined_at"?: string,"role"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "group_members_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_members_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"groups": {
                   Row: {
                     "created_at": string,"id": string,"name": string,"updated_at": string
@@ -161,10 +187,22 @@ isOneToOne: true
 "close_friend_requests_between":
 { Args: { "p_user_a": string,"p_user_b": string }; Returns: undefined
                            },
+"create_group":
+{ Args: { "p_name": string }; Returns: string
+                           },
 "find_profile_by_public_id":
 { Args: { "p_public_id": string }; Returns: {
               "avatar_config": Json,"display_name": string,"id": string,"public_id": string
             }[]
+                           },
+"is_group_member":
+{ Args: { "p_group_id": string }; Returns: boolean
+                           },
+"is_group_owner":
+{ Args: { "p_group_id": string }; Returns: boolean
+                           },
+"leave_group":
+{ Args: { "p_group_id": string }; Returns: undefined
                            },
 "my_sent_friend_requests":
 { Args: Record<PropertyKey, never>; Returns: {
@@ -179,6 +217,12 @@ isOneToOne: true
                            },
 "send_friend_request":
 { Args: { "p_recipient_id": string }; Returns: string
+                           },
+"shares_group_with":
+{ Args: { "p_user_id": string }; Returns: boolean
+                           },
+"transfer_group_ownership":
+{ Args: { "p_group_id": string,"p_new_owner_id": string }; Returns: undefined
                            }
           }
           Enums: {
