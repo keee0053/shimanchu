@@ -23,7 +23,33 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "profiles": {
+            "friendships": {
+                  Row: {
+                    "created_at": string,"friend_id": string,"share_presence": boolean,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"friend_id": string,"share_presence"?: boolean,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"friend_id"?: string,"share_presence"?: boolean,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "friendships_friend_id_fkey"
+      columns: ["friend_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "friendships_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
                   Row: {
                     "avatar_config": NonNullable<Json>,"created_at": string,"discoverable": boolean,"display_name": string,"id": string,"public_id": string,"updated_at": string
                   }
@@ -47,6 +73,9 @@ export type Database = {
 { Args: { "p_public_id": string }; Returns: {
               "avatar_config": Json,"display_name": string,"id": string,"public_id": string
             }[]
+                           },
+"remove_friend":
+{ Args: { "p_friend_id": string }; Returns: undefined
                            }
           }
           Enums: {
