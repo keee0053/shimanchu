@@ -75,6 +75,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"group_candidate_dismissals": {
+                  Row: {
+                    "candidate_user_id": string,"created_at": string,"group_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "candidate_user_id": string,"created_at"?: string,"group_id": string
+                  }
+                  Update: {
+                    "candidate_user_id"?: string,"created_at"?: string,"group_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "group_candidate_dismissals_candidate_user_id_fkey"
+      columns: ["candidate_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_candidate_dismissals_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"group_invitations": {
                   Row: {
                     "created_at": string,"group_id": string,"id": string,"invitee_id": string,"inviter_id": string,"responded_at": string | null,"status": string
@@ -234,6 +260,11 @@ isOneToOne: true
 "find_profile_by_public_id":
 { Args: { "p_public_id": string }; Returns: {
               "avatar_config": Json,"display_name": string,"id": string,"public_id": string
+            }[]
+                           },
+"group_fof_candidates":
+{ Args: { "p_group_id": string }; Returns: {
+              "avatar_config": Json,"display_name": string,"invited": boolean,"mutual_friend_ids": (string)[],"public_id": string,"user_id": string
             }[]
                            },
 "has_pending_group_invitation_with":
