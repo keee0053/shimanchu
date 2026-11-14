@@ -75,6 +75,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"group_invitations": {
+                  Row: {
+                    "created_at": string,"group_id": string,"id": string,"invitee_id": string,"inviter_id": string,"responded_at": string | null,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"group_id": string,"id"?: string,"invitee_id": string,"inviter_id": string,"responded_at"?: string | null,"status"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"group_id"?: string,"id"?: string,"invitee_id"?: string,"inviter_id"?: string,"responded_at"?: string | null,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "group_invitations_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_invitations_invitee_id_fkey"
+      columns: ["invitee_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_invitations_inviter_id_fkey"
+      columns: ["inviter_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"group_members": {
                   Row: {
                     "group_id": string,"joined_at": string,"role": string,"user_id": string
@@ -178,11 +210,17 @@ isOneToOne: true
             "accept_friend_request":
 { Args: { "p_request_id": string }; Returns: undefined
                            },
+"accept_group_invitation":
+{ Args: { "p_invitation_id": string }; Returns: undefined
+                           },
 "can_view_presence_of":
 { Args: { "p_user_id": string }; Returns: boolean
                            },
 "cancel_friend_request":
 { Args: { "p_request_id": string }; Returns: undefined
+                           },
+"cancel_group_invitation":
+{ Args: { "p_invitation_id": string }; Returns: undefined
                            },
 "close_friend_requests_between":
 { Args: { "p_user_a": string,"p_user_b": string }; Returns: undefined
@@ -190,10 +228,16 @@ isOneToOne: true
 "create_group":
 { Args: { "p_name": string }; Returns: string
                            },
+"decline_group_invitation":
+{ Args: { "p_invitation_id": string }; Returns: undefined
+                           },
 "find_profile_by_public_id":
 { Args: { "p_public_id": string }; Returns: {
               "avatar_config": Json,"display_name": string,"id": string,"public_id": string
             }[]
+                           },
+"has_pending_group_invitation_with":
+{ Args: { "p_user_id": string }; Returns: boolean
                            },
 "is_group_member":
 { Args: { "p_group_id": string }; Returns: boolean
@@ -217,6 +261,9 @@ isOneToOne: true
                            },
 "send_friend_request":
 { Args: { "p_recipient_id": string }; Returns: string
+                           },
+"send_group_invitation":
+{ Args: { "p_group_id": string,"p_invitee_id": string }; Returns: string
                            },
 "shares_group_with":
 { Args: { "p_user_id": string }; Returns: boolean
