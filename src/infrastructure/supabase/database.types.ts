@@ -75,6 +75,20 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"groups": {
+                  Row: {
+                    "created_at": string,"id": string,"name": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"name": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"name"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"presence_history": {
                   Row: {
                     "changed_at": string,"from_island": string | null,"id": string,"to_island": string,"user_id": string
