@@ -23,7 +23,33 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "friendships": {
+            "friend_requests": {
+                  Row: {
+                    "created_at": string,"id": string,"recipient_id": string,"requester_id": string,"responded_at": string | null,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"recipient_id": string,"requester_id": string,"responded_at"?: string | null,"status"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"recipient_id"?: string,"requester_id"?: string,"responded_at"?: string | null,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "friend_requests_recipient_id_fkey"
+      columns: ["recipient_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "friend_requests_requester_id_fkey"
+      columns: ["requester_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"friendships": {
                   Row: {
                     "created_at": string,"friend_id": string,"share_presence": boolean,"user_id": string
                   }
@@ -69,13 +95,33 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "find_profile_by_public_id":
+            "accept_friend_request":
+{ Args: { "p_request_id": string }; Returns: undefined
+                           },
+"cancel_friend_request":
+{ Args: { "p_request_id": string }; Returns: undefined
+                           },
+"close_friend_requests_between":
+{ Args: { "p_user_a": string,"p_user_b": string }; Returns: undefined
+                           },
+"find_profile_by_public_id":
 { Args: { "p_public_id": string }; Returns: {
               "avatar_config": Json,"display_name": string,"id": string,"public_id": string
             }[]
                            },
+"my_sent_friend_requests":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "avatar_config": Json,"created_at": string,"display_name": string,"id": string,"public_id": string,"recipient_id": string
+            }[]
+                           },
+"reject_friend_request":
+{ Args: { "p_request_id": string }; Returns: undefined
+                           },
 "remove_friend":
 { Args: { "p_friend_id": string }; Returns: undefined
+                           },
+"send_friend_request":
+{ Args: { "p_recipient_id": string }; Returns: string
                            }
           }
           Enums: {
