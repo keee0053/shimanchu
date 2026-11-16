@@ -98,6 +98,12 @@ begin
   if v_user_id is null then
     raise exception 'not authenticated';
   end if;
+
+  -- 同じグループへの招待の送信・承認と、メンバーの脱退を1つずつ順番に実行させる
+  -- （同時に送ると、両方が pending なしと判断して片方が一意制約違反になるため）
+  -- ロックを取ってから、メンバーか・招待済みかを確かめる
+  perform private.lock_group(p_group_id);
+
   if not public.is_group_member(p_group_id) then
     raise exception 'not a member of the group';
   end if;
@@ -160,14 +166,25 @@ begin
     raise exception 'not authenticated';
   end if;
 
+  select group_id into v_group_id
+  from public.group_invitations
+  where id = p_invitation_id
+    and invitee_id = v_user_id;
+
+  if v_group_id is null then
+    raise exception 'invitation not found';
+  end if;
+
+  -- 最後のメンバーの脱退（グループの削除）と同時に参加しないよう、グループのロックを取ってから承認する
+  -- 招待の行より先にグループをロックする（逆の順だと、グループ削除の cascade と待ち合ってデッドロックになる）
+  perform private.lock_group(v_group_id);
+
   update public.group_invitations
   set status = 'accepted', responded_at = now()
   where id = p_invitation_id
-    and invitee_id = v_user_id
-    and status = 'pending'
-  returning group_id into v_group_id;
+    and status = 'pending';
 
-  if v_group_id is null then
+  if not found then
     raise exception 'invitation not found';
   end if;
 
