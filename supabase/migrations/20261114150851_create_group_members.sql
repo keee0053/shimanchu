@@ -109,6 +109,46 @@ create policy "同じグループのメンバーのプロフィールを読め�
   to authenticated
   using (public.shares_group_with(id));
 
+-- 同じグループのメンバーの削除（脱退・アカウント削除）と役割の変更（譲渡）を、トランザクションの終わりまで1つずつ順番に実行させる
+-- 同時に実行されると、オーナーが抜けるのと同時に引き継ぐ予定のメンバーも抜けてオーナーがいなくなったり、
+-- 最後の2人が同時に抜けて空のグループが残ったりするため
+-- メンバーの行を削除・更新する前に取ること（後から取ると、行のロックと待ち合ってデッドロックになる）
+create function private.lock_group(p_group_id uuid)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+begin
+  perform 1 from public.groups where id = p_group_id for update;
+end;
+$$;
+
+revoke execute on function private.lock_group(uuid) from public, anon, authenticated;
+
+-- アカウント削除で group_members が cascade で消える前に、所属しているグループをロックする
+-- （脱退の関数を通らないため、ここで取る。デッドロックを避けるため id の順に取る）
+create function private.lock_groups_of_deleted_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform 1
+  from public.groups g
+  where g.id in (select m.group_id from public.group_members m where m.user_id = old.id)
+  order by g.id
+  for update;
+  return old;
+end;
+$$;
+
+revoke execute on function private.lock_groups_of_deleted_profile() from public, anon, authenticated;
+
+create trigger profiles_lock_groups_before_delete
+  before delete on public.profiles
+  for each row execute function private.lock_groups_of_deleted_profile();
+
 -- メンバーが抜けたとき（脱退・アカウント削除）の後始末
 -- ・残りのメンバーがいなければグループを削除する
 -- ・抜けたのがオーナーなら、最も古くから参加しているメンバーをオーナーにする
@@ -121,6 +161,10 @@ as $$
 declare
   v_next_owner_id uuid;
 begin
+  -- 通常は呼び出し元で取得済み。参加（招待の承認）と同時に最後の1人が抜けたときに、
+  -- 参加したメンバーを見落としてグループを削除しないよう、ここでも取ってから残りのメンバーを確かめる
+  perform private.lock_group(old.group_id);
+
   if not exists (select 1 from public.group_members where group_id = old.group_id) then
     delete from public.groups where id = old.group_id;
     return null;
@@ -137,6 +181,10 @@ begin
     set role = 'owner'
     where group_id = old.group_id
       and user_id = v_next_owner_id;
+
+    if not found then
+      raise exception 'failed to hand over group ownership';
+    end if;
   end if;
 
   return null;
@@ -188,6 +236,10 @@ begin
   if v_user_id is null then
     raise exception 'not authenticated';
   end if;
+
+  -- ロックを取ってから、自分がオーナーか・相手がメンバーかを確かめる（待っている間に相手が抜けることがあるため）
+  perform private.lock_group(p_group_id);
+
   if not public.is_group_owner(p_group_id) then
     raise exception 'only the owner can transfer ownership';
   end if;
@@ -209,6 +261,11 @@ begin
   update public.group_members
   set role = 'owner'
   where group_id = p_group_id and user_id = p_new_owner_id;
+
+  -- 昇格できなかったら、自分の降格も取り消す（オーナーがいなくならないように）
+  if not found then
+    raise exception 'new owner is not a member';
+  end if;
 end;
 $$;
 
@@ -225,6 +282,8 @@ begin
   if v_user_id is null then
     raise exception 'not authenticated';
   end if;
+
+  perform private.lock_group(p_group_id);
 
   delete from public.group_members
   where group_id = p_group_id and user_id = v_user_id;
