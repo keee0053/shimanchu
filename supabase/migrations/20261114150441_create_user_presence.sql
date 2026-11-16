@@ -17,10 +17,16 @@ create trigger user_presence_set_updated_at
   before update on public.user_presence
   for each row execute function public.set_updated_at();
 
+-- RLS のポリシーだけから使う関数の置き場所
+-- private は API（supabase/config.toml の [api].schemas）に公開しないため、クライアントから RPC で直接呼べない
+create schema if not exists private;
+grant usage on schema private to authenticated;
+
 -- user_id の島を、ログイン中のユーザーが見てよいか
 -- （本人、または user_id が自分に share_presence = true にしている友達）
 -- friendships の RLS では相手側の行を読めないため、security definer で判定する
-create function public.can_view_presence_of(p_user_id uuid)
+-- 相手の共有設定を推測できないように、RPC では呼べない private に置く
+create function private.can_view_presence_of(p_user_id uuid)
 returns boolean
 language sql
 stable
@@ -37,8 +43,9 @@ as $$
     );
 $$;
 
-revoke execute on function public.can_view_presence_of(uuid) from public, anon;
-grant execute on function public.can_view_presence_of(uuid) to authenticated;
+-- ポリシーの判定は呼び出したユーザーの権限で実行されるため、authenticated には EXECUTE が必要
+revoke execute on function private.can_view_presence_of(uuid) from public, anon;
+grant execute on function private.can_view_presence_of(uuid) to authenticated;
 
 alter table public.user_presence enable row level security;
 
@@ -54,7 +61,7 @@ grant update (user_id, island_type, status_text) on public.user_presence to auth
 create policy "本人と公開先の友達は今いる島を読める"
   on public.user_presence for select
   to authenticated
-  using (public.can_view_presence_of(user_id));
+  using (private.can_view_presence_of(user_id));
 
 -- 作成: ログイン中のユーザーは自分の行だけ作れる
 create policy "本人は自分の島を作成できる"
