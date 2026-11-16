@@ -77,6 +77,24 @@ $$;
 
 revoke execute on function public.close_friend_requests_between(uuid, uuid) from public, anon, authenticated;
 
+-- 同じ2人に対する申請の送信・承認を、トランザクションの終わりまで1つずつ順番に実行させる
+-- 同時に実行されると、承認と同時に再送された申請が「申請中」で残ったり、
+-- お互いへの同時の申請が自動承認されずに一意制約違反になったりするため
+-- 申請の関数の中だけで使う
+create function public.lock_friend_pair(p_user_a uuid, p_user_b uuid)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+begin
+  perform pg_advisory_xact_lock(
+    hashtextextended(least(p_user_a, p_user_b)::text || ':' || greatest(p_user_a, p_user_b)::text, 0)
+  );
+end;
+$$;
+
+revoke execute on function public.lock_friend_pair(uuid, uuid) from public, anon, authenticated;
+
 -- 友達申請を送る
 -- ・相手からの申請中の申請があれば、それを承認して友達になる（'accepted' を返す）
 -- ・すでに自分からの申請がある（拒否されたものも含む）ときは何もせず 'pending' を返す
@@ -100,6 +118,9 @@ begin
   if not exists (select 1 from public.profiles where id = p_recipient_id) then
     raise exception 'user not found';
   end if;
+
+  perform public.lock_friend_pair(v_user_id, p_recipient_id);
+
   if exists (
     select 1 from public.friendships
     where user_id = v_user_id and friend_id = p_recipient_id
@@ -152,14 +173,24 @@ begin
     raise exception 'not authenticated';
   end if;
 
+  select requester_id into v_requester_id
+  from public.friend_requests
+  where id = p_request_id
+    and recipient_id = v_user_id;
+
+  if v_requester_id is null then
+    raise exception 'friend request not found';
+  end if;
+
+  -- ロックを取ってから pending かどうかを確かめる（待っている間に状態が変わることがあるため）
+  perform public.lock_friend_pair(v_user_id, v_requester_id);
+
   update public.friend_requests
   set status = 'accepted', responded_at = now()
   where id = p_request_id
-    and recipient_id = v_user_id
-    and status = 'pending'
-  returning requester_id into v_requester_id;
+    and status = 'pending';
 
-  if v_requester_id is null then
+  if not found then
     raise exception 'friend request not found';
   end if;
 
