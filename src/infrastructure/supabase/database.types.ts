@@ -51,14 +51,14 @@ isOneToOne: false
                   ]
                 },"friendships": {
                   Row: {
-                    "created_at": string,"friend_id": string,"share_presence": boolean,"user_id": string
+                    "created_at": string,"friend_id": string,"share_presence": boolean,"share_presence_since": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"friend_id": string,"share_presence"?: boolean,"user_id": string
+                    "created_at"?: string,"friend_id": string,"share_presence"?: boolean,"share_presence_since"?: string,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"friend_id"?: string,"share_presence"?: boolean,"user_id"?: string
+                    "created_at"?: string,"friend_id"?: string,"share_presence"?: boolean,"share_presence_since"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
