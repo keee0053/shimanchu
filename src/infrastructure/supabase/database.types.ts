@@ -51,14 +51,14 @@ isOneToOne: false
                   ]
                 },"friendships": {
                   Row: {
-                    "created_at": string,"friend_id": string,"share_presence": boolean,"user_id": string
+                    "created_at": string,"friend_id": string,"share_presence": boolean,"share_presence_since": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"friend_id": string,"share_presence"?: boolean,"user_id": string
+                    "created_at"?: string,"friend_id": string,"share_presence"?: boolean,"share_presence_since"?: string,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"friend_id"?: string,"share_presence"?: boolean,"user_id"?: string
+                    "created_at"?: string,"friend_id"?: string,"share_presence"?: boolean,"share_presence_since"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -69,6 +69,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     },{
       foreignKeyName: "friendships_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"presence_history": {
+                  Row: {
+                    "changed_at": string,"from_island": string | null,"id": string,"to_island": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "changed_at"?: string,"from_island"?: string | null,"id"?: string,"to_island": string,"user_id": string
+                  }
+                  Update: {
+                    "changed_at"?: string,"from_island"?: string | null,"id"?: string,"to_island"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "presence_history_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
