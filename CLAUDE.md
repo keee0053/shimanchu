@@ -66,7 +66,6 @@ supabase migration new <name>  # マイグレーション作成
 
 以下はチームでまだ決まっていない。関係する実装をするときは、勝手に決めずにユーザーに確認すること（一覧は docs/CODING_GUIDELINES.md 末尾）。
 
-- Sign in with Apple への対応
 - テスト方針
 - 認証セッションの保存方法（今は AsyncStorage。Google ログイン実装時に SecureStore を使った暗号化方式へ変更予定）
 

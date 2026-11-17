@@ -40,7 +40,7 @@ flowchart LR
 | 端末内の状態   | Zustand                               | 選択中のグループ、開いている建物などの UI 状態                                |
 | 位置情報       | expo-location / expo-task-manager     | 位置の取得と島の判定（端末内）。バックグラウンドは MVP 後にジオフェンスで導入 |
 | 入力           | React Hook Form / Zod                 | フォームの状態管理と入力チェック                                              |
-| 認証           | Supabase Auth（Google）               | ログイン。ユーザー ID は RLS で `auth.uid()` として使う                       |
+| 認証           | Supabase Auth（Google・Apple）        | ログイン。Apple は iOS のみ・リリース前に追加（#39）                          |
 | DB             | PostgreSQL（Supabase）                | データの保存。アプリから直接読み書きするため、RLS が権限管理の要              |
 | リアルタイム   | Supabase Realtime（Postgres Changes） | テーブルの変更を購読して友達の端末に配信。届く相手は RLS で決まる             |
 
