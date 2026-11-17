@@ -42,10 +42,7 @@ flowchart LR
 | 入力           | React Hook Form / Zod                 | フォームの状態管理と入力チェック                                              |
 | 認証           | Supabase Auth（Google）               | ログイン。ユーザー ID は RLS で `auth.uid()` として使う                       |
 | DB             | PostgreSQL（Supabase）                | データの保存。アプリから直接読み書きするため、RLS が権限管理の要              |
-| リアルタイム   | Supabase Realtime（Postgres Changes） | テーブルの変更を購読して友達の端末に配信                                      |
-
-> ⚠️ Realtime を Broadcast と併用するかはまだ決まっていない。
-> 決まったら上の図と表を更新すること（[CODING_GUIDELINES.md の未決定事項](CODING_GUIDELINES.md#未決定事項)）。
+| リアルタイム   | Supabase Realtime（Postgres Changes） | テーブルの変更を購読して友達の端末に配信。届く相手は RLS で決まる             |
 
 ## アプリ内部の層構成（クリーンアーキテクチャ）
 

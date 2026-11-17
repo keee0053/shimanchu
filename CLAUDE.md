@@ -55,7 +55,7 @@ supabase migration new <name>  # マイグレーション作成
 - ファイル名はケバブケース、コンポーネントは PascalCase。画面（`src/app/`）だけ `export default`、他は名前付き export
 - Supabase の `{ data, error }` の `error` は必ず `throw`。`select('*')` ではなく使うカラムを書く
 - サーバーのデータは TanStack Query、端末内の状態だけ Zustand。サーバーデータを Zustand にコピーしない
-- Realtime の購読は infrastructure のリポジトリに実装し、解除関数を返す。presentation のフックはクリーンアップで必ず解除する。受信した変更は TanStack Query のキャッシュに反映する
+- Realtime は Postgres Changes で、島の画面を開いている間だけ購読する（届く相手は RLS で決まる）。購読は infrastructure のリポジトリに実装し、解除関数を返す。presentation のフックはクリーンアップで必ず解除する。受信した変更は TanStack Query のキャッシュに反映する
 - DB 変更は必ずマイグレーションで。新しいテーブルは RLS を有効にしてポリシーを書く。マージ済みマイグレーションは編集しない
 - DB の行の型は手書きせず `npm run gen:types` で生成したもの（infrastructure 内）を使う。domain のエンティティは必要な項目だけ手で定義し、リポジトリの実装で変換する
 - 位置情報: MVP はフォアグラウンドのみ（バックグラウンドは MVP 後にジオフェンスで導入）。座標は DB に保存せずサーバーにも送らない（端末で島を判定し、`user_presence` に島の種類だけ送る。登録した場所の座標も端末内だけ）。取得失敗・権限拒否は「漂流」状態として扱う（domain のルール）。座標をログに出さない。`TaskManager.defineTask` は `src/infrastructure/location/` のトップレベルで定義し、`src/container.ts` で import する
@@ -66,7 +66,6 @@ supabase migration new <name>  # マイグレーション作成
 
 以下はチームでまだ決まっていない。関係する実装をするときは、勝手に決めずにユーザーに確認すること（一覧は docs/CODING_GUIDELINES.md 末尾）。
 
-- Realtime を Postgres Changes のままにするか、Broadcast と併用するか
 - Sign in with Apple への対応
 - テスト方針
 - 認証セッションの保存方法（今は AsyncStorage。Google ログイン実装時に SecureStore を使った暗号化方式へ変更予定）

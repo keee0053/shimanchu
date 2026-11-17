@@ -175,7 +175,12 @@ export function useUpdateMyLocation() {
 
 ### Realtime
 
-- 購読の処理は **infrastructure のリポジトリに実装**し、「購読解除の関数」を返す形にする（例: `subscribeToGroupLocations(groupId, onChange): () => void`）。中で `supabase.channel(...)` を使い、解除時に `supabase.removeChannel(channel)` する
+- **方式は Postgres Changes**（#48）。届いてよい相手は RLS で決まるので、別の権限の仕組みを作らない。人数が増えて重くなったら、DB から配信する Broadcast に移る
+- **島の画面を開いている間だけ**、チャンネルを1つ購読する（#48）
+  - `user_presence` の変更（RLS で、自分が見てよい人の分だけが届く）と、今のグループの `group_members` の変更（`group_id` で絞る）
+  - 受け取った変更のうち、今のグループの人の分だけを画面で使う
+  - ほかの画面に移ったときやバックグラウンドでは購読を外し、戻ったときに取り直す
+- 購読の処理は **infrastructure のリポジトリに実装**し、「購読解除の関数」を返す形にする（例: `subscribeToIsland(groupId, onChange): () => void`）。中で `supabase.channel(...)` を使い、解除時に `supabase.removeChannel(channel)` する
 - presentation のフックは `useEffect` の中で購読し、クリーンアップで解除関数を呼ぶ
 - 受け取った変更は `queryClient.setQueryData` または `invalidateQueries` で TanStack Query のキャッシュに反映する（Zustand には入れない）
 - チャンネル名は `<対象>:<id>` 形式（例: `group:<groupId>`）
@@ -235,9 +240,8 @@ export type ProfileInput = z.infer<typeof profileSchema>;
 
 決まったら該当する節を書き換え、この一覧から消すこと。
 
-| 項目                                 | 選択肢                                                                                                                                                                                            | 影響する箇所                                                      |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Realtime の方式                      | Postgres Changes のまま／位置の更新は Broadcast で流し、一定間隔で DB に保存するハイブリッド                                                                                                      | Realtime の購読（infrastructure のリポジトリ）、DB の書き込み頻度 |
-| Sign in with Apple への対応          | Google ログインを置く場合、iOS の審査で求められることがある                                                                                                                                       | 認証画面、`AuthRepository` の実装、Supabase Auth の設定           |
-| テスト方針                           | テストの仕組み（Jest など）と書く範囲。まずは domain の純粋関数から書くのが効果的                                                                                                                 | `test:` コミット、pre-push フック                                 |
-| 認証セッション（トークン）の保存方法 | 今は `AsyncStorage`（暗号化なし）。`expo-secure-store` で暗号鍵を守り、暗号化したセッションを `AsyncStorage` に保存する方式（Supabase の推奨例）に変える。Google ログインを実装する PR で対応する | `src/infrastructure/supabase/client.ts`、認証の実装               |
+| 項目                                 | 選択肢                                                                                                                                                                                            | 影響する箇所                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Sign in with Apple への対応          | Google ログインを置く場合、iOS の審査で求められることがある                                                                                                                                       | 認証画面、`AuthRepository` の実装、Supabase Auth の設定 |
+| テスト方針                           | テストの仕組み（Jest など）と書く範囲。まずは domain の純粋関数から書くのが効果的                                                                                                                 | `test:` コミット、pre-push フック                       |
+| 認証セッション（トークン）の保存方法 | 今は `AsyncStorage`（暗号化なし）。`expo-secure-store` で暗号鍵を守り、暗号化したセッションを `AsyncStorage` に保存する方式（Supabase の推奨例）に変える。Google ログインを実装する PR で対応する | `src/infrastructure/supabase/client.ts`、認証の実装     |
