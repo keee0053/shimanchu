@@ -22,7 +22,7 @@ flowchart LR
   subgraph friend["友達の端末"]
     query["TanStack Query<br/>（サーバーデータのキャッシュ）"]
     zustand["Zustand<br/>（端末内の UI 状態）"]
-    screen["画面（Expo Router）<br/>島・建物・アバター"]
+    screen["画面（Expo Router）<br/>3つの島と海（漂流）・アバター"]
   end
 
   loc -- "島の種類だけを保存" --> db
