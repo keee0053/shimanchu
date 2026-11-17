@@ -194,7 +194,7 @@ export function useUpdateMyLocation() {
   - 表示はユーザーごとの場所に関係なく共通の島にする（誰の学校でも同じ「学校島」）
 - 自宅・学校など、ユーザーが登録した場所の座標は**端末の中だけ**に保存する（サーバーには送らない。機種変更時は登録し直し）
 - 端末からの更新が止まった友達（`user_presence.updated_at` から24時間以上）は、表示する側で漂流として扱う。しきい値は domain の定数にする
-- そのため、島が変わらなくても定期的に `user_presence` を upsert する。同じ `island_type` での upsert でも、DB のトリガーで `updated_at` は現在時刻に更新される（移動履歴は島が変わったときだけ記録される）
+- そのため、島が変わらなくても定期的に `user_presence` を upsert する。更新間隔は24時間より十分短い値にし、`src/infrastructure/location/constants.ts` に定数として置く。同じ `island_type` での upsert でも、DB のトリガーで `updated_at` は現在時刻に更新される（移動履歴は島が変わったときだけ記録される）
 - 島の移動履歴（`presence_history`）は DB のトリガーが記録する。アプリから書き込まない
 
 ## 7. フォーム
