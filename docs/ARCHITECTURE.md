@@ -4,13 +4,13 @@
 
 ## 全体像
 
-Expo で作ったアプリが expo-location で位置を取得し、Supabase（PostgreSQL）に保存する。
+Expo で作ったアプリが expo-location で位置を取得し、端末の中で今いる島（家・学校・外出中・漂流）を判定して、島の種類だけを Supabase（PostgreSQL）に保存する。座標はサーバーに送らない。
 Realtime で友達の端末に変更が配信され、アプリ内のキャッシュ（TanStack Query）が更新されて画面に反映される。
 
 ```mermaid
 flowchart LR
   subgraph me["自分の端末"]
-    loc["expo-location<br/>（位置取得）"]
+    loc["expo-location<br/>（位置取得・島の判定）"]
   end
 
   subgraph supabase["Supabase"]
@@ -25,7 +25,7 @@ flowchart LR
     screen["画面（Expo Router）<br/>島・建物・アバター"]
   end
 
-  loc -- "位置・エリアを保存" --> db
+  loc -- "島の種類だけを保存" --> db
   auth -. "auth.uid() を RLS で使用" .-> db
   db -- "変更を検知" --> rt
   rt -- "変更を配信" --> query
@@ -38,13 +38,13 @@ flowchart LR
 | 画面           | React Native + Expo / Expo Router     | iOS / Android のアプリ本体。`src/app/` のファイル構成がそのまま画面遷移になる |
 | サーバーデータ | TanStack Query                        | Supabase から取得したデータのキャッシュ・再取得                               |
 | 端末内の状態   | Zustand                               | 選択中のグループ、開いている建物などの UI 状態                                |
-| 位置情報       | expo-location / expo-task-manager     | 位置の取得。バックグラウンド取得は当面使わない                                |
+| 位置情報       | expo-location / expo-task-manager     | 位置の取得と島の判定（端末内）。バックグラウンド取得は当面使わない            |
 | 入力           | React Hook Form / Zod                 | フォームの状態管理と入力チェック                                              |
 | 認証           | Supabase Auth（Google）               | ログイン。ユーザー ID は RLS で `auth.uid()` として使う                       |
 | DB             | PostgreSQL（Supabase）                | データの保存。アプリから直接読み書きするため、RLS が権限管理の要              |
 | リアルタイム   | Supabase Realtime（Postgres Changes） | テーブルの変更を購読して友達の端末に配信                                      |
 
-> ⚠️ 位置情報の保存形式（エリア ID のみ／緯度経度）と、Realtime を Broadcast と併用するかはまだ決まっていない。
+> ⚠️ Realtime を Broadcast と併用するかはまだ決まっていない。
 > 決まったら上の図と表を更新すること（[CODING_GUIDELINES.md の未決定事項](CODING_GUIDELINES.md#未決定事項)）。
 
 ## アプリ内部の層構成（クリーンアーキテクチャ）
@@ -62,7 +62,7 @@ flowchart LR
   end
   subgraph domain["domain<br/>src/domain"]
     ent["エンティティの型"]
-    svc["ルール（純粋関数）<br/>エリア判定・漂流判定"]
+    svc["ルール（純粋関数）<br/>島の判定・漂流判定"]
     repo["リポジトリの<br/>インターフェース"]
   end
   subgraph infrastructure["infrastructure<br/>src/infrastructure"]
