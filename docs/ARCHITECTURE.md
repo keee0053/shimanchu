@@ -38,7 +38,7 @@ flowchart LR
 | 画面           | React Native + Expo / Expo Router     | iOS / Android のアプリ本体。`src/app/` のファイル構成がそのまま画面遷移になる |
 | サーバーデータ | TanStack Query                        | Supabase から取得したデータのキャッシュ・再取得                               |
 | 端末内の状態   | Zustand                               | 選択中のグループ、開いている建物などの UI 状態                                |
-| 位置情報       | expo-location / expo-task-manager     | 位置の取得と島の判定（端末内）。バックグラウンド取得は当面使わない            |
+| 位置情報       | expo-location / expo-task-manager     | 位置の取得と島の判定（端末内）。バックグラウンドは MVP 後にジオフェンスで導入 |
 | 入力           | React Hook Form / Zod                 | フォームの状態管理と入力チェック                                              |
 | 認証           | Supabase Auth（Google）               | ログイン。ユーザー ID は RLS で `auth.uid()` として使う                       |
 | DB             | PostgreSQL（Supabase）                | データの保存。アプリから直接読み書きするため、RLS が権限管理の要              |
