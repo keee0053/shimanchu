@@ -96,7 +96,7 @@ flowchart LR
 
 ## 画面遷移
 
-画面の元はワイヤーフレーム（#14）。つなぎ方は #42 で決めた。`src/app/` のルート構成は #18 でこれに合わせて作る。
+画面の元はワイヤーフレーム（#14）。つなぎ方は #42 で決めた。`src/app/` のルート構成（#18）はこれに合わせている（[ディレクトリ構成](#ディレクトリ構成)）。
 
 ```mermaid
 flowchart TD
@@ -132,6 +132,8 @@ flowchart TD
 
 実線は Stack で進む画面（戻る操作で戻る）、点線はシート・モーダルで開く画面。
 
+Stack で進む画面・シート・モーダルは、タブの中ではなくルートの Stack（`src/app/_layout.tsx`）に並べる。タブより上に重なるので、開いている間はタブバーが出ない。ログイン・初回設定・タブのどれを見せるかは `Stack.Protected` で振り分ける（今は仮。#21 でログイン状態とプロフィールの有無に置き換える）。
+
 | 決めたこと             | 内容                                                                                                                                                                                    |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 下部タブ               | ホーム / 友達 / マイページ の3つ。設定はマイページから開く                                                                                                                              |
@@ -153,26 +155,34 @@ flowchart TD
 shimanchu/
 ├── src/                          # アプリのソースコード（import は "@/..." で src/ 起点）
 │   ├── app/                      # [presentation] 画面（Expo Router）。ファイル = 1画面、パス = URL
-│   │   ├── _layout.tsx           # ルートレイアウト（全画面共通のナビゲーター・Provider）
-│   │   ├── index.tsx             # 🧪 "/" ホーム画面
-│   │   └── explore.tsx           # 🧪 "/explore" サンプル画面
+│   │   ├── _layout.tsx           # ルートの Stack（Provider・画面の振り分け・Stack で進む画面・モーダル・シート）
+│   │   ├── login.tsx             # ログイン
+│   │   ├── onboarding/           # 初回設定（_layout.tsx の Stack で index = プロフィール → avatar）
+│   │   ├── (tabs)/               # 下部タブ（_layout.tsx が NativeTabs）
+│   │   │   ├── index.tsx         #   "/" ホーム
+│   │   │   ├── friends.tsx       #   "/friends" 友達
+│   │   │   └── me.tsx            #   "/me" マイページ
+│   │   ├── users/[userId]/       # index.tsx = プロフィール詳細、preview.tsx = 簡易プロフィール（シート）
+│   │   ├── groups/[groupId]/manage.tsx # グループ管理
+│   │   ├── profile-edit.tsx / avatar-edit.tsx # プロフィール編集・アバター編集
+│   │   ├── settings/             # index.tsx = 設定、presence.tsx = 島の公開設定
+│   │   ├── group-switcher.tsx    # グループの切り替え（シート）
+│   │   └── group-add.tsx / friend-search.tsx / presence-prompt.tsx # モーダル
+│   │   # 画面の中身は仮（PlaceholderScreen）。各画面の Issue で置き換える
 │   ├── presentation/             # [presentation] 画面以外の UI まわり
 │   │   ├── components/           # 再利用する UI コンポーネント
-│   │   │   ├── ui/collapsible.tsx # 🧪 開閉パネル
-│   │   │   ├── app-tabs.tsx      # 🧪 タブバー（iOS / Android。.web.tsx は Web 版）
-│   │   │   ├── animated-icon.tsx # 🧪 アニメーション付きアイコン（*.web.tsx / *.module.css は Web 用）
+│   │   │   ├── placeholder-screen.tsx # 実装前の仮の画面（各画面を実装したら使わなくなる）
 │   │   │   ├── themed-text.tsx   # 🧪 ライト/ダーク対応の Text
-│   │   │   ├── themed-view.tsx   # 🧪 ライト/ダーク対応の View
-│   │   │   ├── external-link.tsx # 🧪 外部リンク（アプリ内ブラウザで開く）
-│   │   │   ├── hint-row.tsx      # 🧪 ヒント表示行
-│   │   │   └── web-badge.tsx     # 🧪 Web 用バッジ
+│   │   │   └── themed-view.tsx   # 🧪 ライト/ダーク対応の View
 │   │   ├── hooks/                # UI 用のフック
 │   │   │   ├── use-color-scheme.ts # 🧪 ライト/ダーク判定（.web.ts は Web 版）
 │   │   │   └── use-theme.ts      # 🧪 現在のテーマ取得
+│   │   ├── stores/               # Zustand のストア
+│   │   │   └── temporary-flow-store.ts # 仮の画面の振り分け（#21 で本当の振り分けに置き換えて削除）
 │   │   ├── constants/theme.ts    # 🧪 色・フォントなどのテーマ定数
 │   │   ├── global.css            # 🧪 Web 用グローバル CSS
 │   │   └── query-client.ts       # TanStack Query のクライアント（フォアグラウンド復帰時に再取得）
-│   │   # 今後 queries/（TanStack Query のフック）・stores/（Zustand）・schemas/（フォームの Zod）を追加する
+│   │   # 今後 queries/（TanStack Query のフック）・schemas/（フォームの Zod）を追加する
 │   ├── application/              # [application] ユースケース（まだ空）
 │   ├── domain/                   # [domain] アプリのルール（まだ空）
 │   │   ├── entities/             #   エンティティの型
@@ -189,7 +199,6 @@ shimanchu/
 ├── assets/                       # 画像・アイコン
 │   ├── expo.icon/                # iOS 用アプリアイコン
 │   └── images/                   # アプリアイコン・スプラッシュ画像・Android アイコン
-│                                 #   （react-logo / tabIcons / tutorial-web などは 🧪）
 │
 ├── supabase/                     # Supabase（バックエンド）関連
 │   ├── config.toml               # ローカル Supabase の設定（ポート・Auth プロバイダなど）
