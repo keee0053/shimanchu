@@ -132,7 +132,7 @@ flowchart TD
 
 実線は Stack で進む画面（戻る操作で戻る）、点線はシート・モーダルで開く画面。
 
-Stack で進む画面・シート・モーダルは、タブの中ではなくルートの Stack（`src/app/_layout.tsx`）に並べる。タブより上に重なるので、開いている間はタブバーが出ない。ログイン・初回設定・タブのどれを見せるかは `Stack.Protected` で振り分ける（今は仮。#21 でログイン状態とプロフィールの有無に置き換える）。
+Stack で進む画面・シート・モーダルは、タブの中ではなくルートの Stack（`src/app/_layout.tsx`）に並べる。タブより上に重なるので、開いている間はタブバーが出ない。ログイン・初回設定・タブのどれを見せるかの振り分け（`Stack.Protected`）は #21 で追加する（それまでは起動するとホームが開く）。
 
 | 決めたこと             | 内容                                                                                                                                                                                    |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -155,7 +155,7 @@ Stack で進む画面・シート・モーダルは、タブの中ではなく�
 shimanchu/
 ├── src/                          # アプリのソースコード（import は "@/..." で src/ 起点）
 │   ├── app/                      # [presentation] 画面（Expo Router）。ファイル = 1画面、パス = URL
-│   │   ├── _layout.tsx           # ルートの Stack（Provider・画面の振り分け・Stack で進む画面・モーダル・シート）
+│   │   ├── _layout.tsx           # ルートの Stack（Provider・Stack で進む画面・モーダル・シート）
 │   │   ├── login.tsx             # ログイン
 │   │   ├── onboarding/           # 初回設定（_layout.tsx の Stack で index = プロフィール → avatar）
 │   │   ├── (tabs)/               # 下部タブ（_layout.tsx が NativeTabs）
@@ -177,12 +177,10 @@ shimanchu/
 │   │   ├── hooks/                # UI 用のフック
 │   │   │   ├── use-color-scheme.ts # 🧪 ライト/ダーク判定（.web.ts は Web 版）
 │   │   │   └── use-theme.ts      # 🧪 現在のテーマ取得
-│   │   ├── stores/               # Zustand のストア
-│   │   │   └── temporary-flow-store.ts # 仮の画面の振り分け（#21 で本当の振り分けに置き換えて削除）
 │   │   ├── constants/theme.ts    # 🧪 色・フォントなどのテーマ定数
 │   │   ├── global.css            # 🧪 Web 用グローバル CSS
 │   │   └── query-client.ts       # TanStack Query のクライアント（フォアグラウンド復帰時に再取得）
-│   │   # 今後 queries/（TanStack Query のフック）・schemas/（フォームの Zod）を追加する
+│   │   # 今後 queries/（TanStack Query のフック）・stores/（Zustand）・schemas/（フォームの Zod）を追加する
 │   ├── application/              # [application] ユースケース（まだ空）
 │   ├── domain/                   # [domain] アプリのルール（まだ空）
 │   │   ├── entities/             #   エンティティの型
