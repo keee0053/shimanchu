@@ -290,6 +290,9 @@ isOneToOne: true
 "remove_friend":
 { Args: { "p_friend_id": string }; Returns: undefined
                            },
+"remove_group_member":
+{ Args: { "p_group_id": string,"p_user_id": string }; Returns: undefined
+                           },
 "send_friend_request":
 { Args: { "p_recipient_id": string }; Returns: string
                            },
