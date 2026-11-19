@@ -39,7 +39,19 @@ export type Database = {
       foreignKeyName: "friend_requests_recipient_id_fkey"
       columns: ["recipient_id"]
 isOneToOne: false
+      referencedRelation: "profile_birthdays"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "friend_requests_recipient_id_fkey"
+      columns: ["recipient_id"]
+isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "friend_requests_requester_id_fkey"
+      columns: ["requester_id"]
+isOneToOne: false
+      referencedRelation: "profile_birthdays"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "friend_requests_requester_id_fkey"
@@ -65,7 +77,19 @@ isOneToOne: false
       foreignKeyName: "friendships_friend_id_fkey"
       columns: ["friend_id"]
 isOneToOne: false
+      referencedRelation: "profile_birthdays"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "friendships_friend_id_fkey"
+      columns: ["friend_id"]
+isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "friendships_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profile_birthdays"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "friendships_user_id_fkey"
@@ -88,6 +112,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "group_candidate_dismissals_candidate_user_id_fkey"
+      columns: ["candidate_user_id"]
+isOneToOne: false
+      referencedRelation: "profile_birthdays"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "group_candidate_dismissals_candidate_user_id_fkey"
       columns: ["candidate_user_id"]
 isOneToOne: false
@@ -123,7 +153,19 @@ isOneToOne: false
       foreignKeyName: "group_invitations_invitee_id_fkey"
       columns: ["invitee_id"]
 isOneToOne: false
+      referencedRelation: "profile_birthdays"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_invitations_invitee_id_fkey"
+      columns: ["invitee_id"]
+isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_invitations_inviter_id_fkey"
+      columns: ["inviter_id"]
+isOneToOne: false
+      referencedRelation: "profile_birthdays"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "group_invitations_inviter_id_fkey"
@@ -150,6 +192,12 @@ isOneToOne: false
       columns: ["group_id"]
 isOneToOne: false
       referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_members_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profile_birthdays"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "group_members_user_id_fkey"
@@ -189,20 +237,26 @@ isOneToOne: false
       foreignKeyName: "presence_history_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
+      referencedRelation: "profile_birthdays"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "presence_history_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
                   ]
                 },"profiles": {
                   Row: {
-                    "avatar_config": NonNullable<Json>,"created_at": string,"discoverable": boolean,"display_name": string,"id": string,"public_id": string,"updated_at": string
+                    "avatar_config": NonNullable<Json>,"bio": string | null,"birth_date": string,"birth_date_visibility": string,"created_at": string,"discoverable": boolean,"display_name": string,"gender": string,"id": string,"public_id": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "avatar_config": NonNullable<Json>,"created_at"?: string,"discoverable"?: boolean,"display_name": string,"id": string,"public_id": string,"updated_at"?: string
+                    "avatar_config": NonNullable<Json>,"bio"?: string | null,"birth_date": string,"birth_date_visibility"?: string,"created_at"?: string,"discoverable"?: boolean,"display_name": string,"gender"?: string,"id": string,"public_id": string,"updated_at"?: string
                   }
                   Update: {
-                    "avatar_config"?: NonNullable<Json>,"created_at"?: string,"discoverable"?: boolean,"display_name"?: string,"id"?: string,"public_id"?: string,"updated_at"?: string
+                    "avatar_config"?: NonNullable<Json>,"bio"?: string | null,"birth_date"?: string,"birth_date_visibility"?: string,"created_at"?: string,"discoverable"?: boolean,"display_name"?: string,"gender"?: string,"id"?: string,"public_id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -223,6 +277,12 @@ isOneToOne: false
       foreignKeyName: "user_presence_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: true
+      referencedRelation: "profile_birthdays"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "user_presence_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
@@ -230,7 +290,21 @@ isOneToOne: true
                 }
           }
           Views: {
-            [_ in never]: never
+            "profile_birthdays": {
+                  Row: {
+                    "age": number | null,"birth_date": string | null,"id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "age"?: never,"birth_date"?: never,"id"?: string | null
+                         }
+                        Update: {
+                           "age"?: never,"birth_date"?: never,"id"?: string | null
+                         }
+                        Relationships: [
+                    
+                  ]
+                }
           }
           Functions: {
             "accept_friend_request":
