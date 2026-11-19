@@ -159,6 +159,52 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"group_presence_overrides": {
+                  Row: {
+                    "target_user_id": string,"updated_at": string,"user_id": string,"visible": boolean,"visible_since": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "target_user_id": string,"updated_at"?: string,"user_id": string,"visible": boolean,"visible_since"?: string | null
+                  }
+                  Update: {
+                    "target_user_id"?: string,"updated_at"?: string,"user_id"?: string,"visible"?: boolean,"visible_since"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "group_presence_overrides_target_user_id_fkey"
+      columns: ["target_user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_presence_overrides_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"group_presence_settings": {
+                  Row: {
+                    "share_with_non_friends": boolean | null,"shared_since": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "share_with_non_friends"?: boolean | null,"shared_since"?: string | null,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "share_with_non_friends"?: boolean | null,"shared_since"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "group_presence_settings_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"groups": {
                   Row: {
                     "created_at": string,"id": string,"name": string,"updated_at": string
