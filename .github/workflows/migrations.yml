@@ -1,6 +1,6 @@
 # マイグレーションをホストの Supabase に反映する（#69）
-# - develop にマージされたとき: まだ反映していないマイグレーションを当てる
-# - develop 向けの PR: 何が当たるかを dry-run で確認するだけ（DB は変更しない）
+# - develop 向けの PR: マイグレーションの追加のしかたを検査する（ホストの DB には触らない）
+# - develop にマージされたとき: まだ反映していないマイグレーションをホストに当てる
 # マイグレーションに変更がない push / PR では動かない
 name: マイグレーション
 
@@ -13,6 +13,8 @@ on:
       - '.github/workflows/migrations.yml'
   pull_request:
     branches: [develop]
+    # labeled / unlabeled: 「migration-fix」ラベルを付け外ししたときも検査をやり直す
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     paths:
       - 'supabase/migrations/**'
       - '.github/workflows/migrations.yml'
@@ -23,16 +25,73 @@ permissions:
   contents: read
 
 jobs:
-  migrate:
-    name: ${{ github.event_name == 'pull_request' && '反映内容の確認（dry-run）' || 'ホストに反映' }}
+  # PR の検査は Secrets を使わない（PR のコードからホストの DB を操作できないようにするため）
+  check:
+    name: マイグレーションの検査
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    # 手動実行で develop 以外のブランチ（マージ前のマイグレーション）を当てないようにする
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/develop'
-    # 同じ DB に同時に当てないよう、反映は1つずつ順番に実行する（実行中のものは取り消さない）
-    # dry-run は PR ごとに分け、新しい push が来たら古いものを取り消す
     concurrency:
-      group: ${{ github.event_name == 'pull_request' && format('migrations-dry-run-{0}', github.ref) || 'migrations-deploy' }}
-      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+      group: migrations-check-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # develop との比較に履歴が必要
+
+      - name: 既存のマイグレーションを変更・削除していないか
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          ALLOW_EDIT: ${{ contains(github.event.pull_request.labels.*.name, 'migration-fix') }}
+        run: |
+          # --no-renames: 名前の変更も「削除＋追加」として扱い、検査の対象にする
+          changed=$(git diff --name-status --no-renames "origin/$BASE_REF...HEAD" -- supabase/migrations/ | grep -E '^[MD]' || true)
+          if [ -z "$changed" ]; then
+            echo "既存のマイグレーションの変更・削除はありません"
+            exit 0
+          fi
+          echo "$changed"
+          if [ "$ALLOW_EDIT" = "true" ]; then
+            echo "::warning::「migration-fix」ラベルがあるため、既存のマイグレーションの変更・削除を許可します（ホストへの反映に失敗したマイグレーションを直すときだけ使う）"
+            exit 0
+          fi
+          echo "::error::マージ済みのマイグレーションは変更・削除できません。直したいときは新しいマイグレーションを追加してください（ホストへの反映に失敗したものを直すときだけ、PR に「migration-fix」ラベルを付ける。docs/SETUP.md の 6-5）"
+          exit 1
+
+      - name: 追加したマイグレーションの日時が develop の最新より新しいか
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          version() { basename "$1" | cut -d_ -f1; }
+          latest=$(git ls-tree --name-only "origin/$BASE_REF" supabase/migrations/ | grep '\.sql$' | while read -r f; do version "$f"; done | sort | tail -n 1)
+          added=$(git diff --name-only --no-renames --diff-filter=A "origin/$BASE_REF...HEAD" -- supabase/migrations/ | grep '\.sql$' || true)
+          if [ -z "$added" ]; then
+            echo "追加したマイグレーションはありません"
+            exit 0
+          fi
+          echo "develop の最新: ${latest:-（なし）}"
+          failed=0
+          for f in $added; do
+            v=$(version "$f")
+            if [ -n "$latest" ] && [[ ! "$v" > "$latest" ]]; then
+              echo "::error file=$f::$f の日時（${v}）が develop の最新（${latest}）より古いです。ホストとローカルで当たる順番が変わるため、supabase migration new で作り直して中身を移してください"
+              failed=1
+            else
+              echo "OK: $f"
+            fi
+          done
+          exit $failed
+
+  deploy:
+    name: ホストに反映
+    # 手動実行で develop 以外のブランチ（マージ前のマイグレーション）を当てないようにする
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    # Secrets はこの Environment にだけ置き、develop からしか使えないようにする（GitHub の設定。docs/SETUP.md の 6-5）
+    environment: supabase-host
+    # 同じ DB に同時に当てないよう、1つずつ順番に実行する（実行中のものは取り消さない）
+    concurrency:
+      group: migrations-deploy
+      cancel-in-progress: false
     env:
       # Supabase CLI はこの2つを環境変数から読む。値はログに出さない
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -50,7 +109,7 @@ jobs:
           missing=0
           for name in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_REF; do
             if [ -z "${!name}" ]; then
-              echo "::error::GitHub の Secrets に $name が登録されていません"
+              echo "::error::Environment「supabase-host」の Secrets に $name が登録されていません"
               missing=1
             fi
           done
@@ -59,12 +118,10 @@ jobs:
       - name: ホストのプロジェクトにつなぐ
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
-      # --include-all: 並行して作った PR では、反映済みのものより古い日時のマイグレーションが後からマージされることがある。
-      # それも当てるために付ける（付けないと「Found local migration files to be inserted before the last migration」で失敗する）
-      - name: 反映内容の確認（dry-run）
-        if: github.event_name == 'pull_request'
+      - name: 反映するマイグレーションの確認
         run: supabase db push --linked --include-all --dry-run
 
+      # 日時の順番は PR の検査で確かめているが、近い時間にマージされた PR どうしでは前後することがある。
+      # そのときも止まらないよう --include-all を付ける（付けないと「Found local migration files to be inserted before the last migration」で失敗する）
       - name: ホストに反映
-        if: github.event_name != 'pull_request'
         run: supabase db push --linked --include-all --yes
