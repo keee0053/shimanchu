@@ -2,7 +2,7 @@
 # リリース先とタイトルの prefix によるラベルはワークフロー側で付ける
 
 # リポジトリの設定・開発ツールの変更
-repository:
+'リポジトリ設定':
   - changed-files:
       - any-glob-to-any-file:
           - '.github/**'

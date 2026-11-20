@@ -37,18 +37,18 @@ jobs:
           script: |
             // 向き先のブランチとラベルの対応
             const RELEASE_LABELS = {
-              develop: 'develop release',
-              main: 'main release',
+              develop: '開発リリース',
+              main: '本番リリース',
             };
             // prefix とラベルの対応（scripts/git-hooks/commit-rules.js の TYPES と揃える）
             const TYPE_LABELS = {
-              add: { name: 'enhancement', color: 'a2eeef', description: 'New feature or request' },
-              fix: { name: 'bug', color: 'd73a4a', description: "Something isn't working" },
-              docs: { name: 'documentation', color: '0075ca', description: 'Improvements or additions to documentation' },
-              refactor: { name: 'refactor', color: 'fbca04', description: '動作を変えないコードの整理' },
-              test: { name: 'test', color: 'bfd4f2', description: 'テストの追加・修正' },
-              chore: { name: 'chore', color: 'c5def5', description: '設定・依存関係などの雑務' },
-              perf: { name: 'perf', color: 'f9d0c4', description: 'パフォーマンス改善' },
+              add: { name: '機能追加', color: 'a2eeef', description: '新しい機能の追加・要望' },
+              fix: { name: 'バグ', color: 'd73a4a', description: '正しく動かない不具合' },
+              docs: { name: 'ドキュメント', color: '0075ca', description: 'ドキュメントの追加・改善' },
+              refactor: { name: 'リファクタリング', color: 'fbca04', description: '動作を変えないコードの整理' },
+              test: { name: 'テスト', color: 'bfd4f2', description: 'テストの追加・修正' },
+              chore: { name: '雑務', color: 'c5def5', description: '設定・依存関係などの雑務' },
+              perf: { name: 'パフォーマンス', color: 'f9d0c4', description: 'パフォーマンス改善' },
             };
 
             const { owner, repo } = context.repo;
