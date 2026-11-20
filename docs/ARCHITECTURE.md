@@ -22,7 +22,7 @@ flowchart LR
   subgraph friend["友達の端末"]
     query["TanStack Query<br/>（サーバーデータのキャッシュ）"]
     zustand["Zustand<br/>（端末内の UI 状態）"]
-    screen["画面（Expo Router）<br/>島・建物・アバター"]
+    screen["画面（Expo Router）<br/>3つの島と海（漂流）・アバター"]
   end
 
   loc -- "島の種類だけを保存" --> db
@@ -38,14 +38,11 @@ flowchart LR
 | 画面           | React Native + Expo / Expo Router     | iOS / Android のアプリ本体。`src/app/` のファイル構成がそのまま画面遷移になる |
 | サーバーデータ | TanStack Query                        | Supabase から取得したデータのキャッシュ・再取得                               |
 | 端末内の状態   | Zustand                               | 選択中のグループ、開いている建物などの UI 状態                                |
-| 位置情報       | expo-location / expo-task-manager     | 位置の取得と島の判定（端末内）。バックグラウンド取得は当面使わない            |
+| 位置情報       | expo-location / expo-task-manager     | 位置の取得と島の判定（端末内）。バックグラウンドは MVP 後にジオフェンスで導入 |
 | 入力           | React Hook Form / Zod                 | フォームの状態管理と入力チェック                                              |
-| 認証           | Supabase Auth（Google）               | ログイン。ユーザー ID は RLS で `auth.uid()` として使う                       |
+| 認証           | Supabase Auth（Google・Apple）        | ログイン。Apple は iOS のみ・リリース前に追加（#39）                          |
 | DB             | PostgreSQL（Supabase）                | データの保存。アプリから直接読み書きするため、RLS が権限管理の要              |
-| リアルタイム   | Supabase Realtime（Postgres Changes） | テーブルの変更を購読して友達の端末に配信                                      |
-
-> ⚠️ Realtime を Broadcast と併用するかはまだ決まっていない。
-> 決まったら上の図と表を更新すること（[CODING_GUIDELINES.md の未決定事項](CODING_GUIDELINES.md#未決定事項)）。
+| リアルタイム   | Supabase Realtime（Postgres Changes） | テーブルの変更を購読して友達の端末に配信。届く相手は RLS で決まる             |
 
 ## アプリ内部の層構成（クリーンアーキテクチャ）
 
@@ -96,7 +93,7 @@ flowchart LR
 
 ## 画面遷移
 
-画面の元はワイヤーフレーム（#14）。つなぎ方は #42 で決めた。`src/app/` のルート構成は #18 でこれに合わせて作る。
+画面の元はワイヤーフレーム（#14）。つなぎ方は #42 で決めた。`src/app/` のルート構成（#18）はこれに合わせている（[ディレクトリ構成](#ディレクトリ構成)）。
 
 ```mermaid
 flowchart TD
@@ -132,6 +129,8 @@ flowchart TD
 
 実線は Stack で進む画面（戻る操作で戻る）、点線はシート・モーダルで開く画面。
 
+Stack で進む画面・シート・モーダルは、タブの中ではなくルートの Stack（`src/app/_layout.tsx`）に並べる。Stack で進む画面はタブより上に重なるので、開いている間はタブバーが出ない（シートは後ろの画面を残して重なる）。ログイン・初回設定・タブのどれを見せるかの振り分け（`Stack.Protected`）は #21 で追加する（それまでは起動するとホームが開く）。
+
 | 決めたこと             | 内容                                                                                                                                                                                    |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 下部タブ               | ホーム / 友達 / マイページ の3つ。設定はマイページから開く                                                                                                                              |
@@ -153,19 +152,25 @@ flowchart TD
 shimanchu/
 ├── src/                          # アプリのソースコード（import は "@/..." で src/ 起点）
 │   ├── app/                      # [presentation] 画面（Expo Router）。ファイル = 1画面、パス = URL
-│   │   ├── _layout.tsx           # ルートレイアウト（全画面共通のナビゲーター・Provider）
-│   │   ├── index.tsx             # 🧪 "/" ホーム画面
-│   │   └── explore.tsx           # 🧪 "/explore" サンプル画面
+│   │   ├── _layout.tsx           # ルートの Stack（Provider・Stack で進む画面・モーダル・シート）
+│   │   ├── login.tsx             # ログイン
+│   │   ├── onboarding/           # 初回設定（_layout.tsx の Stack で index = プロフィール → avatar）
+│   │   ├── (tabs)/               # 下部タブ（_layout.tsx が NativeTabs）
+│   │   │   ├── index.tsx         #   "/" ホーム
+│   │   │   ├── friends.tsx       #   "/friends" 友達
+│   │   │   └── me.tsx            #   "/me" マイページ
+│   │   ├── users/[userId]/       # index.tsx = プロフィール詳細、preview.tsx = 簡易プロフィール（シート）
+│   │   ├── groups/[groupId]/manage.tsx # グループ管理
+│   │   ├── profile-edit.tsx / avatar-edit.tsx # プロフィール編集・アバター編集
+│   │   ├── settings/             # index.tsx = 設定、presence.tsx = 島の公開設定
+│   │   ├── group-switcher.tsx    # グループの切り替え（シート）
+│   │   └── group-add.tsx / friend-search.tsx / presence-prompt.tsx # モーダル
+│   │   # 画面の中身は仮（PlaceholderScreen）。各画面の Issue で置き換える
 │   ├── presentation/             # [presentation] 画面以外の UI まわり
 │   │   ├── components/           # 再利用する UI コンポーネント
-│   │   │   ├── ui/collapsible.tsx # 🧪 開閉パネル
-│   │   │   ├── app-tabs.tsx      # 🧪 タブバー（iOS / Android。.web.tsx は Web 版）
-│   │   │   ├── animated-icon.tsx # 🧪 アニメーション付きアイコン（*.web.tsx / *.module.css は Web 用）
+│   │   │   ├── placeholder-screen.tsx # 実装前の仮の画面（各画面を実装したら使わなくなる）
 │   │   │   ├── themed-text.tsx   # 🧪 ライト/ダーク対応の Text
-│   │   │   ├── themed-view.tsx   # 🧪 ライト/ダーク対応の View
-│   │   │   ├── external-link.tsx # 🧪 外部リンク（アプリ内ブラウザで開く）
-│   │   │   ├── hint-row.tsx      # 🧪 ヒント表示行
-│   │   │   └── web-badge.tsx     # 🧪 Web 用バッジ
+│   │   │   └── themed-view.tsx   # 🧪 ライト/ダーク対応の View
 │   │   ├── hooks/                # UI 用のフック
 │   │   │   ├── use-color-scheme.ts # 🧪 ライト/ダーク判定（.web.ts は Web 版）
 │   │   │   └── use-theme.ts      # 🧪 現在のテーマ取得
@@ -189,7 +194,6 @@ shimanchu/
 ├── assets/                       # 画像・アイコン
 │   ├── expo.icon/                # iOS 用アプリアイコン
 │   └── images/                   # アプリアイコン・スプラッシュ画像・Android アイコン
-│                                 #   （react-logo / tabIcons / tutorial-web などは 🧪）
 │
 ├── supabase/                     # Supabase（バックエンド）関連
 │   ├── config.toml               # ローカル Supabase の設定（ポート・Auth プロバイダなど）
