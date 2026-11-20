@@ -23,7 +23,21 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            [_ in never]: never
+            "profiles": {
+                  Row: {
+                    "bio": string | null,"birthday": string | null,"created_at": string | null,"display_name": string,"faculty": string | null,"gender": string | null,"id": string,"university": string | null,"updated_at": string | null,"year": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "bio"?: string | null,"birthday"?: string | null,"created_at"?: string | null,"display_name": string,"faculty"?: string | null,"gender"?: string | null,"id": string,"university"?: string | null,"updated_at"?: string | null,"year"?: number | null
+                  }
+                  Update: {
+                    "bio"?: string | null,"birthday"?: string | null,"created_at"?: string | null,"display_name"?: string,"faculty"?: string | null,"gender"?: string | null,"id"?: string,"university"?: string | null,"updated_at"?: string | null,"year"?: number | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                }
           }
           Views: {
             [_ in never]: never
