@@ -71,4 +71,5 @@ supabase migration new <name>  # マイグレーション作成
 
 ## 現状メモ
 
-- `src/` の多くは create-expo-app テンプレートのサンプル（docs/ARCHITECTURE.md で 🧪 印）。本実装で置き換える予定で、Web 用ファイルも当面は残す方針
+- 画面は `src/app/` にルートだけ用意してあり、中身は仮（`PlaceholderScreen`）。各画面の Issue で置き換える
+- テーマまわり（`themed-text`・`theme.ts` など。docs/ARCHITECTURE.md で 🧪 印）は create-expo-app テンプレートのまま。初期デザイン（#14）で置き換える予定で、Web 用ファイルも当面は残す方針
