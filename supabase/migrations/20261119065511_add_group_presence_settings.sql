@@ -1,8 +1,8 @@
 -- 友達ではないグループのメンバーに島を見せる設定（#67）
 -- 友達への公開は今どおり friendships.share_presence で決める。
 -- 友達ではない人には、同じグループにいる間だけ、次の順で判定する。
---   1. 相手ごとの上書き（group_presence_overrides）があればそれに従う
---   2. なければ全体の設定（group_presence_settings）に従う。行がない・未設定（NULL）なら見せない
+--   1. 相手ごとの上書き（group_presence_overrides）が「見せる」「見せない」ならそれに従う
+--   2. 上書きがない・NULL（全体の設定に従う）なら全体の設定（group_presence_settings）に従う。行がない・未設定（NULL）なら見せない
 -- 履歴は、見せ始めた日時と、同じグループにいるようになった日時の遅いほうより後の分だけ見せる。
 -- 設定や上書きは本人しか読めない。見せていないことは相手に分からない（島に出さないだけ。#63）。
 
@@ -18,19 +18,23 @@ comment on table public.group_presence_settings is '友達ではないグルー�
 comment on column public.group_presence_settings.share_with_non_friends is 'true = 見せる / false = 見せない / NULL = 未設定（見せない）';
 comment on column public.group_presence_settings.shared_since is '最後に「見せる」にした日時。履歴はこれより後の分だけ見せる';
 
--- 相手ごとの上書き（全体の設定より優先する。行を消すと全体の設定に戻る）
+-- 相手ごとの上書き（全体の設定より優先する。visible を NULL にすると全体の設定に戻る）
+-- 行を消すと隠していた日時が分からなくなり、隠していた間の履歴が見えてしまうため、削除はできない
 create table public.group_presence_overrides (
   user_id uuid not null references public.profiles (id) on delete cascade,
   target_user_id uuid not null references public.profiles (id) on delete cascade,
-  visible boolean not null,
+  visible boolean,
   visible_since timestamptz,
+  hidden_until timestamptz,
   updated_at timestamptz not null default now(),
   primary key (user_id, target_user_id),
   constraint group_presence_overrides_not_self check (user_id <> target_user_id)
 );
 
 comment on table public.group_presence_overrides is '友達ではないグループのメンバー1人ずつへの上書き。全体の設定より優先する';
+comment on column public.group_presence_overrides.visible is 'true = 見せる / false = 見せない / NULL = 全体の設定に従う';
 comment on column public.group_presence_overrides.visible_since is '最後に「見せる」にした日時。履歴はこれより後の分だけ見せる';
+comment on column public.group_presence_overrides.hidden_until is '最後に「見せない」をやめた日時。全体の設定に従うときも、履歴はこれより後の分だけ見せる';
 
 create index group_presence_overrides_target_user_id_idx
   on public.group_presence_overrides (target_user_id);
@@ -44,7 +48,8 @@ create trigger group_presence_overrides_set_updated_at
   for each row execute function public.set_updated_at();
 
 -- 「見せる」になったときに、見せ始めた日時を今にする
--- （見せる→見せるの更新では変えない。クライアントにはこの列の書き込みを許可しない）
+-- 上書きは「見せない」をやめたときに、隠すのをやめた日時も今にする
+-- （同じ値への更新では変えない。クライアントにはこれらの列の書き込みを許可しない）
 create function private.set_group_presence_settings_since()
 returns trigger
 language plpgsql
@@ -70,9 +75,13 @@ as $$
 begin
   if tg_op = 'UPDATE' then
     new.visible_since = old.visible_since;
+    new.hidden_until = old.hidden_until;
   end if;
-  if new.visible and (tg_op = 'INSERT' or not old.visible) then
+  if new.visible and (tg_op = 'INSERT' or not coalesce(old.visible, false)) then
     new.visible_since = now();
+  end if;
+  if tg_op = 'UPDATE' and old.visible = false and new.visible is distinct from false then
+    new.hidden_until = now();
   end if;
   return new;
 end;
@@ -101,7 +110,7 @@ grant insert (user_id, share_with_non_friends) on public.group_presence_settings
 grant update (user_id, share_with_non_friends) on public.group_presence_settings to authenticated;
 
 revoke all on public.group_presence_overrides from anon, authenticated;
-grant select, delete on public.group_presence_overrides to authenticated;
+grant select on public.group_presence_overrides to authenticated;
 grant insert (user_id, target_user_id, visible) on public.group_presence_overrides to authenticated;
 grant update (user_id, target_user_id, visible) on public.group_presence_overrides to authenticated;
 
@@ -137,13 +146,11 @@ create policy "本人は自分の上書きを更新できる"
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
 
-create policy "本人は自分の上書きを削除できる"
-  on public.group_presence_overrides for delete
-  to authenticated
-  using (user_id = (select auth.uid()));
+-- 削除: ポリシーを作らない（全体の設定に戻すときは visible を NULL にする）
 
 -- p_user_id が、友達ではないグループのメンバーとしてログイン中のユーザーに島を見せているなら、見せ始めた日時を返す
 -- 見せていなければ NULL。上書き → 全体の設定の順で判定する（友達かどうか・同じグループかどうかは呼び出し側で確かめる）
+-- 全体の設定に従うときは、上書きで隠すのをやめた日時より前は見せない
 create function private.group_presence_since(p_user_id uuid)
 returns timestamptz
 language sql
@@ -152,8 +159,9 @@ security definer
 set search_path = ''
 as $$
   select case
-    when o.user_id is not null then case when o.visible then o.visible_since end
-    when s.share_with_non_friends then s.shared_since
+    when o.visible then o.visible_since
+    when not o.visible then null
+    when s.share_with_non_friends then greatest(s.shared_since, o.hidden_until)
   end
   from (select 1) as one
   left join public.group_presence_overrides o

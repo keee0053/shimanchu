@@ -209,21 +209,33 @@ isOneToOne: false
                   ]
                 },"group_presence_overrides": {
                   Row: {
-                    "target_user_id": string,"updated_at": string,"user_id": string,"visible": boolean,"visible_since": string | null
+                    "hidden_until": string | null,"target_user_id": string,"updated_at": string,"user_id": string,"visible": boolean | null,"visible_since": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "target_user_id": string,"updated_at"?: string,"user_id": string,"visible": boolean,"visible_since"?: string | null
+                    "hidden_until"?: string | null,"target_user_id": string,"updated_at"?: string,"user_id": string,"visible"?: boolean | null,"visible_since"?: string | null
                   }
                   Update: {
-                    "target_user_id"?: string,"updated_at"?: string,"user_id"?: string,"visible"?: boolean,"visible_since"?: string | null
+                    "hidden_until"?: string | null,"target_user_id"?: string,"updated_at"?: string,"user_id"?: string,"visible"?: boolean | null,"visible_since"?: string | null
                   }
                   Relationships: [
                     {
       foreignKeyName: "group_presence_overrides_target_user_id_fkey"
       columns: ["target_user_id"]
 isOneToOne: false
+      referencedRelation: "profile_birthdays"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_presence_overrides_target_user_id_fkey"
+      columns: ["target_user_id"]
+isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_presence_overrides_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profile_birthdays"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "group_presence_overrides_user_id_fkey"
@@ -246,6 +258,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "group_presence_settings_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "profile_birthdays"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "group_presence_settings_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: true
