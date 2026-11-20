@@ -22,6 +22,19 @@ const AI_MARKERS = [
   { pattern: /🤖/u, label: '🤖' },
 ];
 
+// よくある書き間違いの type を正しい type に読み替える（直し方の候補を出すときに使う）
+const TYPE_ALIASES = {
+  feat: 'add',
+  feature: 'add',
+  new: 'add',
+  bugfix: 'fix',
+  hotfix: 'fix',
+  doc: 'docs',
+  tests: 'test',
+  build: 'chore',
+  ci: 'chore',
+};
+
 // ルールの対象外にするメッセージ（git が自動で作るもの）
 const AUTO_GENERATED_PREFIXES = ['Merge ', 'Revert "', 'fixup! ', 'squash! ', 'amend! '];
 
@@ -47,15 +60,19 @@ function checkTitle(title) {
   return errors;
 }
 
-// コミットメッセージ全体を検査する。違反内容の配列を返す（空なら OK）
-function checkCommitMessage(rawMessage) {
-  // git commit -v の差分表示以降と、# で始まるコメント行を除く
-  const message = rawMessage
+// git commit -v の差分表示以降と、# で始まるコメント行を除く
+function normalizeMessage(rawMessage) {
+  return rawMessage
     .split(/^# -+ >8 -+$/m)[0]
     .split(/\r?\n/)
     .filter((line) => !line.startsWith('#'))
     .join('\n')
     .trim();
+}
+
+// コミットメッセージ全体を検査する。違反内容の配列を返す（空なら OK）
+function checkCommitMessage(rawMessage) {
+  const message = normalizeMessage(rawMessage);
 
   const errors = [];
   const markers = findAiMarkers(message);
@@ -78,9 +95,61 @@ function checkCommitMessage(rawMessage) {
   return errors;
 }
 
+// ルールに沿うように直した1行を推測して返す。推測できなければ null
+// 例: "feat: ログイン画面を追加" → "add: ログイン画面を追加"、"Fix：誤字を修正" → "fix: 誤字を修正"
+function suggestTitle(title) {
+  const trimmed = title.trim();
+  const match = trimmed.match(/^([A-Za-z]+)\s*(?:\([^)]*\))?\s*[:：]\s*(.+)$/);
+  if (!match) return null;
+  const type = match[1].toLowerCase();
+  const fixedType = TYPES.includes(type) ? type : TYPE_ALIASES[type];
+  if (!fixedType) return null;
+  const suggestion = `${fixedType}: ${match[2].trim()}`;
+  const ok = checkTitle(suggestion).length === 0 && findAiMarkers(suggestion).length === 0;
+  return ok && suggestion !== title ? suggestion : null;
+}
+
+// ルールに沿うように直したコミットメッセージを推測して返す。推測できなければ null
+// AI ツール表記の行と2行目以降（本文）を消し、1行目の type の書き間違いを直す
+function suggestCommitMessage(rawMessage) {
+  const message = normalizeMessage(rawMessage);
+  const firstLine = message
+    .split('\n')
+    .filter((line) => line.trim() !== '' && findAiMarkers(line).length === 0)[0]
+    ?.trim();
+  if (!firstLine) return null;
+  const suggestion = checkTitle(firstLine).length === 0 ? firstLine : suggestTitle(firstLine);
+  if (!suggestion || suggestion === message) return null;
+  return checkCommitMessage(suggestion).length === 0 ? suggestion : null;
+}
+
+// 表示するコマンドの二重引用符の中に入れても安全か
+// コピーして実行されたときにシェル（sh / zsh / PowerShell / cmd）が解釈する文字を含むものは入れない
+// （例: "feat: 説明 $(rm -rf ~)" や、PowerShell が引用符として扱う “ ” を含む候補をそのままコマンドにしない）
+// 危険な文字を列挙すると漏れが出るため、安全と分かっている文字だけを許可する
+//   - 文字・数字（ひらがな・カタカナ・漢字・英数字など）と半角スペース
+//   - 二重引用符の中でどのシェルでも特別な意味を持たない ASCII 記号（` $ " \ ! % は除く）
+//   - 和文の記号（U+3000〜U+303F の 、。「」 など、・）と全角記号（＂ ＄ ＼ ｀ は除く）
+const SAFE_TO_QUOTE_PATTERN =
+  /^[\p{L}\p{M}\p{N} #&'()*+,\-./:;<=>?@[\]^_{|}~\u3000-\u303F\u30FB\uFF01\uFF03\uFF05-\uFF3B\uFF3D-\uFF3F\uFF41-\uFF5E]*$/u;
+
+function isSafeToQuote(text) {
+  return SAFE_TO_QUOTE_PATTERN.test(text);
+}
+
+// 引用符なしでコマンドに入れても安全か（ブランチ名・コミットの SHA 用）
+function isSafeBareWord(text) {
+  return /^[A-Za-z0-9._/-]+$/.test(text);
+}
+
+// 直接コミット・push しないブランチか
+function isProtectedBranch(branch) {
+  return PROTECTED_BRANCHES.includes(branch);
+}
+
 // push 先のブランチ名を検査する
 function checkBranchName(branch) {
-  if (PROTECTED_BRANCHES.includes(branch)) {
+  if (isProtectedBranch(branch)) {
     return [`${branch} には直接 push しない（feature ブランチから PR を作る）`];
   }
   if (ENABLE_BRANCH_PATTERN_CHECK && !BRANCH_PATTERN.test(branch)) {
@@ -94,5 +163,10 @@ module.exports = {
   checkTitle,
   checkCommitMessage,
   checkBranchName,
+  isProtectedBranch,
   findAiMarkers,
+  suggestTitle,
+  suggestCommitMessage,
+  isSafeToQuote,
+  isSafeBareWord,
 };

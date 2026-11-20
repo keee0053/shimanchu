@@ -1,3 +1,4 @@
+import type { BirthDateVisibility, Gender } from '@/domain/entities/profile';
 import { useProfile, useUpdateProfile } from '@/presentation/queries/profiles';
 import { profileFormSchema, type ProfileFormData } from '@/presentation/schemas/profile';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,16 +7,31 @@ import { Controller, useForm } from 'react-hook-form';
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 
+const BIRTH_DATE_VISIBILITY_OPTIONS: { value: BirthDateVisibility; label: string }[] = [
+  { value: 'full', label: '生年月日と年齢' },
+  { value: 'age', label: '年齢のみ' },
+  { value: 'hidden', label: '非公開' },
+];
+
+const GENDER_OPTIONS: { value: Gender; label: string }[] = [
+  { value: 'male', label: '男性' },
+  { value: 'female', label: '女性' },
+  { value: 'other', label: 'その他' },
+  { value: 'unspecified', label: '回答しない' },
+];
+
 export default function ProfileEditScreen() {
-  const currentUserId = 'target-user-id'; // 実際はログイン中のユーザーID
+  const currentUserId = 'target-user-id'; // 認証実装（#21）後にログイン中のユーザー ID に差し替え
   const { data: profile, isLoading } = useProfile(currentUserId);
   const updateMutation = useUpdateProfile();
 
@@ -27,12 +43,12 @@ export default function ProfileEditScreen() {
     resolver: zodResolver(profileFormSchema),
     values: {
       displayName: profile?.displayName ?? '',
-      university: profile?.university ?? '',
-      faculty: profile?.faculty ?? '',
-      year: profile?.year ? String(profile.year) : '',
+      publicId: profile?.publicId ?? '',
       bio: profile?.bio ?? '',
-      birthday: profile?.birthday ?? '',
-      gender: profile?.gender ?? '',
+      birthDate: profile?.birthDate ?? '',
+      birthDateVisibility: profile?.birthDateVisibility ?? 'age',
+      gender: profile?.gender ?? 'unspecified',
+      discoverable: profile?.discoverable ?? true,
     },
   });
 
@@ -42,12 +58,12 @@ export default function ProfileEditScreen() {
         userId: currentUserId,
         input: {
           displayName: data.displayName,
-          university: data.university || undefined,
-          faculty: data.faculty || undefined,
-          year: data.year ? Number(data.year) : undefined,
-          bio: data.bio || undefined,
-          birthday: data.birthday || undefined,
-          gender: data.gender || undefined,
+          publicId: data.publicId,
+          bio: data.bio.trim() ? data.bio : null,
+          birthDate: data.birthDate,
+          birthDateVisibility: data.birthDateVisibility,
+          gender: data.gender,
+          discoverable: data.discoverable,
         },
       },
       {
@@ -94,73 +110,36 @@ export default function ProfileEditScreen() {
         {errors.displayName && <Text style={styles.errorText}>{errors.displayName.message}</Text>}
       </View>
 
-      {/* 大学名 */}
+      {/* 公開 ID */}
       <View style={styles.field}>
-        <Text style={styles.label}>大学名</Text>
+        <Text style={styles.label}>公開 ID（必須・半角英小文字と数字 4〜20 文字）</Text>
         <Controller
           control={control}
-          name="university"
+          name="publicId"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              style={styles.input}
-              placeholder="例: ○○大学"
+              style={[styles.input, errors.publicId && styles.inputError]}
+              placeholder="例: taro1234"
+              autoCapitalize="none"
+              autoCorrect={false}
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
             />
           )}
         />
-        {errors.university && <Text style={styles.errorText}>{errors.university.message}</Text>}
-      </View>
-
-      {/* 学部・学科 */}
-      <View style={styles.field}>
-        <Text style={styles.label}>学部・学科</Text>
-        <Controller
-          control={control}
-          name="faculty"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              style={styles.input}
-              placeholder="例: 工学部 情報工学科"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-            />
-          )}
-        />
-        {errors.faculty && <Text style={styles.errorText}>{errors.faculty.message}</Text>}
-      </View>
-
-      {/* 学年 */}
-      <View style={styles.field}>
-        <Text style={styles.label}>学年</Text>
-        <Controller
-          control={control}
-          name="year"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              style={styles.input}
-              placeholder="例: 3"
-              keyboardType="numeric"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-            />
-          )}
-        />
-        {errors.year && <Text style={styles.errorText}>{errors.year.message}</Text>}
+        {errors.publicId && <Text style={styles.errorText}>{errors.publicId.message}</Text>}
       </View>
 
       {/* 自己紹介 */}
       <View style={styles.field}>
-        <Text style={styles.label}>自己紹介</Text>
+        <Text style={styles.label}>自己紹介（100文字以内）</Text>
         <Controller
           control={control}
           name="bio"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, errors.bio && styles.inputError]}
               placeholder="自己紹介を入力してください"
               multiline
               numberOfLines={4}
@@ -173,15 +152,15 @@ export default function ProfileEditScreen() {
         {errors.bio && <Text style={styles.errorText}>{errors.bio.message}</Text>}
       </View>
 
-      {/* 誕生日 */}
+      {/* 生年月日 */}
       <View style={styles.field}>
-        <Text style={styles.label}>誕生日 (YYYY-MM-DD)</Text>
+        <Text style={styles.label}>生年月日 (必須・YYYY-MM-DD)</Text>
         <Controller
           control={control}
-          name="birthday"
+          name="birthDate"
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.birthDate && styles.inputError]}
               placeholder="例: 2003-05-15"
               onBlur={onBlur}
               onChangeText={onChange}
@@ -189,7 +168,36 @@ export default function ProfileEditScreen() {
             />
           )}
         />
-        {errors.birthday && <Text style={styles.errorText}>{errors.birthday.message}</Text>}
+        {errors.birthDate && <Text style={styles.errorText}>{errors.birthDate.message}</Text>}
+      </View>
+
+      {/* 生年月日の公開範囲 */}
+      <View style={styles.field}>
+        <Text style={styles.label}>生年月日の公開範囲</Text>
+        <Controller
+          control={control}
+          name="birthDateVisibility"
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.chipRow}>
+              {BIRTH_DATE_VISIBILITY_OPTIONS.map((option) => {
+                const selected = value === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    onPress={() => onChange(option.value)}
+                  >
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+        />
       </View>
 
       {/* 性別 */}
@@ -198,14 +206,37 @@ export default function ProfileEditScreen() {
         <Controller
           control={control}
           name="gender"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              style={styles.input}
-              placeholder="例: 回答しない、その他"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-            />
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.chipRow}>
+              {GENDER_OPTIONS.map((option) => {
+                const selected = value === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    onPress={() => onChange(option.value)}
+                  >
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+        />
+      </View>
+
+      {/* グループ候補に表示する */}
+      <View style={styles.switchField}>
+        <Text style={styles.switchLabel}>友達の友達としてグループ候補に表示する</Text>
+        <Controller
+          control={control}
+          name="discoverable"
+          render={({ field: { onChange, value } }) => (
+            <Switch value={value} onValueChange={onChange} />
           )}
         />
       </View>
@@ -278,6 +309,44 @@ const styles = StyleSheet.create({
     color: '#fa5252',
     fontSize: 12,
     marginTop: 4,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#ced4da',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  chipSelected: {
+    backgroundColor: '#228be6',
+    borderColor: '#228be6',
+  },
+  chipText: {
+    fontSize: 14,
+    color: '#495057',
+  },
+  chipTextSelected: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  switchField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    gap: 12,
+  },
+  switchLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#495057',
   },
   saveButton: {
     backgroundColor: '#228be6',

@@ -451,6 +451,7 @@ npx expo-doctor          # "No issues detected!"
 npx tsc --noEmit         # 型チェック
 npm run lint             # ESLint
 npm run format:check     # Prettier
+npm test                 # テスト（テストがなくても成功する）
 git config core.hooksPath  # .githooks（Git フックが有効）
 npx expo start           # アプリが起動し、画面が表示される
 ```
@@ -481,6 +482,8 @@ supabase start
 ```bash
 npx expo start -c
 ```
+
+> Supabase を使う画面が入るまでは、`.env.local` の設定が漏れていてもアプリは起動し、[動作確認チェックリスト](#5-動作確認チェックリスト)も全部通る。そのため、環境構築から時間がたって、Supabase を使う実装が入ったときに初めてこのエラーが出ることがある。
 
 ### アプリから Supabase につながらない
 

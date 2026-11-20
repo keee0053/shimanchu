@@ -69,7 +69,8 @@ docs: README にセットアップ手順を追加
 - 不要なファイルやコメントの除去（テンプレートのサンプル、`console.log` など）
 - セキュリティ
   - 新しいテーブルに RLS（Row Level Security）が有効になっていて、ポリシーが正しいか
-  - 位置情報がグループごとの共有設定を守って公開されているか（共有オフのグループに見えていないか）
+  - 島（今いる島・移動履歴）が友達ごとの公開設定（`share_presence`）を守って公開されているか（非公開にした友達に見えていないか）
+  - 座標を DB に保存したり、サーバーに送ったりしていないか
   - `service_role` キーなどの秘密情報をアプリに含めていないか（`EXPO_PUBLIC_` 付きの環境変数はアプリに埋め込まれ、誰でも見られる）
   - `.env.local` などの秘密情報をコミットしていないか
 
@@ -116,6 +117,7 @@ npm run setup-hooks
 - PR のブランチ名が `feature/PascalCase` か（`develop` → `main` のリリース用 PR は対象外）
 - PR に含まれるコミットのメッセージ
 - 型チェック・Lint・整形
+- テスト（`npm test`）。push を遅くしないよう、pre-push フックでは実行せず CI だけで実行する
 
 CI が失敗している PR はマージしない。
 
@@ -137,10 +139,14 @@ CI が失敗している PR はマージしない。
 
 ### CodeRabbit（AI コードレビュー）
 
-`develop` / `main` 向けの PR を作ると、CodeRabbit が自動でレビューし、日本語でコメントする（設定は `.coderabbit.yaml`）。
+`develop` / `main` 向けの PR に、CodeRabbit が日本語でレビューのコメントを書く（設定は `.coderabbit.yaml`）。
 
+このリポジトリは公開リポジトリでスターが10個未満のため、CodeRabbit は自動ではレビューしない（PR には「自動レビューをしない」というコメントだけが付く）。**PR を作ったら、PR に `@coderabbitai review` とコメントしてレビューを頼む。**
+
+- コメントの代わりに、CodeRabbit のコメントにある「Trigger review」にチェックを入れてもよい
+- 指摘を受けて直したコミットを push し、もう一度見てほしいときも `@coderabbitai review` とコメントする。レビューを頼める回数には制限があるため、続けて何度も頼まない
 - 要約とレビューは CodeRabbit のコメントに書かれる（PR 本文には書き込まない設定）
-- 指摘への質問や再レビューは、PR のコメントで `@coderabbitai` に話しかける
+- 指摘への質問は、PR のコメントで `@coderabbitai` に話しかける
 - CodeRabbit の指摘は参考意見。採用するかは作成者とレビュアーが判断し、**メンバーによるレビューとマージは必ず人が行う**
 - CodeRabbit にコミットを作らせる機能（docstring・テスト生成など）は使わない
 
@@ -151,6 +157,12 @@ CI が失敗している PR はマージしない。
 - パッケージの追加は `npm install` ではなく `npx expo install <package>` を使う（SDK に合うバージョンが入るため）
 - `ios/` `android/` は自動生成されるので直接編集しない。ネイティブの設定は `app.json` で行う
 - 画面は `src/app/` に置き、画面以外のコードは `src/app/` に置かない
+
+### テスト
+
+- 壊れると困る domain のルール（年齢の計算、島の判定、漂流の判定など）だけテストを書く。ユースケース・画面のテストは書かなくてよい
+- テストは AI（Claude Code など）に書かせてよいが、中身が仕様どおりかは人が確かめる（レビューでも確認する）
+- テストは CI で実行される。書き方は [docs/CODING_GUIDELINES.md](docs/CODING_GUIDELINES.md) の「8. テスト」を参照
 
 ### DB（Supabase）
 

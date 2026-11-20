@@ -34,6 +34,7 @@ npx expo start
 | `npx tsc --noEmit`                 | 型チェック                                                                 |
 | `npm run lint`                     | Lint                                                                       |
 | `npm run format`                   | Prettier で全ファイルを整形（`format:check` は確認のみ）                   |
+| `npm test`                         | テスト（jest-expo。CI でも実行される）                                     |
 | `npm run gen:types`                | DB スキーマから型を生成（`src/infrastructure/supabase/database.types.ts`） |
 | `npx expo-doctor`                  | 依存関係・設定の診断                                                       |
 | `supabase start` / `supabase stop` | ローカル Supabase の起動 / 停止                                            |
