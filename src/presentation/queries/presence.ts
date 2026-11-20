@@ -1,17 +1,38 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type {
   UpdateMyLocationInput,
   UpdateMyLocationResult,
 } from '@/application/update-my-location';
 import { presenceRepository, updateMyLocation } from '@/container';
-import type { UserPresence } from '@/domain/entities/island';
+import type { IslandType, UserPresence } from '@/domain/entities/island';
+import { queryClient } from '@/presentation/query-client';
 
 export const presenceKeys = {
   all: ['presence'] as const,
   mine: () => ['presence', 'mine'] as const,
   latestEvaluation: () => ['presence', 'latest-evaluation'] as const,
 };
+
+// 画面から監視されていない間も直近の判定結果が既定の5分で GC されないように保持する
+queryClient.setQueryDefaults(presenceKeys.latestEvaluation(), {
+  gcTime: Infinity,
+  staleTime: Infinity,
+});
+
+/**
+ * 直近の更新経路（自動同期・手動更新・場所保存/解除）で共有されている現在の島を取得する
+ */
+export function getCurrentCachedIsland(client: QueryClient): IslandType | null {
+  const latestEvaluation = client.getQueryData<UpdateMyLocationResult | null>(
+    presenceKeys.latestEvaluation(),
+  );
+  if (latestEvaluation) {
+    return latestEvaluation.islandType;
+  }
+  const serverPresence = client.getQueryData<UserPresence | null>(presenceKeys.mine());
+  return serverPresence?.islandType ?? null;
+}
 
 /**
  * user_presence テーブルに保存されている自分の現在の島を取得する
@@ -32,6 +53,8 @@ export function useLatestPresenceEvaluation() {
     queryFn: () => null,
     enabled: false,
     initialData: null,
+    gcTime: Infinity,
+    staleTime: Infinity,
   });
 }
 
@@ -39,14 +62,14 @@ export function useLatestPresenceEvaluation() {
  * 現在地を取得して島を判定し、user_presence に保存するミューテーション
  */
 export function useUpdateMyLocation() {
-  const queryClient = useQueryClient();
+  const client = useQueryClient();
 
   return useMutation({
     mutationFn: (input?: UpdateMyLocationInput) => updateMyLocation(input),
     onSuccess: (result) => {
-      queryClient.setQueryData(presenceKeys.latestEvaluation(), result);
+      client.setQueryData(presenceKeys.latestEvaluation(), result);
       if (result.presence) {
-        queryClient.setQueryData(presenceKeys.mine(), result.presence);
+        client.setQueryData(presenceKeys.mine(), result.presence);
       }
     },
   });

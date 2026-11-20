@@ -12,6 +12,17 @@ import type { PlaceRepository } from '@/domain/repositories/place-repository';
 
 const STORAGE_KEY = 'shimanchu:registered_places_v1';
 
+let operationQueue: Promise<unknown> = Promise.resolve();
+
+function enqueue<T>(operation: () => Promise<T>): Promise<T> {
+  const next = operationQueue.then(operation, operation);
+  operationQueue = next.then(
+    () => undefined,
+    () => undefined,
+  );
+  return next;
+}
+
 function isValidPlaceRadius(value: unknown): value is PlaceRadius {
   return typeof value === 'number' && (PLACE_RADIUS_OPTIONS as readonly number[]).includes(value);
 }
@@ -62,32 +73,37 @@ function parseRegisteredPlaces(raw: string | null): RegisteredPlaces {
   }
 }
 
+async function readRegisteredPlaces(): Promise<RegisteredPlaces> {
+  const raw = await AsyncStorage.getItem(STORAGE_KEY);
+  return parseRegisteredPlaces(raw);
+}
+
 export const asyncStoragePlaceRepository: PlaceRepository = {
-  async getRegisteredPlaces(): Promise<RegisteredPlaces> {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    return parseRegisteredPlaces(raw);
+  getRegisteredPlaces(): Promise<RegisteredPlaces> {
+    return enqueue(() => readRegisteredPlaces());
   },
 
-  async saveRegisteredPlace(
-    type: PlaceIslandType,
-    place: RegisteredPlace,
-  ): Promise<RegisteredPlaces> {
-    const current = await this.getRegisteredPlaces();
-    const next: RegisteredPlaces = {
-      ...current,
-      [type]: place,
-    };
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    return next;
+  saveRegisteredPlace(type: PlaceIslandType, place: RegisteredPlace): Promise<RegisteredPlaces> {
+    return enqueue(async () => {
+      const current = await readRegisteredPlaces();
+      const next: RegisteredPlaces = {
+        ...current,
+        [type]: place,
+      };
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
   },
 
-  async removeRegisteredPlace(type: PlaceIslandType): Promise<RegisteredPlaces> {
-    const current = await this.getRegisteredPlaces();
-    const next: RegisteredPlaces = {
-      ...current,
-      [type]: null,
-    };
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    return next;
+  removeRegisteredPlace(type: PlaceIslandType): Promise<RegisteredPlaces> {
+    return enqueue(async () => {
+      const current = await readRegisteredPlaces();
+      const next: RegisteredPlaces = {
+        ...current,
+        [type]: null,
+      };
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
   },
 };

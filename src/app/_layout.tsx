@@ -2,13 +2,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useColorScheme } from 'react-native';
 
-import { useForegroundLocationSync } from '@/presentation/hooks/use-foreground-location-sync';
+import { ForegroundLocationTracker } from '@/presentation/components/location/foreground-location-tracker';
 import { queryClient } from '@/presentation/query-client';
-
-function ForegroundLocationTracker() {
-  useForegroundLocationSync();
-  return null;
-}
 
 // 画面のつなぎ方は docs/ARCHITECTURE.md の「画面遷移」
 //   Stack で進む画面: ここに並べ、タブより上に重ねる（開いている間はタブバーを出さない）
