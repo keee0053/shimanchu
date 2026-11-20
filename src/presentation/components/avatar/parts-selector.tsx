@@ -2,18 +2,25 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
-  EYE_TYPE_OPTIONS,
-  HAIR_COLOR_OPTIONS,
-  HAIR_STYLE_OPTIONS,
-  OUTFIT_OPTIONS,
-  SKIN_TONE_OPTIONS,
-} from '@/domain/constants/avatar-parts';
-import type { AvatarConfig } from '@/domain/entities/avatar';
+  EYE_TYPES,
+  HAIR_COLORS,
+  HAIR_STYLES,
+  OUTFIT_TYPES,
+  SKIN_TONES,
+  type AvatarConfig,
+} from '@/domain/entities/avatar';
 import { ThemedText } from '@/presentation/components/themed-text';
 import {
   AVATAR_CUSTOMIZE_TABS,
   type AvatarCustomizeTab,
 } from '@/presentation/constants/avatar-customize-tabs';
+import {
+  EYE_TYPE_LABELS,
+  HAIR_COLOR_OPTIONS,
+  HAIR_STYLE_LABELS,
+  OUTFIT_OPTIONS,
+  SKIN_TONE_OPTIONS,
+} from '@/presentation/constants/avatar-parts';
 import { Spacing } from '@/presentation/constants/theme';
 
 import { AvatarPixelCanvas } from './avatar-pixel-canvas';
@@ -63,11 +70,12 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
           <View>
             <ThemedText style={styles.sectionTitle}>髪色を選ぶ</ThemedText>
             <View style={styles.paletteRow}>
-              {HAIR_COLOR_OPTIONS.map((c) => {
-                const isSelected = config.hairColor.toLowerCase() === c.hex.toLowerCase();
+              {HAIR_COLORS.map((colorId) => {
+                const c = HAIR_COLOR_OPTIONS[colorId];
+                const isSelected = config.hairColor === colorId;
                 return (
                   <Pressable
-                    key={c.id}
+                    key={colorId}
                     accessibilityRole="button"
                     accessibilityLabel={`髪色: ${c.name}`}
                     accessibilityState={{ selected: isSelected }}
@@ -76,7 +84,7 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                       { backgroundColor: c.hex },
                       isSelected && styles.colorCircleSelected,
                     ]}
-                    onPress={() => onChange('hairColor', c.hex)}
+                    onPress={() => onChange('hairColor', colorId)}
                   >
                     {isSelected && <View style={styles.innerDot} />}
                   </Pressable>
@@ -86,18 +94,19 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
 
             <ThemedText style={[styles.sectionTitle, { marginTop: 16 }]}>髪型を選ぶ</ThemedText>
             <View style={styles.grid}>
-              {HAIR_STYLE_OPTIONS.map((h) => {
-                const isSelected = config.hairStyle === h.id;
+              {HAIR_STYLES.map((styleId) => {
+                const name = HAIR_STYLE_LABELS[styleId];
+                const isSelected = config.hairStyle === styleId;
                 return (
                   <Pressable
-                    key={h.id}
+                    key={styleId}
                     accessibilityRole="button"
-                    accessibilityLabel={`髪型: ${h.name}`}
+                    accessibilityLabel={`髪型: ${name}`}
                     accessibilityState={{ selected: isSelected }}
                     style={[styles.gridCard, isSelected && styles.gridCardSelected]}
-                    onPress={() => onChange('hairStyle', h.id)}
+                    onPress={() => onChange('hairStyle', styleId)}
                   >
-                    <AvatarPixelCanvas config={{ ...config, hairStyle: h.id }} size={40} />
+                    <AvatarPixelCanvas config={{ ...config, hairStyle: styleId }} size={40} />
                     <ThemedText
                       style={[
                         styles.cardTitle,
@@ -105,7 +114,7 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                         isSelected && styles.cardTitleSelected,
                       ]}
                     >
-                      {h.name}
+                      {name}
                     </ThemedText>
                   </Pressable>
                 );
@@ -119,18 +128,19 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
           <View>
             <ThemedText style={styles.sectionTitle}>目・表情を選ぶ</ThemedText>
             <View style={styles.grid}>
-              {EYE_TYPE_OPTIONS.map((e) => {
-                const isSelected = config.eyeType === e.id;
+              {EYE_TYPES.map((eyeId) => {
+                const name = EYE_TYPE_LABELS[eyeId];
+                const isSelected = config.eyeType === eyeId;
                 return (
                   <Pressable
-                    key={e.id}
+                    key={eyeId}
                     accessibilityRole="button"
-                    accessibilityLabel={`目・表情: ${e.name}`}
+                    accessibilityLabel={`目・表情: ${name}`}
                     accessibilityState={{ selected: isSelected }}
                     style={[styles.gridCard, isSelected && styles.gridCardSelected]}
-                    onPress={() => onChange('eyeType', e.id)}
+                    onPress={() => onChange('eyeType', eyeId)}
                   >
-                    <AvatarPixelCanvas config={{ ...config, eyeType: e.id }} size={40} />
+                    <AvatarPixelCanvas config={{ ...config, eyeType: eyeId }} size={40} />
                     <ThemedText
                       style={[
                         styles.cardTitle,
@@ -138,7 +148,7 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
                         isSelected && styles.cardTitleSelected,
                       ]}
                     >
-                      {e.name}
+                      {name}
                     </ThemedText>
                   </Pressable>
                 );
@@ -152,16 +162,17 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
           <View>
             <ThemedText style={styles.sectionTitle}>肌色パレット（4〜5段階）</ThemedText>
             <View style={styles.skinList}>
-              {SKIN_TONE_OPTIONS.map((s) => {
-                const isSelected = config.skinTone.toLowerCase() === s.hex.toLowerCase();
+              {SKIN_TONES.map((toneId) => {
+                const s = SKIN_TONE_OPTIONS[toneId];
+                const isSelected = config.skinTone === toneId;
                 return (
                   <Pressable
-                    key={s.id}
+                    key={toneId}
                     accessibilityRole="button"
                     accessibilityLabel={`肌色: ${s.name}`}
                     accessibilityState={{ selected: isSelected }}
                     style={[styles.skinCard, isSelected && styles.skinCardSelected]}
-                    onPress={() => onChange('skinTone', s.hex)}
+                    onPress={() => onChange('skinTone', toneId)}
                   >
                     <View style={[styles.skinColorPreview, { backgroundColor: s.hex }]} />
                     <ThemedText style={styles.skinName}>{s.name}</ThemedText>
@@ -177,18 +188,19 @@ export function PartsSelector({ config, activeTab, onTabChange, onChange }: Part
           <View>
             <ThemedText style={styles.sectionTitle}>服（胴体）を選ぶ</ThemedText>
             <View style={styles.grid}>
-              {OUTFIT_OPTIONS.map((o) => {
-                const isSelected = config.outfit === o.id;
+              {OUTFIT_TYPES.map((outfitId) => {
+                const o = OUTFIT_OPTIONS[outfitId];
+                const isSelected = config.outfit === outfitId;
                 return (
                   <Pressable
-                    key={o.id}
+                    key={outfitId}
                     accessibilityRole="button"
                     accessibilityLabel={`服: ${o.name}`}
                     accessibilityState={{ selected: isSelected }}
                     style={[styles.gridCard, isSelected && styles.gridCardSelected]}
-                    onPress={() => onChange('outfit', o.id)}
+                    onPress={() => onChange('outfit', outfitId)}
                   >
-                    <AvatarPixelCanvas config={{ ...config, outfit: o.id }} size={40} />
+                    <AvatarPixelCanvas config={{ ...config, outfit: outfitId }} size={40} />
                     <ThemedText
                       style={[
                         styles.cardTitle,

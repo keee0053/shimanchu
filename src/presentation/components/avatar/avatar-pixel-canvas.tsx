@@ -7,6 +7,7 @@ import type {
   HairStyle,
   OutfitType,
 } from '@/domain/entities/avatar';
+import { HAIR_COLOR_OPTIONS, SKIN_TONE_OPTIONS } from '@/presentation/constants/avatar-parts';
 
 interface AvatarPixelCanvasProps {
   config: AvatarConfig;
@@ -512,8 +513,10 @@ export function AvatarPixelCanvas({
       });
     };
 
-    const skinPalette = buildSkinPalette(skinTone);
-    const baseHairPalette = buildHairPalette(hairColor);
+    const skinToneHex = SKIN_TONE_OPTIONS[skinTone].hex;
+    const hairColorHex = HAIR_COLOR_OPTIONS[hairColor].hex;
+    const skinPalette = buildSkinPalette(skinToneHex);
+    const baseHairPalette = buildHairPalette(hairColorHex);
     const hairLayer = HAIR_TEMPLATES[hairStyle];
     const hairPalette = { ...baseHairPalette, ...hairLayer.palette };
 
@@ -527,7 +530,7 @@ export function AvatarPixelCanvas({
 
     // 3. 目・表情（gy=13..15, gx=6 と gx=12）＆ 口（gy=16, gx=8..10）
     const eyeDark = '#1E0804';
-    const eyeSoft = shiftRgb(skinTone, -85, -90, -82);
+    const eyeSoft = shiftRgb(skinToneHex, -85, -90, -82);
 
     setPx(8, 16, skinPalette.M);
     setPx(9, 16, shiftRgb(skinPalette.M, -6, -6, -6));
