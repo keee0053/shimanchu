@@ -20,6 +20,7 @@ export default function HomeScreen() {
           href: { pathname: '/groups/[groupId]/manage', params: { groupId: SAMPLE_GROUP_ID } },
         },
         { label: '「島を見せるか」の確認（モーダル）', href: '/presence-prompt' },
+        { label: '家・学校の場所登録', href: '/settings/places' },
       ]}
     />
   );
