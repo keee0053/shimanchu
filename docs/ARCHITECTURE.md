@@ -22,7 +22,7 @@ flowchart LR
   subgraph friend["友達の端末"]
     query["TanStack Query<br/>（サーバーデータのキャッシュ）"]
     zustand["Zustand<br/>（端末内の UI 状態）"]
-    screen["画面（Expo Router）<br/>島・建物・アバター"]
+    screen["画面（Expo Router）<br/>3つの島と海（漂流）・アバター"]
   end
 
   loc -- "島の種類だけを保存" --> db
@@ -38,14 +38,11 @@ flowchart LR
 | 画面           | React Native + Expo / Expo Router     | iOS / Android のアプリ本体。`src/app/` のファイル構成がそのまま画面遷移になる |
 | サーバーデータ | TanStack Query                        | Supabase から取得したデータのキャッシュ・再取得                               |
 | 端末内の状態   | Zustand                               | 選択中のグループ、開いている建物などの UI 状態                                |
-| 位置情報       | expo-location / expo-task-manager     | 位置の取得と島の判定（端末内）。バックグラウンド取得は当面使わない            |
+| 位置情報       | expo-location / expo-task-manager     | 位置の取得と島の判定（端末内）。バックグラウンドは MVP 後にジオフェンスで導入 |
 | 入力           | React Hook Form / Zod                 | フォームの状態管理と入力チェック                                              |
-| 認証           | Supabase Auth（Google）               | ログイン。ユーザー ID は RLS で `auth.uid()` として使う                       |
+| 認証           | Supabase Auth（Google・Apple）        | ログイン。Apple は iOS のみ・リリース前に追加（#39）                          |
 | DB             | PostgreSQL（Supabase）                | データの保存。アプリから直接読み書きするため、RLS が権限管理の要              |
-| リアルタイム   | Supabase Realtime（Postgres Changes） | テーブルの変更を購読して友達の端末に配信                                      |
-
-> ⚠️ Realtime を Broadcast と併用するかはまだ決まっていない。
-> 決まったら上の図と表を更新すること（[CODING_GUIDELINES.md の未決定事項](CODING_GUIDELINES.md#未決定事項)）。
+| リアルタイム   | Supabase Realtime（Postgres Changes） | テーブルの変更を購読して友達の端末に配信。届く相手は RLS で決まる             |
 
 ## アプリ内部の層構成（クリーンアーキテクチャ）
 
