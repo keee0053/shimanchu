@@ -1,4 +1,4 @@
-import type { IslandType, PlaceIslandType } from '@/domain/entities/island';
+import type { IslandType, PlaceIslandType, RegisteredPlaces } from '@/domain/entities/island';
 import type { PlaceRepository } from '@/domain/repositories/place-repository';
 
 import type { PlaceChangeResult } from './save-registered-place';
@@ -12,6 +12,7 @@ export type RemoveRegisteredPlaceDeps = {
 export type RemoveRegisteredPlaceInput = {
   type: PlaceIslandType;
   currentIsland?: IslandType | null;
+  onPlacesUpdated?: (places: RegisteredPlaces) => void;
 };
 
 /**
@@ -20,6 +21,7 @@ export type RemoveRegisteredPlaceInput = {
 export function createRemoveRegisteredPlace(deps: RemoveRegisteredPlaceDeps) {
   return async (input: RemoveRegisteredPlaceInput): Promise<PlaceChangeResult> => {
     const places = await deps.placeRepository.removeRegisteredPlace(input.type);
+    input.onPlacesUpdated?.(places);
     try {
       const evaluation = await deps.updateMyLocation({
         currentIsland: input.currentIsland,

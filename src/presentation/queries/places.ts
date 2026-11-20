@@ -36,10 +36,19 @@ export function useSaveRegisteredPlace() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: { type: PlaceIslandType; place: RegisteredPlace }) =>
+    mutationFn: (input: {
+      type: PlaceIslandType;
+      place: RegisteredPlace;
+      onPlacesCommitted?: (places: RegisteredPlaces) => void;
+    }) =>
       saveRegisteredPlace({
-        ...input,
+        type: input.type,
+        place: input.place,
         currentIsland: getCurrentCachedIsland(queryClient),
+        onPlacesUpdated: (places) => {
+          queryClient.setQueryData(placeKeys.all, places);
+          input.onPlacesCommitted?.(places);
+        },
       }),
     onSuccess: ({ places, evaluation }) => {
       queryClient.setQueryData(placeKeys.all, places);
@@ -60,10 +69,17 @@ export function useRemoveRegisteredPlace() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (type: PlaceIslandType) =>
+    mutationFn: (input: {
+      type: PlaceIslandType;
+      onPlacesCommitted?: (places: RegisteredPlaces) => void;
+    }) =>
       removeRegisteredPlace({
-        type,
+        type: input.type,
         currentIsland: getCurrentCachedIsland(queryClient),
+        onPlacesUpdated: (places) => {
+          queryClient.setQueryData(placeKeys.all, places);
+          input.onPlacesCommitted?.(places);
+        },
       }),
     onSuccess: ({ places, evaluation }) => {
       queryClient.setQueryData(placeKeys.all, places);
