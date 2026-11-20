@@ -175,16 +175,23 @@ export function useUpdateMyLocation() {
 
 ### Realtime
 
-- 購読の処理は **infrastructure のリポジトリに実装**し、「購読解除の関数」を返す形にする（例: `subscribeToGroupLocations(groupId, onChange): () => void`）。中で `supabase.channel(...)` を使い、解除時に `supabase.removeChannel(channel)` する
+- **方式は Postgres Changes**（#48）。届いてよい相手は RLS で決まるので、別の権限の仕組みを作らない。人数が増えて重くなったら、DB から配信する Broadcast に移る
+- **島の画面を開いている間だけ**、チャンネルを1つ購読する（#48）
+  - `user_presence` の変更（RLS で、自分が見てよい人の分だけが届く）と、今のグループの `group_members` の変更（`group_id` で絞る）
+  - 受け取った変更のうち、今のグループの人の分だけを画面で使う
+  - ほかの画面に移ったときやバックグラウンドでは購読を外し、戻ったときに取り直す
+- 購読の処理は **infrastructure のリポジトリに実装**し、「購読解除の関数」を返す形にする（例: `subscribeToIsland(groupId, onChange): () => void`）。中で `supabase.channel(...)` を使い、解除時に `supabase.removeChannel(channel)` する
 - presentation のフックは `useEffect` の中で購読し、クリーンアップで解除関数を呼ぶ
 - 受け取った変更は `queryClient.setQueryData` または `invalidateQueries` で TanStack Query のキャッシュに反映する（Zustand には入れない）
 - チャンネル名は `<対象>:<id>` 形式（例: `group:<groupId>`）
 
 ## 6. 位置情報
 
-- **まずはフォアグラウンドのみで実装する。** バックグラウンド取得は必要性が固まってから追加する（⚠️ **未決定**: 導入時期）
+- **MVP はフォアグラウンドのみで実装する。** バックグラウンドは MVP 後に、家と学校のジオフェンス（入った・出た）で導入する（#47）。「常に許可」の権限・`app.json` の権限文言・ストア審査での説明が必要になる
+- **フォアグラウンドでの更新タイミング**（#47）: 起動時とアプリに戻ってきたときに取得する。開いている間は100m以上動いたら判定し直す。島が変わらなくても15分ごとに upsert する
+- **精度**（#47）: `Accuracy.Balanced`（約100m）。地図で場所を登録するときだけ `High` を使う
 - `expo-location`・`expo-task-manager` は **`src/infrastructure/location/` の中だけで使う**（presentation からの import は ESLint で禁止）。domain に位置取得のインターフェースを置き、infrastructure で実装する
-- 精度（accuracy）・更新間隔・距離のしきい値は `src/infrastructure/location/constants.ts` に定数として置く（バッテリー消費に直結するため、散らばらせない）
+- 上の精度（accuracy）・更新間隔・距離のしきい値は `src/infrastructure/location/constants.ts` に定数として置く（バッテリー消費に直結するため、散らばらせない）
 - **島の判定・漂流の判定は domain の純粋関数にする**（`src/domain/services/`）。位置が取れない・権限がないときに「漂流」状態にするのも domain のルール（エラー画面にしない）
 - 権限は使う直前に要求する
 - `TaskManager.defineTask` はコンポーネントの中ではなく `src/infrastructure/location/` のファイルのトップレベルで呼び、そのファイルを `src/container.ts` で import する（container はルートの `_layout.tsx` から読み込まれるので、アプリ起動時に登録される）
@@ -193,9 +200,19 @@ export function useUpdateMyLocation() {
   - 島の種類: `home`（家）/ `school`（学校）/ `outside`（外出中: 位置は取れたが登録した場所のどこにもいない）/ `drifting`（漂流: 位置が取れない・権限がない）
   - 表示はユーザーごとの場所に関係なく共通の島にする（誰の学校でも同じ「学校島」）
 - 自宅・学校など、ユーザーが登録した場所の座標は**端末の中だけ**に保存する（サーバーには送らない。機種変更時は登録し直し）
-- 端末からの更新が止まった友達（`user_presence.updated_at` から24時間以上）は、表示する側で漂流として扱う。しきい値は domain の定数にする
+- 端末からの更新が止まった友達（`user_presence.updated_at` から24時間以上）は、表示する側で漂流として扱う。しきい値は domain の定数にする。最終更新は、島でアバターを押したときの簡易プロフィールに「3時間前」のように出す（島の上には出さない: #47）
 - そのため、島が変わらなくても定期的に `user_presence` を upsert する。更新間隔は24時間より十分短い値にし、`src/infrastructure/location/constants.ts` に定数として置く。同じ `island_type` での upsert でも、DB のトリガーで `updated_at` は現在時刻に更新される（移動履歴は島が変わったときだけ記録される）
 - 島の移動履歴（`presence_history`）は DB のトリガーが記録する。アプリから書き込まない
+- **島の判定**（#29）
+  - 家と学校は、それぞれ1つだけ登録できる。その場所にいるときに現在地で登録し、地図でピンを動かして直せる
+  - 登録した点から半径以内なら、その島にいるとみなす。半径は本人が小・中・大（100m / 200m / 500m。初期値は 200m）から選ぶ。値は domain の定数にする
+  - 境目で出入りを繰り返さないよう、島から出たかどうかは半径に余裕を足して判定する（余裕の幅も domain の定数にする）
+  - 家と学校の範囲が重なっているときは、中心が近い方の島にする。どちらにも入らなければ `outside`
+- **島の表示**（#29）
+  - 海の上に「自宅の島」「学校の島」「外出中の島」を並べ、漂流中の人は島の周りの海に浮かべる。最初は全体を見せ、島を押すとその島を大きく表示する
+  - 描画は `react-native-svg`、ズームとアバターの動きは `react-native-reanimated` と `react-native-gesture-handler` で行う
+  - 同じ島のアバターは、重ならないように散らす。位置はユーザー ID から決め、開くたびに変わらないようにする。入りきらないときは「+N」を出し、押すと一覧を出す
+  - 島を公開していない友達は出さない。「非公開」のエリアは作らない（#63）
 
 ## 7. フォーム
 
@@ -223,10 +240,7 @@ export type ProfileInput = z.infer<typeof profileSchema>;
 
 決まったら該当する節を書き換え、この一覧から消すこと。
 
-| 項目                                 | 選択肢                                                                                                                                                                                            | 影響する箇所                                                      |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Realtime の方式                      | Postgres Changes のまま／位置の更新は Broadcast で流し、一定間隔で DB に保存するハイブリッド                                                                                                      | Realtime の購読（infrastructure のリポジトリ）、DB の書き込み頻度 |
-| バックグラウンド位置情報の導入時期   | フォアグラウンドのみで作り、必要性が固まったら追加                                                                                                                                                | `src/infrastructure/location/`、`app.json` の権限設定、ストア審査 |
-| Sign in with Apple への対応          | Google ログインを置く場合、iOS の審査で求められることがある                                                                                                                                       | 認証画面、`AuthRepository` の実装、Supabase Auth の設定           |
-| テスト方針                           | テストの仕組み（Jest など）と書く範囲。まずは domain の純粋関数から書くのが効果的                                                                                                                 | `test:` コミット、pre-push フック                                 |
-| 認証セッション（トークン）の保存方法 | 今は `AsyncStorage`（暗号化なし）。`expo-secure-store` で暗号鍵を守り、暗号化したセッションを `AsyncStorage` に保存する方式（Supabase の推奨例）に変える。Google ログインを実装する PR で対応する | `src/infrastructure/supabase/client.ts`、認証の実装               |
+| 項目                                 | 選択肢                                                                                                                                                                                            | 影響する箇所                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| テスト方針                           | テストの仕組み（Jest など）と書く範囲。まずは domain の純粋関数から書くのが効果的                                                                                                                 | `test:` コミット、pre-push フック                   |
+| 認証セッション（トークン）の保存方法 | 今は `AsyncStorage`（暗号化なし）。`expo-secure-store` で暗号鍵を守り、暗号化したセッションを `AsyncStorage` に保存する方式（Supabase の推奨例）に変える。Google ログインを実装する PR で対応する | `src/infrastructure/supabase/client.ts`、認証の実装 |
