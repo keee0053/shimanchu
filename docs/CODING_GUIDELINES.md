@@ -8,6 +8,7 @@ Git・PR・レビューのルールは [CONTRIBUTING.md](../CONTRIBUTING.md)、�
 ## 1. 基本
 
 - コミット前に `npx tsc --noEmit`・`npm run lint`・`npm run format:check` が通ること（pre-push フックと CI でも確認される）
+- テスト（`npm test`）は CI だけで実行される。テストを書いた・ルールを変えたときは手元でも `npm test` を通す（[8. テスト](#8-テスト)）
 - VS Code では保存時に Prettier で自動整形される（推奨拡張を入れること）
 - `any` は使わない。型が分からないときは `unknown` で受けて絞り込む
 - クラスは使わず、**関数と型**で書く（DI コンテナやクラス継承は使わない）
@@ -236,11 +237,35 @@ export const profileSchema = z.object({
 export type ProfileInput = z.infer<typeof profileSchema>;
 ```
 
+## 8. テスト
+
+- 仕組みは `jest-expo`（Expo の推奨）。`npm test` で実行する
+- **壊れると困る domain のルールだけ書く**（年齢の計算、18歳以上の判定、島の判定、漂流の判定など）。ユースケース・画面のテストは書かなくてよい。カバレッジの目標は設けない
+  - CodeRabbit のレビューは差分しか読まず、コードを実行もしないので、計算の正しさや、変えていないところが壊れたことには気づきにくい。そこをテストで補う
+- テストは AI（Claude Code など）に書かせてよい。ただし、中身が仕様どおりか（期待する値が正しいか）は人が確かめる
+- 実行するのは **CI だけ**。push を遅くしないよう、pre-push フックには入れない
+- テストのファイルは、テストする関数の近くの `__tests__/` に `<名前>-test.ts` で置く
+- `describe` / `it` / `expect` はグローバルのまま使う（import しない）。テスト名は日本語で、何を確かめるかを書く
+- 境界の値（ちょうど18歳になる日、島の範囲の端など）を必ず入れる
+
+```ts
+// src/domain/services/__tests__/age-test.ts
+import { calculateAge } from '@/domain/services/age';
+
+describe('calculateAge', () => {
+  it('誕生日の前日はまだ年を取らない', () => {
+    expect(calculateAge(new Date('2008-04-01'), new Date('2026-03-31'))).toBe(17);
+  });
+  it('誕生日の当日に年を取る', () => {
+    expect(calculateAge(new Date('2008-04-01'), new Date('2026-04-01'))).toBe(18);
+  });
+});
+```
+
 ## 未決定事項
 
 決まったら該当する節を書き換え、この一覧から消すこと。
 
 | 項目                                 | 選択肢                                                                                                                                                                                            | 影響する箇所                                        |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| テスト方針                           | テストの仕組み（Jest など）と書く範囲。まずは domain の純粋関数から書くのが効果的                                                                                                                 | `test:` コミット、pre-push フック                   |
 | 認証セッション（トークン）の保存方法 | 今は `AsyncStorage`（暗号化なし）。`expo-secure-store` で暗号鍵を守り、暗号化したセッションを `AsyncStorage` に保存する方式（Supabase の推奨例）に変える。Google ログインを実装する PR で対応する | `src/infrastructure/supabase/client.ts`、認証の実装 |

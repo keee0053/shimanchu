@@ -181,7 +181,7 @@ shimanchu/
 │   ├── application/              # [application] ユースケース（まだ空）
 │   ├── domain/                   # [domain] アプリのルール（まだ空）
 │   │   ├── entities/             #   エンティティの型
-│   │   ├── services/             #   ルール（純粋関数）
+│   │   ├── services/             #   ルール（純粋関数）。テストは近くの __tests__/<名前>-test.ts
 │   │   └── repositories/         #   リポジトリのインターフェース
 │   ├── infrastructure/           # [infrastructure] 外部とのやり取りの実装
 │   │   └── supabase/
@@ -214,16 +214,16 @@ shimanchu/
 │   ├── SETUP.md                  # 環境構築手順
 │   └── CODING_GUIDELINES.md      # コーディング規約（命名・層構成・データ取得・状態管理・位置情報など）
 ├── .github/
-│   ├── workflows/ci.yml          # CI（PR 時に PR タイトル・コミットメッセージ・型・Lint・整形をチェック）
+│   ├── workflows/ci.yml          # CI（PR 時に PR タイトル・コミットメッセージ・型・Lint・整形・テストをチェック）
 │   └── pull_request_template.md  # PR テンプレート
 ├── .coderabbit.yaml               # CodeRabbit（AI コードレビュー）の設定
 ├── CONTRIBUTING.md               # チーム開発ルール（ブランチ・コミット・PR・レビュー）
 ├── CLAUDE.md                     # Claude Code 向けのプロジェクトルール
 │
 ├── app.json                      # Expo のアプリ設定（アプリ名・アイコン・位置情報の権限文言・プラグイン）
-├── package.json                  # 依存パッケージと npm スクリプト
+├── package.json                  # 依存パッケージと npm スクリプト（jest の設定もここ。preset は jest-expo）
 ├── package-lock.json             # 依存バージョンの固定（コミットする）
-├── tsconfig.json                 # TypeScript 設定（strict、"@/*" → src/* のパスエイリアス）
+├── tsconfig.json                 # TypeScript 設定（strict、"@/*" → src/* のパスエイリアス、jest の型）
 ├── eslint.config.js              # ESLint 設定（Expo 推奨 + Prettier 連携 + 層の依存ルール）
 ├── .prettierrc.json              # Prettier 設定（.prettierignore で対象外を指定）
 ├── expo-env.d.ts                 # 🚫 Expo の型定義（expo start 時に自動生成）
