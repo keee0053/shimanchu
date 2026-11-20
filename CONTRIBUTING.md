@@ -117,6 +117,7 @@ npm run setup-hooks
 - PR のブランチ名が `feature/PascalCase` か（`develop` → `main` のリリース用 PR は対象外）
 - PR に含まれるコミットのメッセージ
 - 型チェック・Lint・整形
+- テスト（`npm test`）。push を遅くしないよう、pre-push フックでは実行せず CI だけで実行する
 
 CI が失敗している PR はマージしない。
 
@@ -156,6 +157,12 @@ CI が失敗している PR はマージしない。
 - パッケージの追加は `npm install` ではなく `npx expo install <package>` を使う（SDK に合うバージョンが入るため）
 - `ios/` `android/` は自動生成されるので直接編集しない。ネイティブの設定は `app.json` で行う
 - 画面は `src/app/` に置き、画面以外のコードは `src/app/` に置かない
+
+### テスト
+
+- 壊れると困る domain のルール（年齢の計算、島の判定、漂流の判定など）だけテストを書く。ユースケース・画面のテストは書かなくてよい
+- テストは AI（Claude Code など）に書かせてよいが、中身が仕様どおりかは人が確かめる（レビューでも確認する）
+- テストは CI で実行される。書き方は [docs/CODING_GUIDELINES.md](docs/CODING_GUIDELINES.md) の「8. テスト」を参照
 
 ### DB（Supabase）
 

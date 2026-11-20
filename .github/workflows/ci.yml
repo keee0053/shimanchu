@@ -70,3 +70,7 @@ jobs:
 
       - name: 整形チェック
         run: npm run format:check
+
+      # テストは push を遅くしないよう pre-push フックでは実行せず、CI だけで実行する
+      - name: テスト
+        run: npm test

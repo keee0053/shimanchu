@@ -31,11 +31,12 @@ npx expo install <pkg>    # パッケージ追加（npm install ではなくこ�
 npx tsc --noEmit          # 型チェック
 npm run lint              # ESLint（Prettier 連携）
 npm run format            # Prettier で整形（format:check は確認のみ）
+npm test                  # テスト（jest-expo。CI だけで実行され、pre-push フックでは実行されない）
 npm run gen:types         # DB の型を src/infrastructure/supabase/database.types.ts に生成（要 supabase start）
 supabase migration new <name>  # マイグレーション作成
 ```
 
-作業完了前に `npx tsc --noEmit`・`npm run lint`・`npm run format:check` を通すこと。
+作業完了前に `npx tsc --noEmit`・`npm run lint`・`npm run format:check` を通すこと。テストを書いた・domain のルールを変えたときは `npm test` も通すこと。
 
 ## コードを書くときの要点
 
@@ -59,6 +60,7 @@ supabase migration new <name>  # マイグレーション作成
 - DB 変更は必ずマイグレーションで。新しいテーブルは RLS を有効にしてポリシーを書く。マージ済みマイグレーションは編集しない
 - DB の行の型は手書きせず `npm run gen:types` で生成したもの（infrastructure 内）を使う。domain のエンティティは必要な項目だけ手で定義し、リポジトリの実装で変換する
 - 位置情報: MVP はフォアグラウンドのみ（バックグラウンドは MVP 後にジオフェンスで導入）。座標は DB に保存せずサーバーにも送らない（端末で島を判定し、`user_presence` に島の種類だけ送る。登録した場所の座標も端末内だけ）。取得失敗・権限拒否は「漂流」状態として扱う（domain のルール）。座標をログに出さない。`TaskManager.defineTask` は `src/infrastructure/location/` のトップレベルで定義し、`src/container.ts` で import する
+- テスト: 壊れると困る domain のルール（年齢・島の判定・漂流の判定など）だけ書く。ユースケース・画面は書かない。テストする関数の近くの `__tests__/<名前>-test.ts` に置く。期待する値が仕様どおりかはユーザーに確かめてもらう
 - フォームは React Hook Form + Zod（`src/presentation/schemas/`、型は `z.infer`、エラーメッセージは日本語）
 - 秘密情報（`service_role` キー、`.env.local`）をコードやコミットに含めない。`EXPO_PUBLIC_` 付きの環境変数は公開される前提で扱う
 
@@ -66,7 +68,6 @@ supabase migration new <name>  # マイグレーション作成
 
 以下はチームでまだ決まっていない。関係する実装をするときは、勝手に決めずにユーザーに確認すること（一覧は docs/CODING_GUIDELINES.md 末尾）。
 
-- テスト方針
 - 認証セッションの保存方法（今は AsyncStorage。Google ログイン実装時に SecureStore を使った暗号化方式へ変更予定）
 
 ## 現状メモ
