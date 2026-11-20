@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-# CodeRabbit（AI コードレビュー）の設定。PR を作ると自動でレビューされる
+# CodeRabbit（AI コードレビュー）の設定。スターが10個未満の公開リポジトリは自動でレビューされないため、PR に `@coderabbitai review` とコメントして頼む（CONTRIBUTING.md）
 # 設定項目: https://docs.coderabbit.ai/reference/configuration
 
 language: ja-JP
