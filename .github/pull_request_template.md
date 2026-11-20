@@ -56,6 +56,7 @@ prefix: add / fix / refactor / test / chore / perf / docs
 - [ ] 座標を DB に保存したり、サーバーに送ったりしていない（位置情報を扱う場合）
 - [ ] 秘密情報（`service_role` キー、`.env.local` など）を含めていない
 - [ ] AI ツール表記（Co-Authored-By 等）を含めていない
+- [ ] PR を作った後、PR に `@coderabbitai review` とコメントして CodeRabbit にレビューを頼んだ（自動ではレビューされない）
 
 ## レビュアーへの補足
 
