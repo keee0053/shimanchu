@@ -3,6 +3,7 @@
 -- 友達ではない人には、同じグループにいる間だけ、次の順で判定する。
 --   1. 相手ごとの上書き（group_presence_overrides）があればそれに従う
 --   2. なければ全体の設定（group_presence_settings）に従う。行がない・未設定（NULL）なら見せない
+-- 履歴は、見せ始めた日時と、同じグループにいるようになった日時の遅いほうより後の分だけ見せる。
 -- 設定や上書きは本人しか読めない。見せていないことは相手に分からない（島に出さないだけ。#63）。
 
 -- 全体の設定（1人1行。行がなければ未設定）
@@ -181,7 +182,10 @@ $$;
 
 -- user_id の履歴を、ログイン中のユーザーがいつより後の分まで見てよいか（#57 の判定に、友達ではないグループのメンバーを足す）
 -- 本人なら全期間（-infinity）、島を公開している友達なら公開を始めた日時、
--- 見せている友達ではないグループのメンバーなら見せ始めた日時、それ以外は NULL（見られない）
+-- 見せている友達ではないグループのメンバーなら、見せ始めた日時と同じグループにいるようになった日時の遅いほう、
+-- それ以外は NULL（見られない）
+-- 同じグループにいるようになった日時は、2人の参加日時の遅いほう（複数のグループで一緒なら最も早いもの）。
+-- グループに入る前・抜けて入り直す前の履歴は見せない
 create or replace function private.presence_history_visible_since(p_user_id uuid)
 returns timestamptz
 language plpgsql
@@ -193,6 +197,8 @@ declare
   v_viewer_id uuid := (select auth.uid());
   v_share_presence boolean;
   v_share_presence_since timestamptz;
+  v_together_since timestamptz;
+  v_group_since timestamptz;
 begin
   if v_viewer_id is null then
     return null;
@@ -211,10 +217,23 @@ begin
     return case when v_share_presence then v_share_presence_since end;
   end if;
 
-  if not public.shares_group_with(p_user_id) then
+  select min(greatest(me.joined_at, other.joined_at))
+  into v_together_since
+  from public.group_members me
+  join public.group_members other on other.group_id = me.group_id
+  where me.user_id = v_viewer_id
+    and other.user_id = p_user_id;
+
+  if v_together_since is null then
     return null;
   end if;
 
-  return private.group_presence_since(p_user_id);
+  -- greatest は NULL を無視するため、見せていないときは先に返す
+  v_group_since := private.group_presence_since(p_user_id);
+  if v_group_since is null then
+    return null;
+  end if;
+
+  return greatest(v_group_since, v_together_since);
 end;
 $$;
