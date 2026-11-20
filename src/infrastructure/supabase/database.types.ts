@@ -195,14 +195,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "avatar_config": NonNullable<Json>,"created_at": string,"discoverable": boolean,"display_name": string,"id": string,"public_id": string,"updated_at": string
+                    "avatar_config": NonNullable<Json>,"created_at": string,"discoverable": boolean,"display_name": string,"id": string,"image_path": string | null,"public_id": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "avatar_config": NonNullable<Json>,"created_at"?: string,"discoverable"?: boolean,"display_name": string,"id": string,"public_id": string,"updated_at"?: string
+                    "avatar_config": NonNullable<Json>,"created_at"?: string,"discoverable"?: boolean,"display_name": string,"id": string,"image_path"?: string | null,"public_id": string,"updated_at"?: string
                   }
                   Update: {
-                    "avatar_config"?: NonNullable<Json>,"created_at"?: string,"discoverable"?: boolean,"display_name"?: string,"id"?: string,"public_id"?: string,"updated_at"?: string
+                    "avatar_config"?: NonNullable<Json>,"created_at"?: string,"discoverable"?: boolean,"display_name"?: string,"id"?: string,"image_path"?: string | null,"public_id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     
