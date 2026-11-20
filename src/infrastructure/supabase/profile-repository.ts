@@ -64,7 +64,9 @@ export const supabaseProfileRepository: ProfileRepository = {
         gender: input.gender,
         discoverable: input.discoverable,
       })
-      .eq('id', userId);
+      .eq('id', userId)
+      .select('id')
+      .single();
 
     if (error) throw error;
   },

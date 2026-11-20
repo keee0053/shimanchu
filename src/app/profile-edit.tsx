@@ -236,7 +236,11 @@ export default function ProfileEditScreen() {
           control={control}
           name="discoverable"
           render={({ field: { onChange, value } }) => (
-            <Switch value={value} onValueChange={onChange} />
+            <Switch
+              accessibilityLabel="友達の友達としてグループ候補に表示する"
+              value={value}
+              onValueChange={onChange}
+            />
           )}
         />
       </View>
