@@ -19,18 +19,21 @@ comment on column public.profiles.birth_date_visibility is '生年月日の公�
 comment on column public.profiles.gender is '性別。male / female / other / unspecified（回答しない）';
 
 -- 生年月日は 18歳以上（#50）、120年前まで
--- current_date を使う CHECK 制約は行を作ったあとに再評価されないため、作成・更新のときにトリガーで検査する
+-- 今日の日付で判定する CHECK 制約は行を作ったあとに再評価されないため、作成・更新のときにトリガーで検査する
+-- DB のタイムゾーンは UTC なので、日本時間の日付で判定する（current_date だと日本時間の朝9時に切り替わる）
 create function private.check_birth_date()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
+declare
+  v_today date := (now() at time zone 'Asia/Tokyo')::date;
 begin
-  if new.birth_date > (current_date - interval '18 years')::date then
+  if new.birth_date > (v_today - interval '18 years')::date then
     raise exception 'birth_date must be at least 18 years ago'
       using errcode = 'check_violation';
   end if;
-  if new.birth_date < (current_date - interval '120 years')::date then
+  if new.birth_date < (v_today - interval '120 years')::date then
     raise exception 'birth_date must be within 120 years'
       using errcode = 'check_violation';
   end if;
@@ -41,6 +44,8 @@ $$;
 create trigger profiles_check_birth_date
   before insert or update of birth_date on public.profiles
   for each row execute function private.check_birth_date();
+
+revoke execute on function private.check_birth_date() from public, anon, authenticated;
 
 -- 列単位の権限
 -- 本人が作成・更新できる列に足す
@@ -82,6 +87,7 @@ as $$
 $$;
 
 -- p_user_id の年齢を、公開範囲に合わせて返す（本人には常に返す）
+-- 年齢は日本時間の日付で数える（check_birth_date と同じ理由）
 create function private.visible_age(p_user_id uuid)
 returns integer
 language sql
@@ -89,7 +95,7 @@ stable
 security definer
 set search_path = ''
 as $$
-  select extract(year from age(current_date, p.birth_date))::integer
+  select extract(year from age((now() at time zone 'Asia/Tokyo')::date, p.birth_date))::integer
   from public.profiles p
   where p.id = p_user_id
     and (p.id = (select auth.uid()) or p.birth_date_visibility in ('full', 'age'));
