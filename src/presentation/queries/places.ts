@@ -1,15 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import {
+  locationRepository,
+  placeRepository,
+  removeRegisteredPlace,
+  saveRegisteredPlace,
+} from '@/container';
 import type {
   Coordinates,
   PlaceIslandType,
   RegisteredPlace,
   RegisteredPlaces,
-  UserPresence,
 } from '@/domain/entities/island';
-import { locationRepository, placeRepository, updateMyLocation } from '@/container';
 
-import { presenceKeys } from './presence';
+import { getCurrentCachedIsland, presenceKeys } from './presence';
 
 export const placeKeys = {
   all: ['places'] as const,
@@ -32,18 +36,18 @@ export function useSaveRegisteredPlace() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: { type: PlaceIslandType; place: RegisteredPlace }) => {
-      const next = await placeRepository.saveRegisteredPlace(input.type, input.place);
-      const currentIsland =
-        queryClient.getQueryData<UserPresence | null>(presenceKeys.mine())?.islandType ?? null;
-      const evaluation = await updateMyLocation({ currentIsland });
-      return { places: next, evaluation };
-    },
+    mutationFn: (input: { type: PlaceIslandType; place: RegisteredPlace }) =>
+      saveRegisteredPlace({
+        ...input,
+        currentIsland: getCurrentCachedIsland(queryClient),
+      }),
     onSuccess: ({ places, evaluation }) => {
       queryClient.setQueryData(placeKeys.all, places);
-      queryClient.setQueryData(presenceKeys.latestEvaluation(), evaluation);
-      if (evaluation.presence) {
-        queryClient.setQueryData(presenceKeys.mine(), evaluation.presence);
+      if (evaluation) {
+        queryClient.setQueryData(presenceKeys.latestEvaluation(), evaluation);
+        if (evaluation.presence) {
+          queryClient.setQueryData(presenceKeys.mine(), evaluation.presence);
+        }
       }
     },
   });
@@ -56,18 +60,18 @@ export function useRemoveRegisteredPlace() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (type: PlaceIslandType) => {
-      const next = await placeRepository.removeRegisteredPlace(type);
-      const currentIsland =
-        queryClient.getQueryData<UserPresence | null>(presenceKeys.mine())?.islandType ?? null;
-      const evaluation = await updateMyLocation({ currentIsland });
-      return { places: next, evaluation };
-    },
+    mutationFn: (type: PlaceIslandType) =>
+      removeRegisteredPlace({
+        type,
+        currentIsland: getCurrentCachedIsland(queryClient),
+      }),
     onSuccess: ({ places, evaluation }) => {
       queryClient.setQueryData(placeKeys.all, places);
-      queryClient.setQueryData(presenceKeys.latestEvaluation(), evaluation);
-      if (evaluation.presence) {
-        queryClient.setQueryData(presenceKeys.mine(), evaluation.presence);
+      if (evaluation) {
+        queryClient.setQueryData(presenceKeys.latestEvaluation(), evaluation);
+        if (evaluation.presence) {
+          queryClient.setQueryData(presenceKeys.mine(), evaluation.presence);
+        }
       }
     },
   });

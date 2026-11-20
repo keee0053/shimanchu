@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
@@ -30,30 +30,18 @@ import {
   useMyPresence,
   useUpdateMyLocation,
 } from '@/presentation/queries/presence';
+import { formatUpdatedAt } from '@/presentation/utils/format-updated-at';
 
 type PlaceDraft = {
   coordinates: Coordinates | null;
   radius: PlaceRadius;
+  version: number;
 };
-
-function formatUpdatedAt(isoString: string | null): string {
-  if (!isoString) {
-    return '未判定';
-  }
-  const date = new Date(isoString);
-  if (Number.isNaN(date.getTime())) {
-    return '未判定';
-  }
-  return date.toLocaleTimeString('ja-JP', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-}
 
 export default function PlacesSettingsScreen() {
   const [selectedType, setSelectedType] = useState<PlaceIslandType>('home');
   const [drafts, setDrafts] = useState<Partial<Record<PlaceIslandType, PlaceDraft>>>({});
+  const draftVersionRef = useRef(0);
   const [focusVersion, setFocusVersion] = useState(0);
   const [permissionNotice, setPermissionNotice] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -86,25 +74,29 @@ export default function PlacesSettingsScreen() {
   const islandInfo = displayedIsland ? ISLAND_LABELS[displayedIsland] : null;
   const tabMeta = PLACE_ISLAND_LABELS[selectedType];
 
-  const updateDraft = (patch: Partial<PlaceDraft>) => {
+  const updateDraft = (patch: Partial<Omit<PlaceDraft, 'version'>>) => {
+    draftVersionRef.current += 1;
+    const nextVersion = draftVersionRef.current;
     setDrafts((prev) => {
-      const base: PlaceDraft = prev[selectedType] ?? {
+      const base = prev[selectedType] ?? {
         coordinates: savedPlaceForTab?.coordinates ?? null,
         radius: savedPlaceForTab?.radius ?? DEFAULT_PLACE_RADIUS,
+        version: nextVersion,
       };
       return {
         ...prev,
         [selectedType]: {
           ...base,
           ...patch,
+          version: nextVersion,
         },
       };
     });
   };
 
-  const clearDraft = (type: PlaceIslandType) => {
+  const clearDraftIfUnchanged = (type: PlaceIslandType, expectedVersion: number | undefined) => {
     setDrafts((prev) => {
-      if (!(type in prev)) {
+      if (!(type in prev) || prev[type]?.version !== expectedVersion) {
         return prev;
       }
       const next = { ...prev };
@@ -124,12 +116,19 @@ export default function PlacesSettingsScreen() {
 
   const handleRefreshIsland = async () => {
     setPermissionNotice(null);
-    const result = await updateLocationMutation.mutateAsync({
-      currentIsland: displayedIsland,
-    });
-    if (result.islandType === 'drifting') {
+    setActionMessage(null);
+    try {
+      const result = await updateLocationMutation.mutateAsync({
+        currentIsland: displayedIsland,
+      });
+      if (result.islandType === 'drifting') {
+        setPermissionNotice(
+          '位置情報を取得できない、または権限が許可されていないため「漂流中」として判定しました。',
+        );
+      }
+    } catch {
       setPermissionNotice(
-        '位置情報を取得できない、または権限が許可されていないため「漂流中」として判定しました。',
+        '位置判定の更新に失敗しました。通信環境をご確認のうえ再試行してください。',
       );
     }
   };
@@ -137,35 +136,55 @@ export default function PlacesSettingsScreen() {
   const handleFetchCurrentPosition = async () => {
     setPermissionNotice(null);
     setActionMessage(null);
-    const coords = await currentPositionMutation.mutateAsync();
-    if (!coords) {
+    try {
+      const coords = await currentPositionMutation.mutateAsync();
+      if (!coords) {
+        setPermissionNotice(
+          '現在地を取得できませんでした。位置情報の権限または端末の位置情報設定をご確認ください。',
+        );
+        return;
+      }
+      updateDraft({ coordinates: coords });
+      setFocusVersion((v) => v + 1);
+      setActionMessage('現在地にピンを置きました。必要なら地図上で微調整して保存してください。');
+    } catch {
       setPermissionNotice(
         '現在地を取得できませんでした。位置情報の権限または端末の位置情報設定をご確認ください。',
       );
-      return;
     }
-    updateDraft({ coordinates: coords });
-    setFocusVersion((v) => v + 1);
-    setActionMessage('現在地にピンを置きました。必要なら地図上で微調整して保存してください。');
   };
 
   const handleSavePlace = async () => {
     if (!draftCoords) {
       return;
     }
+    setPermissionNotice(null);
     setActionMessage(null);
     const targetType = selectedType;
-    const { evaluation } = await savePlaceMutation.mutateAsync({
-      type: targetType,
-      place: {
-        coordinates: draftCoords,
-        radius: draftRadius,
-      },
-    });
-    clearDraft(targetType);
-    setActionMessage(
-      `${PLACE_ISLAND_LABELS[targetType].label}を端末に保存しました（現在の判定: ${ISLAND_LABELS[evaluation.islandType].label}）。`,
-    );
+    const targetLabel = PLACE_ISLAND_LABELS[targetType].label;
+    const targetVersion = drafts[targetType]?.version;
+
+    try {
+      const { evaluation, syncFailed } = await savePlaceMutation.mutateAsync({
+        type: targetType,
+        place: {
+          coordinates: draftCoords,
+          radius: draftRadius,
+        },
+      });
+      clearDraftIfUnchanged(targetType, targetVersion);
+      if (syncFailed || !evaluation) {
+        setPermissionNotice(
+          `${targetLabel}を端末に保存しましたが、現在の島の同期に失敗しました。「今すぐ更新」から再試行してください。`,
+        );
+        return;
+      }
+      setActionMessage(
+        `${targetLabel}を端末に保存しました（現在の判定: ${ISLAND_LABELS[evaluation.islandType].label}）。`,
+      );
+    } catch {
+      setPermissionNotice(`${targetLabel}の保存に失敗しました。もう一度お試しください。`);
+    }
   };
 
   const handleRemovePlace = () => {
@@ -180,11 +199,24 @@ export default function PlacesSettingsScreen() {
           text: '解除する',
           style: 'destructive',
           onPress: async () => {
-            const { evaluation } = await removePlaceMutation.mutateAsync(targetType);
-            clearDraft(targetType);
-            setActionMessage(
-              `${targetLabel}の登録を解除しました（現在の判定: ${ISLAND_LABELS[evaluation.islandType].label}）。`,
-            );
+            setPermissionNotice(null);
+            setActionMessage(null);
+            const targetVersion = drafts[targetType]?.version;
+            try {
+              const { evaluation, syncFailed } = await removePlaceMutation.mutateAsync(targetType);
+              clearDraftIfUnchanged(targetType, targetVersion);
+              if (syncFailed || !evaluation) {
+                setPermissionNotice(
+                  `${targetLabel}の登録を解除しましたが、現在の島の同期に失敗しました。「今すぐ更新」から再試行してください。`,
+                );
+                return;
+              }
+              setActionMessage(
+                `${targetLabel}の登録を解除しました（現在の判定: ${ISLAND_LABELS[evaluation.islandType].label}）。`,
+              );
+            } catch {
+              setPermissionNotice(`${targetLabel}の解除に失敗しました。もう一度お試しください。`);
+            }
           },
         },
       ],

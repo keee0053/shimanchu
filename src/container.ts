@@ -2,6 +2,8 @@
 // infrastructure の実装を domain のインターフェースに当てはめ、presentation に渡す。
 // 層をまたいで import してよいのはこのファイルだけ（eslint.config.js のルール参照）。
 
+import { createRemoveRegisteredPlace } from '@/application/remove-registered-place';
+import { createSaveRegisteredPlace } from '@/application/save-registered-place';
 import { createUpdateMyLocation } from '@/application/update-my-location';
 import type { LocationRepository } from '@/domain/repositories/location-repository';
 import type { PlaceRepository } from '@/domain/repositories/place-repository';
@@ -19,6 +21,16 @@ export const updateMyLocation = createUpdateMyLocation({
   locationRepository,
   placeRepository,
   presenceRepository,
+});
+
+export const saveRegisteredPlace = createSaveRegisteredPlace({
+  placeRepository,
+  updateMyLocation,
+});
+
+export const removeRegisteredPlace = createRemoveRegisteredPlace({
+  placeRepository,
+  updateMyLocation,
 });
 
 export { PRESENCE_HEARTBEAT_INTERVAL_MS };
