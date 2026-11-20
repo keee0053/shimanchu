@@ -17,6 +17,7 @@ export type SaveRegisteredPlaceInput = {
   type: PlaceIslandType;
   place: RegisteredPlace;
   currentIsland?: IslandType | null;
+  onPlacesUpdated?: (places: RegisteredPlaces) => void;
 };
 
 export type PlaceChangeResult = {
@@ -31,6 +32,7 @@ export type PlaceChangeResult = {
 export function createSaveRegisteredPlace(deps: SaveRegisteredPlaceDeps) {
   return async (input: SaveRegisteredPlaceInput): Promise<PlaceChangeResult> => {
     const places = await deps.placeRepository.saveRegisteredPlace(input.type, input.place);
+    input.onPlacesUpdated?.(places);
     try {
       const evaluation = await deps.updateMyLocation({
         currentIsland: input.currentIsland,

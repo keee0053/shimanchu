@@ -171,8 +171,10 @@ export default function PlacesSettingsScreen() {
           coordinates: draftCoords,
           radius: draftRadius,
         },
+        onPlacesCommitted: () => {
+          clearDraftIfUnchanged(targetType, targetVersion);
+        },
       });
-      clearDraftIfUnchanged(targetType, targetVersion);
       if (syncFailed || !evaluation) {
         setPermissionNotice(
           `${targetLabel}を端末に保存しましたが、現在の島の同期に失敗しました。「今すぐ更新」から再試行してください。`,
@@ -203,8 +205,12 @@ export default function PlacesSettingsScreen() {
             setActionMessage(null);
             const targetVersion = drafts[targetType]?.version;
             try {
-              const { evaluation, syncFailed } = await removePlaceMutation.mutateAsync(targetType);
-              clearDraftIfUnchanged(targetType, targetVersion);
+              const { evaluation, syncFailed } = await removePlaceMutation.mutateAsync({
+                type: targetType,
+                onPlacesCommitted: () => {
+                  clearDraftIfUnchanged(targetType, targetVersion);
+                },
+              });
               if (syncFailed || !evaluation) {
                 setPermissionNotice(
                   `${targetLabel}の登録を解除しましたが、現在の島の同期に失敗しました。「今すぐ更新」から再試行してください。`,
