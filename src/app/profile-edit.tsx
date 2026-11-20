@@ -3,10 +3,10 @@ import { useProfile, useUpdateProfile } from '@/presentation/queries/profiles';
 import { profileFormSchema, type ProfileFormData } from '@/presentation/schemas/profile';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -32,8 +32,9 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
 
 export default function ProfileEditScreen() {
   const currentUserId = 'target-user-id'; // 認証実装（#21）後にログイン中のユーザー ID に差し替え
-  const { data: profile, isLoading } = useProfile(currentUserId);
+  const { data: profile, isLoading, isError, isFetching, refetch } = useProfile(currentUserId);
   const updateMutation = useUpdateProfile();
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const {
     control,
@@ -52,7 +53,16 @@ export default function ProfileEditScreen() {
     },
   });
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/me');
+  };
+
   const onSubmit = (data: ProfileFormData) => {
+    setSaveStatus('idle');
     updateMutation.mutate(
       {
         userId: currentUserId,
@@ -68,12 +78,10 @@ export default function ProfileEditScreen() {
       },
       {
         onSuccess: () => {
-          Alert.alert('完了', 'プロフィールを更新しました', [
-            { text: 'OK', onPress: () => router.back() },
-          ]);
+          setSaveStatus('success');
         },
         onError: () => {
-          Alert.alert('エラー', '保存に失敗しました。時間をおいて再試行してください。');
+          setSaveStatus('error');
         },
       },
     );
@@ -83,6 +91,54 @@ export default function ProfileEditScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.stateContainer}>
+        <Text style={styles.stateMessage}>
+          プロフィールの取得に失敗しました。通信状況を確認して再読み込みしてください。
+        </Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          style={[styles.saveButton, isFetching && styles.buttonDisabled]}
+          onPress={() => {
+            void refetch();
+          }}
+          disabled={isFetching}
+        >
+          {isFetching ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.saveButtonText}>再読み込み</Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityRole="button"
+          style={styles.secondaryButton}
+          onPress={handleBack}
+        >
+          <Text style={styles.secondaryButtonText}>前の画面に戻る</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <View style={styles.stateContainer}>
+        <Text style={styles.stateMessage}>
+          プロフィールがまだ作成されていません。初回設定を完了してから編集してください。
+        </Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          style={styles.secondaryButton}
+          onPress={handleBack}
+        >
+          <Text style={styles.secondaryButtonText}>前の画面に戻る</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -245,8 +301,48 @@ export default function ProfileEditScreen() {
         />
       </View>
 
+      {saveStatus === 'success' && (
+        <View
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          style={[styles.statusBanner, styles.successBanner]}
+        >
+          <Text style={styles.successBannerText}>プロフィールを更新しました</Text>
+          <TouchableOpacity
+            accessibilityRole="button"
+            style={styles.bannerActionButton}
+            onPress={handleBack}
+          >
+            <Text style={styles.successActionText}>前の画面に戻る</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {saveStatus === 'error' && (
+        <View
+          accessibilityRole="alert"
+          accessibilityLiveRegion="assertive"
+          style={[styles.statusBanner, styles.errorBanner]}
+        >
+          <Text style={styles.errorBannerText}>
+            保存に失敗しました。時間をおいて再試行してください。
+          </Text>
+          <TouchableOpacity
+            accessibilityRole="button"
+            style={styles.bannerActionButton}
+            onPress={() => {
+              void handleSubmit(onSubmit)();
+            }}
+            disabled={updateMutation.isPending}
+          >
+            <Text style={styles.errorActionText}>再試行</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* 保存ボタン */}
       <TouchableOpacity
+        accessibilityRole="button"
         style={[styles.saveButton, updateMutation.isPending && styles.buttonDisabled]}
         onPress={() => {
           void handleSubmit(onSubmit)();
@@ -276,6 +372,79 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  stateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: '#f8f9fa',
+    gap: 12,
+  },
+  stateMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    color: '#495057',
+    marginBottom: 8,
+  },
+  secondaryButton: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#ced4da',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    color: '#495057',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  statusBanner: {
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  successBanner: {
+    backgroundColor: '#ebfbee',
+    borderColor: '#69db7c',
+  },
+  errorBanner: {
+    backgroundColor: '#fff5f5',
+    borderColor: '#ffa8a8',
+  },
+  successBannerText: {
+    flex: 1,
+    color: '#2b8a3e',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  errorBannerText: {
+    flex: 1,
+    color: '#c92a2a',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bannerActionButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  successActionText: {
+    color: '#2b8a3e',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
+  },
+  errorActionText: {
+    color: '#c92a2a',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
   },
   heading: {
     fontSize: 22,
