@@ -4,13 +4,13 @@
 
 ## 全体像
 
-Expo で作ったアプリが expo-location で位置を取得し、Supabase（PostgreSQL）に保存する。
+Expo で作ったアプリが expo-location で位置を取得し、端末の中で今いる島（家・学校・外出中・漂流）を判定して、島の種類だけを Supabase（PostgreSQL）に保存する。座標はサーバーに送らない。
 Realtime で友達の端末に変更が配信され、アプリ内のキャッシュ（TanStack Query）が更新されて画面に反映される。
 
 ```mermaid
 flowchart LR
   subgraph me["自分の端末"]
-    loc["expo-location<br/>（位置取得）"]
+    loc["expo-location<br/>（位置取得・島の判定）"]
   end
 
   subgraph supabase["Supabase"]
@@ -22,10 +22,10 @@ flowchart LR
   subgraph friend["友達の端末"]
     query["TanStack Query<br/>（サーバーデータのキャッシュ）"]
     zustand["Zustand<br/>（端末内の UI 状態）"]
-    screen["画面（Expo Router）<br/>島・建物・アバター"]
+    screen["画面（Expo Router）<br/>3つの島と海（漂流）・アバター"]
   end
 
-  loc -- "位置・エリアを保存" --> db
+  loc -- "島の種類だけを保存" --> db
   auth -. "auth.uid() を RLS で使用" .-> db
   db -- "変更を検知" --> rt
   rt -- "変更を配信" --> query
@@ -38,14 +38,11 @@ flowchart LR
 | 画面           | React Native + Expo / Expo Router     | iOS / Android のアプリ本体。`src/app/` のファイル構成がそのまま画面遷移になる |
 | サーバーデータ | TanStack Query                        | Supabase から取得したデータのキャッシュ・再取得                               |
 | 端末内の状態   | Zustand                               | 選択中のグループ、開いている建物などの UI 状態                                |
-| 位置情報       | expo-location / expo-task-manager     | 位置の取得。バックグラウンド取得は当面使わない                                |
+| 位置情報       | expo-location / expo-task-manager     | 位置の取得と島の判定（端末内）。バックグラウンドは MVP 後にジオフェンスで導入 |
 | 入力           | React Hook Form / Zod                 | フォームの状態管理と入力チェック                                              |
-| 認証           | Supabase Auth（Google）               | ログイン。ユーザー ID は RLS で `auth.uid()` として使う                       |
+| 認証           | Supabase Auth（Google・Apple）        | ログイン。Apple は iOS のみ・リリース前に追加（#39）                          |
 | DB             | PostgreSQL（Supabase）                | データの保存。アプリから直接読み書きするため、RLS が権限管理の要              |
-| リアルタイム   | Supabase Realtime（Postgres Changes） | テーブルの変更を購読して友達の端末に配信                                      |
-
-> ⚠️ 位置情報の保存形式（エリア ID のみ／緯度経度）と、Realtime を Broadcast と併用するかはまだ決まっていない。
-> 決まったら上の図と表を更新すること（[CODING_GUIDELINES.md の未決定事項](CODING_GUIDELINES.md#未決定事項)）。
+| リアルタイム   | Supabase Realtime（Postgres Changes） | テーブルの変更を購読して友達の端末に配信。届く相手は RLS で決まる             |
 
 ## アプリ内部の層構成（クリーンアーキテクチャ）
 
@@ -62,7 +59,7 @@ flowchart LR
   end
   subgraph domain["domain<br/>src/domain"]
     ent["エンティティの型"]
-    svc["ルール（純粋関数）<br/>エリア判定・漂流判定"]
+    svc["ルール（純粋関数）<br/>島の判定・漂流判定"]
     repo["リポジトリの<br/>インターフェース"]
   end
   subgraph infrastructure["infrastructure<br/>src/infrastructure"]
@@ -94,6 +91,58 @@ flowchart LR
 - コード量を増やしすぎないため、**ロジックがない単純な取得はユースケースを作らず**、presentation から container のリポジトリを直接呼んでよい
 - 書き方の詳細は [CODING_GUIDELINES.md の「層構成」](CODING_GUIDELINES.md#3-層構成クリーンアーキテクチャ)・[「データの取得と更新」](CODING_GUIDELINES.md#4-データの取得と更新) を参照
 
+## 画面遷移
+
+画面の元はワイヤーフレーム（#14）。つなぎ方は #42 で決めた。`src/app/` のルート構成（#18）はこれに合わせている（[ディレクトリ構成](#ディレクトリ構成)）。
+
+```mermaid
+flowchart TD
+  start([起動]) --> authed{ログイン済み?}
+  authed -- いいえ --> login[ログイン]
+  login --> hasProfile{プロフィールあり?}
+  authed -- はい --> hasProfile
+  hasProfile -- いいえ --> onboardProfile[初回設定: プロフィール]
+  onboardProfile --> onboardAvatar[初回設定: アバター]
+  onboardAvatar --> home
+  hasProfile -- はい --> home
+
+  subgraph tabs["下部タブ"]
+    home["ホーム<br/>最後に開いたグループの島"]
+    friends["友達<br/>友達一覧・届いた申請"]
+    me["マイページ<br/>自分のプロフィール"]
+  end
+
+  home -. シート .-> switcher[グループの切り替え]
+  switcher -. モーダル .-> groupAdd["グループ追加<br/>作成・届いている招待"]
+  home -. シート .-> preview[簡易プロフィール]
+  preview --> profile[プロフィール詳細]
+  home --> manage["グループ管理<br/>名前・招待・メンバー削除・譲渡・退出"]
+
+  friends -. モーダル .-> search[友達を検索して申請]
+  friends --> profile
+
+  me --> edit[プロフィール編集]
+  me --> avatarEdit[アバター編集]
+  me --> settings["設定<br/>ログアウト・アカウント削除"]
+  settings --> presence["島の公開設定<br/>友達ごと・友達ではないメンバー"]
+```
+
+実線は Stack で進む画面（戻る操作で戻る）、点線はシート・モーダルで開く画面。
+
+Stack で進む画面・シート・モーダルは、タブの中ではなくルートの Stack（`src/app/_layout.tsx`）に並べる。Stack で進む画面はタブより上に重なるので、開いている間はタブバーが出ない（シートは後ろの画面を残して重なる）。ログイン・初回設定・タブのどれを見せるかの振り分け（`Stack.Protected`）は #21 で追加する（それまでは起動するとホームが開く）。
+
+| 決めたこと             | 内容                                                                                                                                                                                    |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 下部タブ               | ホーム / 友達 / マイページ の3つ。設定はマイページから開く                                                                                                                              |
+| ホーム                 | 最後に開いたグループの島を表示する（最後に開いたグループは端末に保存）。グループは島の中のシートで切り替え、そこから「グループ追加」も開く。グループが0件のときはグループ追加へ案内する |
+| Stack で進む画面       | プロフィール詳細・プロフィール編集・アバター編集・設定・島の公開設定・グループ管理                                                                                                      |
+| シート                 | 島でアバターを押したときの簡易プロフィール・グループの切り替え                                                                                                                          |
+| モーダル               | グループ追加（作成・届いている招待）・友達を検索して申請。友達ではない人がいるグループに初めて入ったときの「島を見せるか」の確認（#67）                                                 |
+| 確認ダイアログ         | 削除・退出・ログアウトなど、取り消せない操作の前                                                                                                                                        |
+| 初回設定の途中で閉じた | 入力中のプロフィールとアバターを端末に残し、開き直したら途中の画面から続ける（プロフィールの行はアバター作成の最後にまとめて作るため、途中では DB に何も残らない）                      |
+| ディープリンク         | MVP では作らない。`shimanchu://` の scheme は Google ログインの戻り先にだけ使う。招待はアプリ内だけ                                                                                     |
+| 対象のプラットフォーム | MVP は iOS・Android だけ。Web は動作確認の対象にしない（Web 用のファイルは今の方針どおり残す）                                                                                          |
+
 ## ディレクトリ構成
 
 > 🧪 = `create-expo-app` テンプレートのサンプル。本実装に入るときに削除・置き換え予定。
@@ -103,19 +152,25 @@ flowchart LR
 shimanchu/
 ├── src/                          # アプリのソースコード（import は "@/..." で src/ 起点）
 │   ├── app/                      # [presentation] 画面（Expo Router）。ファイル = 1画面、パス = URL
-│   │   ├── _layout.tsx           # ルートレイアウト（全画面共通のナビゲーター・Provider）
-│   │   ├── index.tsx             # 🧪 "/" ホーム画面
-│   │   └── explore.tsx           # 🧪 "/explore" サンプル画面
+│   │   ├── _layout.tsx           # ルートの Stack（Provider・Stack で進む画面・モーダル・シート）
+│   │   ├── login.tsx             # ログイン
+│   │   ├── onboarding/           # 初回設定（_layout.tsx の Stack で index = プロフィール → avatar）
+│   │   ├── (tabs)/               # 下部タブ（_layout.tsx が NativeTabs）
+│   │   │   ├── index.tsx         #   "/" ホーム
+│   │   │   ├── friends.tsx       #   "/friends" 友達
+│   │   │   └── me.tsx            #   "/me" マイページ
+│   │   ├── users/[userId]/       # index.tsx = プロフィール詳細、preview.tsx = 簡易プロフィール（シート）
+│   │   ├── groups/[groupId]/manage.tsx # グループ管理
+│   │   ├── profile-edit.tsx / avatar-edit.tsx # プロフィール編集・アバター編集
+│   │   ├── settings/             # index.tsx = 設定、presence.tsx = 島の公開設定
+│   │   ├── group-switcher.tsx    # グループの切り替え（シート）
+│   │   └── group-add.tsx / friend-search.tsx / presence-prompt.tsx # モーダル
+│   │   # 画面の中身は仮（PlaceholderScreen）。各画面の Issue で置き換える
 │   ├── presentation/             # [presentation] 画面以外の UI まわり
 │   │   ├── components/           # 再利用する UI コンポーネント
-│   │   │   ├── ui/collapsible.tsx # 🧪 開閉パネル
-│   │   │   ├── app-tabs.tsx      # 🧪 タブバー（iOS / Android。.web.tsx は Web 版）
-│   │   │   ├── animated-icon.tsx # 🧪 アニメーション付きアイコン（*.web.tsx / *.module.css は Web 用）
+│   │   │   ├── placeholder-screen.tsx # 実装前の仮の画面（各画面を実装したら使わなくなる）
 │   │   │   ├── themed-text.tsx   # 🧪 ライト/ダーク対応の Text
-│   │   │   ├── themed-view.tsx   # 🧪 ライト/ダーク対応の View
-│   │   │   ├── external-link.tsx # 🧪 外部リンク（アプリ内ブラウザで開く）
-│   │   │   ├── hint-row.tsx      # 🧪 ヒント表示行
-│   │   │   └── web-badge.tsx     # 🧪 Web 用バッジ
+│   │   │   └── themed-view.tsx   # 🧪 ライト/ダーク対応の View
 │   │   ├── hooks/                # UI 用のフック
 │   │   │   ├── use-color-scheme.ts # 🧪 ライト/ダーク判定（.web.ts は Web 版）
 │   │   │   └── use-theme.ts      # 🧪 現在のテーマ取得
@@ -139,7 +194,6 @@ shimanchu/
 ├── assets/                       # 画像・アイコン
 │   ├── expo.icon/                # iOS 用アプリアイコン
 │   └── images/                   # アプリアイコン・スプラッシュ画像・Android アイコン
-│                                 #   （react-logo / tabIcons / tutorial-web などは 🧪）
 │
 ├── supabase/                     # Supabase（バックエンド）関連
 │   ├── config.toml               # ローカル Supabase の設定（ポート・Auth プロバイダなど）

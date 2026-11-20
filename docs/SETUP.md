@@ -482,6 +482,8 @@ supabase start
 npx expo start -c
 ```
 
+> Supabase を使う画面が入るまでは、`.env.local` の設定が漏れていてもアプリは起動し、[動作確認チェックリスト](#5-動作確認チェックリスト)も全部通る。そのため、環境構築から時間がたって、Supabase を使う実装が入ったときに初めてこのエラーが出ることがある。
+
 ### アプリから Supabase につながらない
 
 `127.0.0.1` は「その端末自身」を指すので、PC 以外から接続すると届かない。`.env.local` の `EXPO_PUBLIC_SUPABASE_URL` を接続元に合わせて変え、`npx expo start -c` で再起動する。
