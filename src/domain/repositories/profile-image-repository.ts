@@ -15,5 +15,4 @@ export type ProfileImageStorageRepository = {
   updateMyProfileImagePath(imagePath: string | null): Promise<void>;
   getSignedProfileImageUrl(imagePath: string): Promise<string>;
   deleteProfileImage(imagePath: string): Promise<void>;
-  deleteAllMyProfileImages(): Promise<void>;
 };

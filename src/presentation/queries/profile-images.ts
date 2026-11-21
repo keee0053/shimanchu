@@ -32,22 +32,15 @@ export function useProfileImageUrl(imagePath: string | null | undefined) {
 }
 
 /**
- * プロフィール画像を選んで縮小圧縮し、Supabase Storage へアップロードするミューテーション
+ * 準備済みプロフィール画像を Supabase Storage へアップロードするミューテーション
  */
 export function useUploadProfileImage() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input?: UploadProfileImageUseCaseInput) => uploadProfileImage(input),
+    mutationFn: (input: UploadProfileImageUseCaseInput) => uploadProfileImage(input),
     onSuccess: (result, variables) => {
-      if (!result) {
-        return;
-      }
-      if (
-        variables?.updateProfileRecord !== false &&
-        variables?.previousImagePath &&
-        variables.previousImagePath !== result.imagePath
-      ) {
+      if (variables.updateProfileRecord !== false && variables.previousImagePath) {
         queryClient.removeQueries({
           queryKey: profileImageKeys.signedUrl(variables.previousImagePath),
           exact: true,
@@ -70,7 +63,7 @@ export function useRemoveProfileImage() {
   return useMutation({
     mutationFn: (input: RemoveProfileImageUseCaseInput) => removeProfileImage(input),
     onSuccess: (_result, variables) => {
-      if (variables.currentImagePath) {
+      if (variables.updateProfileRecord !== false && variables.currentImagePath) {
         queryClient.removeQueries({
           queryKey: profileImageKeys.signedUrl(variables.currentImagePath),
           exact: true,

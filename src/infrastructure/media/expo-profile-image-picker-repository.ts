@@ -37,28 +37,35 @@ export const expoProfileImagePickerRepository: ProfileImagePickerRepository = {
 
     const asset = pickerResult.assets[0];
     const resizeSpec = calculateProfileImageResize(asset.width, asset.height);
+    const context = ImageManipulator.manipulate(asset.uri);
+    let rendered: Awaited<ReturnType<typeof context.renderAsync>> | null = null;
 
-    for (const compress of COMPRESSION_QUALITIES) {
-      const context = ImageManipulator.manipulate(asset.uri);
+    try {
       if (resizeSpec) {
         context.resize(resizeSpec);
       }
-      const rendered = await context.renderAsync();
-      const saved = await rendered.saveAsync({
-        format: SaveFormat.JPEG,
-        compress,
-      });
+      rendered = await context.renderAsync();
 
-      const sizeBytes = await getFileSizeBytes(saved.uri);
-      if (isValidProfileImageSize(sizeBytes)) {
-        return {
-          uri: saved.uri,
-          mimeType: 'image/jpeg',
-          sizeBytes,
-          width: saved.width,
-          height: saved.height,
-        };
+      for (const compress of COMPRESSION_QUALITIES) {
+        const saved = await rendered.saveAsync({
+          format: SaveFormat.JPEG,
+          compress,
+        });
+
+        const sizeBytes = await getFileSizeBytes(saved.uri);
+        if (isValidProfileImageSize(sizeBytes)) {
+          return {
+            uri: saved.uri,
+            mimeType: 'image/jpeg',
+            sizeBytes,
+            width: saved.width,
+            height: saved.height,
+          };
+        }
       }
+    } finally {
+      rendered?.release();
+      context.release();
     }
 
     throw new Error('画像を 2MB 以下に圧縮できませんでした。別の画像を選択してください。');

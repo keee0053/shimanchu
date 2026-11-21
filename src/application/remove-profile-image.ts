@@ -6,6 +6,7 @@ export type RemoveProfileImageDeps = {
 
 export type RemoveProfileImageUseCaseInput = {
   currentImagePath?: string | null;
+  /** `false` の場合は `profiles.image_path` の更新も Storage ファイルの削除も行わない（`uploadProfileImage` と対称） */
   updateProfileRecord?: boolean;
 };
 
@@ -14,9 +15,11 @@ export type RemoveProfileImageUseCaseInput = {
  */
 export function createRemoveProfileImage(deps: RemoveProfileImageDeps) {
   return async (input: RemoveProfileImageUseCaseInput): Promise<{ cleanupFailed: boolean }> => {
-    if (input.updateProfileRecord !== false) {
-      await deps.storageRepository.updateMyProfileImagePath(null);
+    if (input.updateProfileRecord === false) {
+      return { cleanupFailed: false };
     }
+
+    await deps.storageRepository.updateMyProfileImagePath(null);
 
     if (!input.currentImagePath) {
       return { cleanupFailed: false };

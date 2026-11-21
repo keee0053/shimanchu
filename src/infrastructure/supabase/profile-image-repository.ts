@@ -17,7 +17,6 @@ import {
 import { supabase } from './client';
 
 const PROFILE_IMAGE_SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 60;
-const STORAGE_LIST_PAGE_SIZE = 100;
 
 async function requireCurrentUserId(): Promise<string> {
   const {
@@ -80,13 +79,19 @@ export const supabaseProfileImageRepository: ProfileImageStorageRepository = {
       throw new Error('プロフィール画像の保存先パスが不正です。');
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .update({ image_path: imagePath })
-      .eq('id', userId);
+      .eq('id', userId)
+      .select('id');
 
     if (error) {
       throw error;
+    }
+    if (!data || data.length === 0) {
+      throw new Error(
+        'プロフィールが未作成のため画像を紐づけられませんでした。初回プロフィール設定時は updateProfileRecord: false を指定してください。',
+      );
     }
   },
 
@@ -117,44 +122,6 @@ export const supabaseProfileImageRepository: ProfileImageStorageRepository = {
     const { error } = await supabase.storage.from(PROFILE_IMAGE_BUCKET).remove([imagePath]);
     if (error) {
       throw error;
-    }
-  },
-
-  async deleteAllMyProfileImages(): Promise<void> {
-    const userId = await requireCurrentUserId();
-    const allPaths: string[] = [];
-    let offset = 0;
-
-    while (true) {
-      const { data, error } = await supabase.storage.from(PROFILE_IMAGE_BUCKET).list(userId, {
-        limit: STORAGE_LIST_PAGE_SIZE,
-        offset,
-      });
-      if (error) {
-        throw error;
-      }
-      if (!data || data.length === 0) {
-        break;
-      }
-
-      for (const item of data) {
-        if (item.id !== null) {
-          allPaths.push(`${userId}/${item.name}`);
-        }
-      }
-
-      if (data.length < STORAGE_LIST_PAGE_SIZE) {
-        break;
-      }
-      offset += data.length;
-    }
-
-    for (let i = 0; i < allPaths.length; i += STORAGE_LIST_PAGE_SIZE) {
-      const batch = allPaths.slice(i, i + STORAGE_LIST_PAGE_SIZE);
-      const { error } = await supabase.storage.from(PROFILE_IMAGE_BUCKET).remove(batch);
-      if (error) {
-        throw error;
-      }
     }
   },
 };
