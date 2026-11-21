@@ -13,6 +13,7 @@ export type UpdateMyLocationDeps = {
 export type UpdateMyLocationInput = {
   coords?: Coordinates | null;
   currentIsland?: IslandType | null;
+  requestPermission?: boolean;
 };
 
 export type UpdateMyLocationResult = {
@@ -25,26 +26,43 @@ export type UpdateMyLocationResult = {
  * 現在地を取得し、登録済みの場所（家・学校）から島を判定して user_presence に保存するユースケース
  */
 export function createUpdateMyLocation(deps: UpdateMyLocationDeps) {
-  return async (input?: UpdateMyLocationInput): Promise<UpdateMyLocationResult> => {
-    let coords: Coordinates | null = null;
-    if (input?.coords !== undefined) {
-      coords = input.coords;
-    } else {
-      try {
-        coords = await deps.locationRepository.getCurrentPosition();
-      } catch {
-        coords = null;
+  let operationQueue: Promise<unknown> = Promise.resolve();
+  let lastResolvedIsland: IslandType | null = null;
+
+  function enqueue<T>(operation: () => Promise<T>): Promise<T> {
+    const next = operationQueue.then(operation, operation);
+    operationQueue = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
+  }
+
+  return (input?: UpdateMyLocationInput): Promise<UpdateMyLocationResult> =>
+    enqueue(async () => {
+      let coords: Coordinates | null = null;
+      if (input?.coords !== undefined) {
+        coords = input.coords;
+      } else {
+        try {
+          coords = await deps.locationRepository.getCurrentPosition({
+            requestPermission: input?.requestPermission === true,
+          });
+        } catch {
+          coords = null;
+        }
       }
-    }
 
-    const places = await deps.placeRepository.getRegisteredPlaces();
-    const islandType = detectIsland(coords, places, input?.currentIsland);
-    const presence = await deps.presenceRepository.saveMyIsland(islandType);
+      const places = await deps.placeRepository.getRegisteredPlaces();
+      const currentIsland = lastResolvedIsland ?? input?.currentIsland ?? null;
+      const islandType = detectIsland(coords, places, currentIsland);
+      const presence = await deps.presenceRepository.saveMyIsland(islandType);
+      lastResolvedIsland = islandType;
 
-    return {
-      islandType,
-      updatedAt: presence?.updatedAt ?? new Date().toISOString(),
-      presence,
-    };
-  };
+      return {
+        islandType,
+        updatedAt: presence?.updatedAt ?? new Date().toISOString(),
+        presence,
+      };
+    });
 }

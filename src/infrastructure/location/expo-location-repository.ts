@@ -27,7 +27,7 @@ async function ensureForegroundPermission(requestIfDenied: boolean): Promise<boo
 export const expoLocationRepository: LocationRepository = {
   async getCurrentPosition(options?: GetCurrentPositionOptions): Promise<Coordinates | null> {
     try {
-      const granted = await ensureForegroundPermission(true);
+      const granted = await ensureForegroundPermission(options?.requestPermission === true);
       if (!granted) {
         return null;
       }

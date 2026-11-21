@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
   type Coordinates,
@@ -54,6 +54,22 @@ export default function PlacesSettingsScreen() {
   const currentPositionMutation = useCurrentPositionForRegistration();
   const savePlaceMutation = useSaveRegisteredPlace();
   const removePlaceMutation = useRemoveRegisteredPlace();
+
+  const isAndroid = Platform.OS === 'android';
+  const isWeb = Platform.OS === 'web';
+  const isFetchingCurrentPosition =
+    currentPositionMutation.isPending || (isAndroid && savePlaceMutation.isPending);
+  const gpsButtonLabel = isAndroid
+    ? isFetchingCurrentPosition
+      ? '現在地を登録しています...'
+      : '現在地を登録する'
+    : isWeb
+      ? isFetchingCurrentPosition
+        ? '現在地を取得しています...'
+        : '現在地を取得'
+      : isFetchingCurrentPosition
+        ? '現在地を取得しています...'
+        : '現在地を取得してピンを置く';
 
   const savedPlaces = placesQuery.data;
   const savedPlaceForTab = savedPlaces?.[selectedType] ?? null;
@@ -120,6 +136,7 @@ export default function PlacesSettingsScreen() {
     try {
       const result = await updateLocationMutation.mutateAsync({
         currentIsland: displayedIsland,
+        requestPermission: true,
       });
       if (result.islandType === 'drifting') {
         setPermissionNotice(
@@ -136,22 +153,63 @@ export default function PlacesSettingsScreen() {
   const handleFetchCurrentPosition = async () => {
     setPermissionNotice(null);
     setActionMessage(null);
+    const targetType = selectedType;
+    const targetRadius = draftRadius;
+    const targetLabel = PLACE_ISLAND_LABELS[targetType].label;
+    const targetVersion = drafts[targetType]?.version;
+
+    let coords: Coordinates | null;
     try {
-      const coords = await currentPositionMutation.mutateAsync();
-      if (!coords) {
-        setPermissionNotice(
-          '現在地を取得できませんでした。位置情報の権限または端末の位置情報設定をご確認ください。',
-        );
-        return;
-      }
-      updateDraft({ coordinates: coords });
-      setFocusVersion((v) => v + 1);
-      setActionMessage('現在地にピンを置きました。必要なら地図上で微調整して保存してください。');
+      coords = await currentPositionMutation.mutateAsync();
     } catch {
       setPermissionNotice(
         '現在地を取得できませんでした。位置情報の権限または端末の位置情報設定をご確認ください。',
       );
+      return;
     }
+
+    if (!coords) {
+      setPermissionNotice(
+        '現在地を取得できませんでした。位置情報の権限または端末の位置情報設定をご確認ください。',
+      );
+      return;
+    }
+
+    if (isAndroid) {
+      try {
+        const { evaluation, syncFailed } = await savePlaceMutation.mutateAsync({
+          type: targetType,
+          place: {
+            coordinates: coords,
+            radius: targetRadius,
+          },
+          coords,
+          onPlacesCommitted: () => {
+            clearDraftIfUnchanged(targetType, targetVersion);
+          },
+        });
+        if (syncFailed || !evaluation) {
+          setPermissionNotice(
+            `${targetLabel}を端末に保存しましたが、現在の島の同期に失敗しました。「今すぐ更新」から再試行してください。`,
+          );
+          return;
+        }
+        setActionMessage(
+          `${targetLabel}を現在地で端末に保存しました（現在の判定: ${ISLAND_LABELS[evaluation.islandType].label}）。`,
+        );
+      } catch {
+        setPermissionNotice(`${targetLabel}の保存に失敗しました。もう一度お試しください。`);
+      }
+      return;
+    }
+
+    updateDraft({ coordinates: coords });
+    setFocusVersion((v) => v + 1);
+    setActionMessage(
+      isWeb
+        ? '現在地を取得しました。下のボタンから保存できます。'
+        : '現在地にピンを置きました。必要なら地図上で微調整して保存してください。',
+    );
   };
 
   const handleSavePlace = async () => {
@@ -190,6 +248,9 @@ export default function PlacesSettingsScreen() {
   };
 
   const handleRemovePlace = () => {
+    if (isWeb) {
+      return;
+    }
     const targetType = selectedType;
     const targetLabel = PLACE_ISLAND_LABELS[targetType].label;
     Alert.alert(
@@ -292,14 +353,16 @@ export default function PlacesSettingsScreen() {
         {/* 現在地取得ボタン */}
         <Pressable
           accessibilityRole="button"
-          disabled={currentPositionMutation.isPending}
+          disabled={isFetchingCurrentPosition}
           onPress={() => void handleFetchCurrentPosition()}
-          style={({ pressed }) => [styles.gpsButton, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.gpsButton,
+            isFetchingCurrentPosition && styles.disabled,
+            pressed && styles.pressed,
+          ]}
         >
           <ThemedText type="smallBold" style={styles.gpsButtonText}>
-            {currentPositionMutation.isPending
-              ? '現在地を取得しています...'
-              : '現在地を取得してピンを置く'}
+            {gpsButtonLabel}
           </ThemedText>
         </Pressable>
 
@@ -371,7 +434,7 @@ export default function PlacesSettingsScreen() {
             </ThemedText>
           </Pressable>
 
-          {savedPlaceForTab && (
+          {!isWeb && savedPlaceForTab && (
             <Pressable
               accessibilityRole="button"
               disabled={removePlaceMutation.isPending}
