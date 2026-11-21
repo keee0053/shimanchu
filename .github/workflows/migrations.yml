@@ -72,7 +72,11 @@ jobs:
           failed=0
           for f in $added; do
             v=$(version "$f")
-            if [ -n "$latest" ] && [[ ! "$v" > "$latest" ]]; then
+            # 「fix.sql」のように日時で始まらないファイルは、文字列の比較で通ってしまうため先に弾く
+            if [[ ! "$v" =~ ^[0-9]{14}$ ]]; then
+              echo "::error file=$f::$f のファイル名が「14桁の日時_名前.sql」の形式ではありません。supabase migration new で作り直して中身を移してください"
+              failed=1
+            elif [ -n "$latest" ] && [[ ! "$v" > "$latest" ]]; then
               echo "::error file=$f::$f の日時（${v}）が develop の最新（${latest}）より古いです。ホストとローカルで当たる順番が変わるため、supabase migration new で作り直して中身を移してください"
               failed=1
             else
