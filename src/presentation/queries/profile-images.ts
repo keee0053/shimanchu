@@ -27,6 +27,7 @@ export function useProfileImageUrl(imagePath: string | null | undefined) {
     enabled: Boolean(imagePath),
     staleTime: SIGNED_URL_STALE_TIME_MS,
     gcTime: SIGNED_URL_GC_TIME_MS,
+    refetchInterval: SIGNED_URL_STALE_TIME_MS,
   });
 }
 
@@ -42,7 +43,11 @@ export function useUploadProfileImage() {
       if (!result) {
         return;
       }
-      if (variables?.previousImagePath && variables.previousImagePath !== result.imagePath) {
+      if (
+        variables?.updateProfileRecord !== false &&
+        variables?.previousImagePath &&
+        variables.previousImagePath !== result.imagePath
+      ) {
         queryClient.removeQueries({
           queryKey: profileImageKeys.signedUrl(variables.previousImagePath),
           exact: true,
