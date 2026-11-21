@@ -25,6 +25,36 @@ jobs:
     name: ラベル付け
     runs-on: ubuntu-latest
     steps:
+      # 英語のラベル名を日本語に変える（#90）。リポジトリのラベルが全部変わったらこのステップは消す
+      # 後のステップが日本語のラベルを新しく作って重複しないよう、最初に実行する
+      - name: 英語のラベル名を日本語に変更
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const RENAMES = [
+              { from: 'bug', name: 'バグ', description: '正しく動かない不具合' },
+              { from: 'enhancement', name: '機能追加', description: '新しい機能の追加・要望' },
+              { from: 'documentation', name: 'ドキュメント', description: 'ドキュメントの追加・改善' },
+              { from: 'chore', name: '雑務', description: '設定・依存関係などの雑務' },
+              { from: 'repository', name: 'リポジトリ設定', description: 'リポジトリの設定・開発ツールの変更' },
+              { from: 'develop release', name: '開発リリース', description: '開発環境へのリリース' },
+              { from: 'main release', name: '本番リリース', description: '本番環境へのリリース' },
+            ];
+
+            const { owner, repo } = context.repo;
+            const labels = await github.paginate(github.rest.issues.listLabelsForRepo, { owner, repo });
+            const existing = labels.map((l) => l.name);
+
+            for (const { from, name, description } of RENAMES) {
+              if (!existing.includes(from)) continue;
+              if (existing.includes(name)) {
+                core.warning(`「${name}」がすでにあるため「${from}」は変更しない。手で統合してください`);
+                continue;
+              }
+              await github.rest.issues.updateLabel({ owner, repo, name: from, new_name: name, description });
+              core.info(`${from} → ${name}`);
+            }
+
       - name: 変更したファイル
         if: contains(fromJSON('["develop", "main"]'), github.event.pull_request.base.ref)
         uses: actions/labeler@v5
@@ -37,18 +67,18 @@ jobs:
           script: |
             // 向き先のブランチとラベルの対応
             const RELEASE_LABELS = {
-              develop: 'develop release',
-              main: 'main release',
+              develop: '開発リリース',
+              main: '本番リリース',
             };
             // prefix とラベルの対応（scripts/git-hooks/commit-rules.js の TYPES と揃える）
             const TYPE_LABELS = {
-              add: { name: 'enhancement', color: 'a2eeef', description: 'New feature or request' },
-              fix: { name: 'bug', color: 'd73a4a', description: "Something isn't working" },
-              docs: { name: 'documentation', color: '0075ca', description: 'Improvements or additions to documentation' },
-              refactor: { name: 'refactor', color: 'fbca04', description: '動作を変えないコードの整理' },
-              test: { name: 'test', color: 'bfd4f2', description: 'テストの追加・修正' },
-              chore: { name: 'chore', color: 'c5def5', description: '設定・依存関係などの雑務' },
-              perf: { name: 'perf', color: 'f9d0c4', description: 'パフォーマンス改善' },
+              add: { name: '機能追加', color: 'a2eeef', description: '新しい機能の追加・要望' },
+              fix: { name: 'バグ', color: 'd73a4a', description: '正しく動かない不具合' },
+              docs: { name: 'ドキュメント', color: '0075ca', description: 'ドキュメントの追加・改善' },
+              refactor: { name: 'リファクタリング', color: 'fbca04', description: '動作を変えないコードの整理' },
+              test: { name: 'テスト', color: 'bfd4f2', description: 'テストの追加・修正' },
+              chore: { name: '雑務', color: 'c5def5', description: '設定・依存関係などの雑務' },
+              perf: { name: 'パフォーマンス', color: 'f9d0c4', description: 'パフォーマンス改善' },
             };
 
             const { owner, repo } = context.repo;
