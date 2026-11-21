@@ -39,19 +39,20 @@ export function useSaveRegisteredPlace() {
     mutationFn: (input: {
       type: PlaceIslandType;
       place: RegisteredPlace;
+      coords?: Coordinates;
       onPlacesCommitted?: (places: RegisteredPlaces) => void;
     }) =>
       saveRegisteredPlace({
         type: input.type,
         place: input.place,
+        ...(input.coords !== undefined ? { coords: input.coords } : {}),
         currentIsland: getCurrentCachedIsland(queryClient),
         onPlacesUpdated: (places) => {
           queryClient.setQueryData(placeKeys.all, places);
           input.onPlacesCommitted?.(places);
         },
       }),
-    onSuccess: ({ places, evaluation }) => {
-      queryClient.setQueryData(placeKeys.all, places);
+    onSuccess: ({ evaluation }) => {
       if (evaluation) {
         queryClient.setQueryData(presenceKeys.latestEvaluation(), evaluation);
         if (evaluation.presence) {
@@ -81,8 +82,7 @@ export function useRemoveRegisteredPlace() {
           input.onPlacesCommitted?.(places);
         },
       }),
-    onSuccess: ({ places, evaluation }) => {
-      queryClient.setQueryData(placeKeys.all, places);
+    onSuccess: ({ evaluation }) => {
       if (evaluation) {
         queryClient.setQueryData(presenceKeys.latestEvaluation(), evaluation);
         if (evaluation.presence) {
@@ -98,6 +98,10 @@ export function useRemoveRegisteredPlace() {
  */
 export function useCurrentPositionForRegistration() {
   return useMutation<Coordinates | null>({
-    mutationFn: () => locationRepository.getCurrentPosition({ highAccuracy: true }),
+    mutationFn: () =>
+      locationRepository.getCurrentPosition({
+        highAccuracy: true,
+        requestPermission: true,
+      }),
   });
 }

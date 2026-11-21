@@ -1,4 +1,5 @@
 import type {
+  Coordinates,
   IslandType,
   PlaceIslandType,
   RegisteredPlace,
@@ -16,6 +17,7 @@ export type SaveRegisteredPlaceDeps = {
 export type SaveRegisteredPlaceInput = {
   type: PlaceIslandType;
   place: RegisteredPlace;
+  coords?: Coordinates;
   currentIsland?: IslandType | null;
   onPlacesUpdated?: (places: RegisteredPlaces) => void;
 };
@@ -35,6 +37,7 @@ export function createSaveRegisteredPlace(deps: SaveRegisteredPlaceDeps) {
     input.onPlacesUpdated?.(places);
     try {
       const evaluation = await deps.updateMyLocation({
+        ...(input.coords !== undefined ? { coords: input.coords } : {}),
         currentIsland: input.currentIsland,
       });
       return { places, evaluation, syncFailed: false };

@@ -2,6 +2,7 @@ import type { Coordinates } from '../entities/island';
 
 export type GetCurrentPositionOptions = {
   highAccuracy?: boolean;
+  requestPermission?: boolean;
 };
 
 export type LocationRepository = {
