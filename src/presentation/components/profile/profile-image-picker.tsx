@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { profileImagePickerRepository } from '@/container';
+import type { PreparedProfileImage } from '@/domain/entities/profile-image';
 import { ThemedText } from '@/presentation/components/themed-text';
 import { Spacing } from '@/presentation/constants/theme';
 import {
@@ -13,11 +15,16 @@ import { ProfileImage } from './profile-image';
 type ProfileImagePickerProps = {
   imagePath: string | null;
   onChangeImagePath: (imagePath: string | null) => void;
+  /**
+   * 選択・解除を即座に `profiles.image_path` および Storage 上の旧ファイル整理へ反映するかどうか。
+   * 初回プロフィール設定（`profiles` 行作成前）や「保存」ボタン押下時に確定する編集画面では必ず `false` を指定し、保存・キャンセル時の Storage 後始末を呼び出し側で行うこと。
+   */
   updateProfileRecord?: boolean;
 };
 
 /**
- * プロフィール画像の選択・アップロード・削除を行う UI コンポーネント
+ * プロフィール画像の選択・アップロード・削除を行う UI コンポーネント。
+ * 初回設定（`profiles` 行作成前）や一括保存型の編集画面では `updateProfileRecord={false}` を必ず指定すること。
  */
 export function ProfileImagePicker({
   imagePath,
@@ -28,27 +35,44 @@ export function ProfileImagePicker({
     imagePath: string;
     uri: string;
   } | null>(null);
+  const [isPicking, setIsPicking] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
 
   const uploadMutation = useUploadProfileImage();
   const removeMutation = useRemoveProfileImage();
 
-  const isBusy = uploadMutation.isPending || removeMutation.isPending;
+  const isBusy = isPicking || uploadMutation.isPending || removeMutation.isPending;
   const activeLocalPreviewUri =
     localPreview && localPreview.imagePath === imagePath ? localPreview.uri : null;
 
   const handlePickImage = async () => {
     setErrorMessage(null);
     setNoticeMessage(null);
+
+    let prepared: PreparedProfileImage | null;
+    setIsPicking(true);
+    try {
+      prepared = await profileImagePickerRepository.pickAndPrepareProfileImage();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'プロフィール画像の選択に失敗しました。',
+      );
+      return;
+    } finally {
+      setIsPicking(false);
+    }
+
+    if (!prepared) {
+      return;
+    }
+
     try {
       const result = await uploadMutation.mutateAsync({
+        image: prepared,
         previousImagePath: imagePath,
         updateProfileRecord,
       });
-      if (!result) {
-        return;
-      }
       setLocalPreview({ imagePath: result.imagePath, uri: result.localPreviewUri });
       onChangeImagePath(result.imagePath);
       if (result.cleanupFailed) {
@@ -62,15 +86,22 @@ export function ProfileImagePicker({
   };
 
   const handleRemoveImage = async () => {
-    if (!imagePath && !activeLocalPreviewUri) {
+    if (!imagePath) {
       return;
     }
     setErrorMessage(null);
     setNoticeMessage(null);
+
+    if (!updateProfileRecord) {
+      setLocalPreview(null);
+      onChangeImagePath(null);
+      return;
+    }
+
     try {
       const result = await removeMutation.mutateAsync({
         currentImagePath: imagePath,
-        updateProfileRecord,
+        updateProfileRecord: true,
       });
       setLocalPreview(null);
       onChangeImagePath(null);
@@ -84,7 +115,7 @@ export function ProfileImagePicker({
     }
   };
 
-  const hasImage = Boolean(imagePath || activeLocalPreviewUri);
+  const hasImage = Boolean(imagePath);
 
   return (
     <View style={styles.container}>
@@ -102,11 +133,13 @@ export function ProfileImagePicker({
           ]}
         >
           <ThemedText type="smallBold" style={styles.primaryButtonText}>
-            {uploadMutation.isPending
-              ? 'アップロード中...'
-              : hasImage
-                ? '画像を変更'
-                : '画像を選ぶ'}
+            {isPicking
+              ? '画像を選択中...'
+              : uploadMutation.isPending
+                ? 'アップロード中...'
+                : hasImage
+                  ? '画像を変更'
+                  : '画像を選ぶ'}
           </ThemedText>
         </Pressable>
 

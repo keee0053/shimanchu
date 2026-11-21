@@ -34,7 +34,9 @@ export function ProfileImage({
   if (displayUri) {
     return (
       <Image
-        source={{ uri: displayUri }}
+        source={
+          !localUri && imagePath ? { uri: displayUri, cacheKey: imagePath } : { uri: displayUri }
+        }
         style={[styles.image, dimensionStyle]}
         contentFit="cover"
         transition={150}

@@ -49,7 +49,6 @@ export const profileImageStorageRepository: ProfileImageStorageRepository =
   supabaseProfileImageRepository;
 
 export const uploadProfileImage = createUploadProfileImage({
-  pickerRepository: profileImagePickerRepository,
   storageRepository: profileImageStorageRepository,
 });
 
