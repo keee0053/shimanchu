@@ -24,7 +24,10 @@ export function ProfileImagePicker({
   onChangeImagePath,
   updateProfileRecord = true,
 }: ProfileImagePickerProps) {
-  const [localPreviewUri, setLocalPreviewUri] = useState<string | null>(null);
+  const [localPreview, setLocalPreview] = useState<{
+    imagePath: string;
+    uri: string;
+  } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
 
@@ -32,6 +35,8 @@ export function ProfileImagePicker({
   const removeMutation = useRemoveProfileImage();
 
   const isBusy = uploadMutation.isPending || removeMutation.isPending;
+  const activeLocalPreviewUri =
+    localPreview && localPreview.imagePath === imagePath ? localPreview.uri : null;
 
   const handlePickImage = async () => {
     setErrorMessage(null);
@@ -44,7 +49,7 @@ export function ProfileImagePicker({
       if (!result) {
         return;
       }
-      setLocalPreviewUri(result.localPreviewUri);
+      setLocalPreview({ imagePath: result.imagePath, uri: result.localPreviewUri });
       onChangeImagePath(result.imagePath);
       if (result.cleanupFailed) {
         setNoticeMessage('画像を更新しました（古い画像の削除は一部スキップされました）。');
@@ -57,7 +62,7 @@ export function ProfileImagePicker({
   };
 
   const handleRemoveImage = async () => {
-    if (!imagePath && !localPreviewUri) {
+    if (!imagePath && !activeLocalPreviewUri) {
       return;
     }
     setErrorMessage(null);
@@ -67,7 +72,7 @@ export function ProfileImagePicker({
         currentImagePath: imagePath,
         updateProfileRecord,
       });
-      setLocalPreviewUri(null);
+      setLocalPreview(null);
       onChangeImagePath(null);
       if (result.cleanupFailed) {
         setNoticeMessage('画像の設定を解除しました（Storage 上のファイル削除に失敗しました）。');
@@ -79,11 +84,11 @@ export function ProfileImagePicker({
     }
   };
 
-  const hasImage = Boolean(imagePath || localPreviewUri);
+  const hasImage = Boolean(imagePath || activeLocalPreviewUri);
 
   return (
     <View style={styles.container}>
-      <ProfileImage imagePath={imagePath} localUri={localPreviewUri} size={96} />
+      <ProfileImage imagePath={imagePath} localUri={activeLocalPreviewUri} size={96} />
 
       <View style={styles.buttons}>
         <Pressable

@@ -15,6 +15,7 @@ export type UploadProfileImageDeps = {
 
 export type UploadProfileImageUseCaseInput = {
   previousImagePath?: string | null;
+  /** `false` の場合は `profiles.image_path` の更新および旧画像 `previousImagePath` の削除を行わない */
   updateProfileRecord?: boolean;
 };
 
@@ -51,7 +52,9 @@ export function createUploadProfileImage(deps: UploadProfileImageDeps) {
       sizeBytes: prepared.sizeBytes,
     });
 
-    if (input?.updateProfileRecord !== false) {
+    const shouldUpdateProfileRecord = input?.updateProfileRecord !== false;
+
+    if (shouldUpdateProfileRecord) {
       try {
         await deps.storageRepository.updateMyProfileImagePath(newPath);
       } catch (error) {
@@ -66,7 +69,7 @@ export function createUploadProfileImage(deps: UploadProfileImageDeps) {
 
     let cleanupFailed = false;
     const previousPath = input?.previousImagePath;
-    if (previousPath && previousPath !== newPath) {
+    if (shouldUpdateProfileRecord && previousPath && previousPath !== newPath) {
       try {
         await deps.storageRepository.deleteProfileImage(previousPath);
       } catch {
