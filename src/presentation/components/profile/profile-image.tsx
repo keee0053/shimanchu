@@ -45,12 +45,20 @@ export function ProfileImage({
     );
   }
 
+  const placeholderLabel = signedUrlQuery.isLoading
+    ? '読込中'
+    : signedUrlQuery.isError
+      ? ''
+      : fallbackLabel;
+
   return (
     <ThemedView type="backgroundElement" style={[styles.placeholder, dimensionStyle]}>
       <View style={styles.placeholderInner}>
-        <ThemedText type="small" themeColor="textSecondary">
-          {signedUrlQuery.isLoading ? '読込中' : fallbackLabel}
-        </ThemedText>
+        {placeholderLabel ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {placeholderLabel}
+          </ThemedText>
+        ) : null}
       </View>
     </ThemedView>
   );

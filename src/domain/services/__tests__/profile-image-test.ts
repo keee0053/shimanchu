@@ -1,77 +1,102 @@
-import { PROFILE_IMAGE_MAX_BYTES } from '@/domain/entities/profile-image';
+import type { ProfileImageMimeType } from '@/domain/entities/profile-image';
 import {
   buildProfileImagePath,
   calculateProfileImageResize,
-  getExtensionForProfileImageMimeType,
   isAllowedProfileImageMimeType,
   isValidProfileImagePath,
   isValidProfileImageSize,
 } from '@/domain/services/profile-image';
 
-describe('isAllowedProfileImageMimeType', () => {
-  it('JPEG・PNG・WebP を許可する', () => {
-    expect(isAllowedProfileImageMimeType('image/jpeg')).toBe(true);
-    expect(isAllowedProfileImageMimeType('image/png')).toBe(true);
-    expect(isAllowedProfileImageMimeType('image/webp')).toBe(true);
-  });
+const TWO_MIB = 2 * 1024 * 1024;
 
-  it('許可されていない形式を拒否する', () => {
-    expect(isAllowedProfileImageMimeType('image/gif')).toBe(false);
-    expect(isAllowedProfileImageMimeType('image/heic')).toBe(false);
-    expect(isAllowedProfileImageMimeType('application/pdf')).toBe(false);
+describe('isAllowedProfileImageMimeType', () => {
+  it.each<{ mimeType: string; expected: boolean }>([
+    { mimeType: 'image/jpeg', expected: true },
+    { mimeType: 'image/png', expected: true },
+    { mimeType: 'image/webp', expected: true },
+    { mimeType: 'image/gif', expected: false },
+    { mimeType: 'image/heic', expected: false },
+    { mimeType: 'application/pdf', expected: false },
+    { mimeType: '', expected: false },
+  ])('$mimeType の許可判定は $expected になる', ({ mimeType, expected }) => {
+    expect(isAllowedProfileImageMimeType(mimeType)).toBe(expected);
   });
 });
 
 describe('isValidProfileImageSize', () => {
-  it('1バイトからちょうど 2MB までを許可する', () => {
-    expect(isValidProfileImageSize(1)).toBe(true);
-    expect(isValidProfileImageSize(PROFILE_IMAGE_MAX_BYTES)).toBe(true);
-  });
-
-  it('0以下・小数・2MB超過を拒否する', () => {
-    expect(isValidProfileImageSize(0)).toBe(false);
-    expect(isValidProfileImageSize(-1)).toBe(false);
-    expect(isValidProfileImageSize(1.5)).toBe(false);
-    expect(isValidProfileImageSize(PROFILE_IMAGE_MAX_BYTES + 1)).toBe(false);
+  it.each<{ sizeBytes: number; expected: boolean }>([
+    { sizeBytes: 1, expected: true },
+    { sizeBytes: TWO_MIB, expected: true },
+    { sizeBytes: 0, expected: false },
+    { sizeBytes: -1, expected: false },
+    { sizeBytes: 1.5, expected: false },
+    { sizeBytes: TWO_MIB + 1, expected: false },
+    { sizeBytes: Number.NaN, expected: false },
+    { sizeBytes: Number.POSITIVE_INFINITY, expected: false },
+  ])('サイズ $sizeBytes バイトの判定は $expected になる', ({ sizeBytes, expected }) => {
+    expect(isValidProfileImageSize(sizeBytes)).toBe(expected);
   });
 });
 
 describe('buildProfileImagePath / isValidProfileImagePath', () => {
-  it('userId と fileId から Storage パスを生成できる', () => {
-    expect(getExtensionForProfileImageMimeType('image/jpeg')).toBe('jpg');
-    expect(buildProfileImagePath('user-123', 'avatar-1', 'image/png')).toBe(
-      'user-123/avatar-1.png',
-    );
+  it.each<{ mimeType: ProfileImageMimeType; expected: string }>([
+    { mimeType: 'image/jpeg', expected: 'user-123/avatar-1.jpg' },
+    { mimeType: 'image/png', expected: 'user-123/avatar-1.png' },
+    { mimeType: 'image/webp', expected: 'user-123/avatar-1.webp' },
+  ])('MIME タイプ $mimeType からパス $expected を生成できる', ({ mimeType, expected }) => {
+    expect(buildProfileImagePath('user-123', 'avatar-1', mimeType)).toBe(expected);
   });
 
-  it('パストラバーサルや空文字を含む場合はエラーにする', () => {
-    expect(() => buildProfileImagePath('', 'file', 'image/jpeg')).toThrow();
-    expect(() => buildProfileImagePath('user/1', 'file', 'image/jpeg')).toThrow();
-    expect(() => buildProfileImagePath('user-1', '..', 'image/jpeg')).toThrow();
+  it.each<{ userId: string; fileId: string }>([
+    { userId: '', fileId: 'file' },
+    { userId: 'user/1', fileId: 'file' },
+    { userId: 'user-1', fileId: '..' },
+    { userId: 'user-1', fileId: 'a b' },
+  ])('不正なセグメント ($userId / $fileId) はエラーにする', ({ userId, fileId }) => {
+    expect(() => buildProfileImagePath(userId, fileId, 'image/jpeg')).toThrow();
   });
 
-  it('本人のフォルダ直下のパスだけを妥当とみなす', () => {
-    expect(isValidProfileImagePath('user-1/avatar.jpg', 'user-1')).toBe(true);
-    expect(isValidProfileImagePath('user-2/avatar.jpg', 'user-1')).toBe(false);
-    expect(isValidProfileImagePath('user-1/sub/avatar.jpg', 'user-1')).toBe(false);
-    expect(isValidProfileImagePath('user-1/', 'user-1')).toBe(false);
-    expect(isValidProfileImagePath('user-1/..', 'user-1')).toBe(false);
+  it.each<{ path: string; userId: string; expected: boolean }>([
+    { path: 'user-1/avatar.jpg', userId: 'user-1', expected: true },
+    { path: 'user-2/avatar.jpg', userId: 'user-1', expected: false },
+    { path: 'user-1/sub/avatar.jpg', userId: 'user-1', expected: false },
+    { path: 'user-1/', userId: 'user-1', expected: false },
+    { path: 'user-1/..', userId: 'user-1', expected: false },
+  ])('パス $path（userId=$userId）の妥当性は $expected になる', ({ path, userId, expected }) => {
+    expect(isValidProfileImagePath(path, userId)).toBe(expected);
   });
 });
 
 describe('calculateProfileImageResize', () => {
-  it('縦横とも最大サイズ以下なら null を返す', () => {
+  it.each<{
+    width: number;
+    height: number;
+    maxDimension: number;
+    expected: { width: number } | { height: number } | null;
+  }>([
+    { width: 512, height: 512, maxDimension: 512, expected: null },
+    { width: 300, height: 512, maxDimension: 512, expected: null },
+    { width: 513, height: 512, maxDimension: 512, expected: { width: 512 } },
+    { width: 1024, height: 1024, maxDimension: 512, expected: { width: 512 } },
+    { width: 512, height: 513, maxDimension: 512, expected: { height: 512 } },
+    { width: 600, height: 1200, maxDimension: 512, expected: { height: 512 } },
+    { width: 400, height: 200, maxDimension: 256, expected: { width: 256 } },
+    { width: 0, height: 512, maxDimension: 512, expected: null },
+    { width: 512, height: 0, maxDimension: 512, expected: null },
+    { width: 1024, height: 1024, maxDimension: 0, expected: null },
+    { width: -100, height: 600, maxDimension: 512, expected: null },
+    { width: Number.NaN, height: 600, maxDimension: 512, expected: null },
+    { width: 600, height: Number.NaN, maxDimension: 512, expected: null },
+    { width: Number.POSITIVE_INFINITY, height: 600, maxDimension: 512, expected: null },
+  ])(
+    '($width x $height, max=$maxDimension) のリサイズ結果は $expected になる',
+    ({ width, height, maxDimension, expected }) => {
+      expect(calculateProfileImageResize(width, height, maxDimension)).toEqual(expected);
+    },
+  );
+
+  it('maxDimension 省略時は 512px が使われる', () => {
+    expect(calculateProfileImageResize(1024, 512)).toEqual({ width: 512 });
     expect(calculateProfileImageResize(512, 512)).toBeNull();
-    expect(calculateProfileImageResize(300, 512)).toBeNull();
-  });
-
-  it('横長または正方形で上限を超えるときは width 基準のリサイズを返す', () => {
-    expect(calculateProfileImageResize(513, 512)).toEqual({ width: 512 });
-    expect(calculateProfileImageResize(1024, 1024)).toEqual({ width: 512 });
-  });
-
-  it('縦長で上限を超えるときは height 基準のリサイズを返す', () => {
-    expect(calculateProfileImageResize(512, 513)).toEqual({ height: 512 });
-    expect(calculateProfileImageResize(600, 1200)).toEqual({ height: 512 });
   });
 });

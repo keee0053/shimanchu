@@ -16,20 +16,20 @@ type ProfileImagePickerProps = {
   imagePath: string | null;
   onChangeImagePath: (imagePath: string | null) => void;
   /**
-   * 選択・解除を即座に `profiles.image_path` および Storage 上の旧ファイル整理へ反映するかどうか。
-   * 初回プロフィール設定（`profiles` 行作成前）や「保存」ボタン押下時に確定する編集画面では必ず `false` を指定し、保存・キャンセル時の Storage 後始末を呼び出し側で行うこと。
+   * 選択・解除を即座に `profiles.image_path` および Storage 上の旧ファイル整理へ反映するかどうか（必須）。
+   * 初回プロフィール設定（`profiles` 行作成前）や「保存」ボタン押下時に確定する編集画面では `false` を指定し、保存・キャンセル時の最後の候補の整理を呼び出し側で行うこと（途中離脱時の孤立ファイル整理は #93）。
    */
-  updateProfileRecord?: boolean;
+  updateProfileRecord: boolean;
 };
 
 /**
  * プロフィール画像の選択・アップロード・削除を行う UI コンポーネント。
- * 初回設定（`profiles` 行作成前）や一括保存型の編集画面では `updateProfileRecord={false}` を必ず指定すること。
+ * 初回設定（`profiles` 行作成前）や一括保存型の編集画面では `updateProfileRecord={false}` を指定すること。
  */
 export function ProfileImagePicker({
   imagePath,
   onChangeImagePath,
-  updateProfileRecord = true,
+  updateProfileRecord,
 }: ProfileImagePickerProps) {
   const [localPreview, setLocalPreview] = useState<{
     imagePath: string;
@@ -43,8 +43,9 @@ export function ProfileImagePicker({
   const removeMutation = useRemoveProfileImage();
 
   const isBusy = isPicking || uploadMutation.isPending || removeMutation.isPending;
-  const activeLocalPreviewUri =
-    localPreview && localPreview.imagePath === imagePath ? localPreview.uri : null;
+  const unpersistedSessionImagePath =
+    localPreview && localPreview.imagePath === imagePath ? localPreview.imagePath : null;
+  const activeLocalPreviewUri = unpersistedSessionImagePath ? (localPreview?.uri ?? null) : null;
 
   const handlePickImage = async () => {
     setErrorMessage(null);
@@ -71,6 +72,7 @@ export function ProfileImagePicker({
       const result = await uploadMutation.mutateAsync({
         image: prepared,
         previousImagePath: imagePath,
+        unpersistedPreviousImagePath: updateProfileRecord ? null : unpersistedSessionImagePath,
         updateProfileRecord,
       });
       setLocalPreview({ imagePath: result.imagePath, uri: result.localPreviewUri });
@@ -93,6 +95,16 @@ export function ProfileImagePicker({
     setNoticeMessage(null);
 
     if (!updateProfileRecord) {
+      if (unpersistedSessionImagePath) {
+        try {
+          await removeMutation.mutateAsync({
+            unpersistedImagePath: unpersistedSessionImagePath,
+            updateProfileRecord: false,
+          });
+        } catch {
+          // 未保存候補の Storage 削除失敗でも画面上の選択解除は完了させる
+        }
+      }
       setLocalPreview(null);
       onChangeImagePath(null);
       return;
@@ -184,6 +196,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.two,
   },
+  // TODO(#14): テーマカラーの整備にあわせてボタン・エラー色を共通テーマに統一する
   primaryButton: {
     backgroundColor: '#0284C7',
     paddingVertical: 10,

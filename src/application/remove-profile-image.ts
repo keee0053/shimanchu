@@ -1,13 +1,15 @@
 import type { ProfileImageStorageRepository } from '@/domain/repositories/profile-image-repository';
 
-export type RemoveProfileImageDeps = {
+type RemoveProfileImageDeps = {
   storageRepository: ProfileImageStorageRepository;
 };
 
 export type RemoveProfileImageUseCaseInput = {
   currentImagePath?: string | null;
-  /** `false` の場合は `profiles.image_path` の更新も Storage ファイルの削除も行わない（`uploadProfileImage` と対称） */
-  updateProfileRecord?: boolean;
+  /** `updateProfileRecord: false` のとき、同一画面内でアップロード済み・DB 未保存の候補があれば指定して即座に削除する */
+  unpersistedImagePath?: string | null;
+  /** `false` の場合は `profiles.image_path` の更新および DB 保存済み画像 `currentImagePath` の削除を行わない（`uploadProfileImage` と対称） */
+  updateProfileRecord: boolean;
 };
 
 /**
@@ -15,18 +17,19 @@ export type RemoveProfileImageUseCaseInput = {
  */
 export function createRemoveProfileImage(deps: RemoveProfileImageDeps) {
   return async (input: RemoveProfileImageUseCaseInput): Promise<{ cleanupFailed: boolean }> => {
-    if (input.updateProfileRecord === false) {
-      return { cleanupFailed: false };
+    if (input.updateProfileRecord) {
+      await deps.storageRepository.updateMyProfileImagePath(null);
     }
 
-    await deps.storageRepository.updateMyProfileImagePath(null);
-
-    if (!input.currentImagePath) {
+    const pathToDelete = input.updateProfileRecord
+      ? input.currentImagePath
+      : input.unpersistedImagePath;
+    if (!pathToDelete) {
       return { cleanupFailed: false };
     }
 
     try {
-      await deps.storageRepository.deleteProfileImage(input.currentImagePath);
+      await deps.storageRepository.deleteProfileImage(pathToDelete);
       return { cleanupFailed: false };
     } catch {
       return { cleanupFailed: true };

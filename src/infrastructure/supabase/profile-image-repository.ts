@@ -2,20 +2,19 @@ import * as Crypto from 'expo-crypto';
 import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
 
-import { PROFILE_IMAGE_BUCKET } from '@/domain/entities/profile-image';
 import type {
   ProfileImageStorageRepository,
   UploadProfileImageInput,
 } from '@/domain/repositories/profile-image-repository';
 import {
   buildProfileImagePath,
-  isAllowedProfileImageMimeType,
   isValidProfileImagePath,
   isValidProfileImageSize,
 } from '@/domain/services/profile-image';
 
 import { supabase } from './client';
 
+const PROFILE_IMAGE_BUCKET = 'profile-images';
 const PROFILE_IMAGE_SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 60;
 
 async function requireCurrentUserId(): Promise<string> {
@@ -45,13 +44,6 @@ export const supabaseProfileImageRepository: ProfileImageStorageRepository = {
   async uploadMyProfileImage(input: UploadProfileImageInput): Promise<string> {
     const userId = await requireCurrentUserId();
 
-    if (!isAllowedProfileImageMimeType(input.mimeType)) {
-      throw new Error('対応していない画像形式です（JPEG・PNG・WebP のみ対応）。');
-    }
-    if (!isValidProfileImageSize(input.sizeBytes)) {
-      throw new Error('画像サイズが上限（2MB）を超えています。');
-    }
-
     const arrayBuffer = await readFileAsArrayBuffer(input.uri);
     if (!isValidProfileImageSize(arrayBuffer.byteLength)) {
       throw new Error('画像サイズが上限（2MB）を超えているか、ファイルが空です。');
@@ -72,6 +64,10 @@ export const supabaseProfileImageRepository: ProfileImageStorageRepository = {
     return data.path;
   },
 
+  /**
+   * 自分の `profiles.image_path` を更新する。
+   * 初回プロフィール設定など `profiles` 行の作成前は 0 件更新となるため、ユースケース／コンポーネント側では `updateProfileRecord: false` を指定して利用する。
+   */
   async updateMyProfileImagePath(imagePath: string | null): Promise<void> {
     const userId = await requireCurrentUserId();
 
@@ -89,9 +85,7 @@ export const supabaseProfileImageRepository: ProfileImageStorageRepository = {
       throw error;
     }
     if (!data || data.length === 0) {
-      throw new Error(
-        'プロフィールが未作成のため画像を紐づけられませんでした。初回プロフィール設定時は updateProfileRecord: false を指定してください。',
-      );
+      throw new Error('プロフィールの保存に失敗しました。時間をおいてもう一度お試しください。');
     }
   },
 

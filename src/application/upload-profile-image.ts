@@ -5,18 +5,20 @@ import {
   isValidProfileImageSize,
 } from '@/domain/services/profile-image';
 
-export type UploadProfileImageDeps = {
+type UploadProfileImageDeps = {
   storageRepository: ProfileImageStorageRepository;
 };
 
 export type UploadProfileImageUseCaseInput = {
   image: PreparedProfileImage;
   previousImagePath?: string | null;
-  /** `false` の場合は `profiles.image_path` の更新および旧画像 `previousImagePath` の削除を行わない（呼び出し側で保存・解除時に整理する） */
-  updateProfileRecord?: boolean;
+  /** `updateProfileRecord: false` のとき、同一画面内でアップロード済み・DB 未保存の直前候補があれば指定して即座に削除する */
+  unpersistedPreviousImagePath?: string | null;
+  /** `false` の場合は `profiles.image_path` の更新および DB 保存済み旧画像 `previousImagePath` の削除を行わない（呼び出し側で保存・解除時に整理する） */
+  updateProfileRecord: boolean;
 };
 
-export type UploadProfileImageResult = {
+type UploadProfileImageResult = {
   imagePath: string;
   localPreviewUri: string;
   mimeType: ProfileImageMimeType;
@@ -44,9 +46,7 @@ export function createUploadProfileImage(deps: UploadProfileImageDeps) {
       sizeBytes: image.sizeBytes,
     });
 
-    const shouldUpdateProfileRecord = input.updateProfileRecord !== false;
-
-    if (shouldUpdateProfileRecord) {
+    if (input.updateProfileRecord) {
       try {
         await deps.storageRepository.updateMyProfileImagePath(newPath);
       } catch (error) {
@@ -60,10 +60,12 @@ export function createUploadProfileImage(deps: UploadProfileImageDeps) {
     }
 
     let cleanupFailed = false;
-    const previousPath = input.previousImagePath;
-    if (shouldUpdateProfileRecord && previousPath) {
+    const pathToDelete = input.updateProfileRecord
+      ? input.previousImagePath
+      : input.unpersistedPreviousImagePath;
+    if (pathToDelete) {
       try {
-        await deps.storageRepository.deleteProfileImage(previousPath);
+        await deps.storageRepository.deleteProfileImage(pathToDelete);
       } catch {
         cleanupFailed = true;
       }

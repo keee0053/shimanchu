@@ -39,17 +39,16 @@ export function useUploadProfileImage() {
 
   return useMutation({
     mutationFn: (input: UploadProfileImageUseCaseInput) => uploadProfileImage(input),
-    onSuccess: (result, variables) => {
-      if (variables.updateProfileRecord !== false && variables.previousImagePath) {
+    onSuccess: (_result, variables) => {
+      const deletedPath = variables.updateProfileRecord
+        ? variables.previousImagePath
+        : variables.unpersistedPreviousImagePath;
+      if (deletedPath) {
         queryClient.removeQueries({
-          queryKey: profileImageKeys.signedUrl(variables.previousImagePath),
+          queryKey: profileImageKeys.signedUrl(deletedPath),
           exact: true,
         });
       }
-      void queryClient.invalidateQueries({
-        queryKey: profileImageKeys.signedUrl(result.imagePath),
-        exact: true,
-      });
     },
   });
 }
@@ -63,9 +62,12 @@ export function useRemoveProfileImage() {
   return useMutation({
     mutationFn: (input: RemoveProfileImageUseCaseInput) => removeProfileImage(input),
     onSuccess: (_result, variables) => {
-      if (variables.updateProfileRecord !== false && variables.currentImagePath) {
+      const deletedPath = variables.updateProfileRecord
+        ? variables.currentImagePath
+        : variables.unpersistedImagePath;
+      if (deletedPath) {
         queryClient.removeQueries({
-          queryKey: profileImageKeys.signedUrl(variables.currentImagePath),
+          queryKey: profileImageKeys.signedUrl(deletedPath),
           exact: true,
         });
       }
