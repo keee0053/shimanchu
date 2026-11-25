@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { profileImagePickerRepository } from '@/container';
-import type { PreparedProfileImage } from '@/domain/entities/profile-image';
+import type { PickedProfileImage, ProfileImageCropRect } from '@/domain/entities/profile-image';
 import { ThemedText } from '@/presentation/components/themed-text';
 import { Spacing } from '@/presentation/constants/theme';
 import {
@@ -11,6 +11,7 @@ import {
 } from '@/presentation/queries/profile-images';
 
 import { ProfileImage } from './profile-image';
+import { ProfileImageCropModal } from './profile-image-crop-modal';
 
 type ProfileImagePickerProps = {
   imagePath: string | null;
@@ -23,7 +24,7 @@ type ProfileImagePickerProps = {
 };
 
 /**
- * プロフィール画像の選択・アップロード・削除を行う UI コンポーネント。
+ * プロフィール画像の選択・切り抜き調整・アップロード・削除を行う UI コンポーネント。
  * 初回設定（`profiles` 行作成前）や一括保存型の編集画面では `updateProfileRecord={false}` を指定すること。
  */
 export function ProfileImagePicker({
@@ -35,14 +36,16 @@ export function ProfileImagePicker({
     imagePath: string;
     uri: string;
   } | null>(null);
+  const [croppingImage, setCroppingImage] = useState<PickedProfileImage | null>(null);
   const [isPicking, setIsPicking] = useState(false);
+  const [isCropping, setIsCropping] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
 
   const uploadMutation = useUploadProfileImage();
   const removeMutation = useRemoveProfileImage();
 
-  const isBusy = isPicking || uploadMutation.isPending || removeMutation.isPending;
+  const isBusy = isPicking || isCropping || uploadMutation.isPending || removeMutation.isPending;
   const unpersistedSessionImagePath =
     localPreview && localPreview.imagePath === imagePath ? localPreview.imagePath : null;
   const activeLocalPreviewUri = unpersistedSessionImagePath ? (localPreview?.uri ?? null) : null;
@@ -51,24 +54,33 @@ export function ProfileImagePicker({
     setErrorMessage(null);
     setNoticeMessage(null);
 
-    let prepared: PreparedProfileImage | null;
     setIsPicking(true);
     try {
-      prepared = await profileImagePickerRepository.pickAndPrepareProfileImage();
+      const picked = await profileImagePickerRepository.pickProfileImage();
+      if (picked) {
+        setCroppingImage(picked);
+      }
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : 'プロフィール画像の選択に失敗しました。',
       );
-      return;
     } finally {
       setIsPicking(false);
     }
+  };
 
-    if (!prepared) {
+  const handleCompleteCrop = async (cropRect: ProfileImageCropRect) => {
+    if (!croppingImage) {
       return;
     }
-
+    const source = croppingImage;
+    setIsCropping(true);
     try {
+      const prepared = await profileImagePickerRepository.cropAndPrepareProfileImage(
+        source,
+        cropRect,
+      );
+      setCroppingImage(null);
       const result = await uploadMutation.mutateAsync({
         image: prepared,
         previousImagePath: imagePath,
@@ -81,9 +93,12 @@ export function ProfileImagePicker({
         setNoticeMessage('画像を更新しました（古い画像の削除は一部スキップされました）。');
       }
     } catch (error) {
+      setCroppingImage(null);
       setErrorMessage(
         error instanceof Error ? error.message : 'プロフィール画像のアップロードに失敗しました。',
       );
+    } finally {
+      setIsCropping(false);
     }
   };
 
@@ -147,7 +162,7 @@ export function ProfileImagePicker({
           <ThemedText type="smallBold" style={styles.primaryButtonText}>
             {isPicking
               ? '画像を選択中...'
-              : uploadMutation.isPending
+              : isCropping || uploadMutation.isPending
                 ? 'アップロード中...'
                 : hasImage
                   ? '画像を変更'
@@ -183,6 +198,13 @@ export function ProfileImagePicker({
           {errorMessage}
         </ThemedText>
       )}
+
+      <ProfileImageCropModal
+        image={croppingImage}
+        isSubmitting={isCropping}
+        onCancel={() => setCroppingImage(null)}
+        onComplete={(cropRect) => void handleCompleteCrop(cropRect)}
+      />
     </View>
   );
 }

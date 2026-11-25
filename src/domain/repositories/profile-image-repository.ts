@@ -1,4 +1,9 @@
-import type { PreparedProfileImage, ProfileImageMimeType } from '../entities/profile-image';
+import type {
+  PickedProfileImage,
+  PreparedProfileImage,
+  ProfileImageCropRect,
+  ProfileImageMimeType,
+} from '../entities/profile-image';
 
 export type UploadProfileImageInput = {
   uri: string;
@@ -7,7 +12,11 @@ export type UploadProfileImageInput = {
 };
 
 export type ProfileImagePickerRepository = {
-  pickAndPrepareProfileImage(): Promise<PreparedProfileImage | null>;
+  pickProfileImage(): Promise<PickedProfileImage | null>;
+  cropAndPrepareProfileImage(
+    source: PickedProfileImage,
+    cropRect: ProfileImageCropRect,
+  ): Promise<PreparedProfileImage>;
 };
 
 export type ProfileImageStorageRepository = {

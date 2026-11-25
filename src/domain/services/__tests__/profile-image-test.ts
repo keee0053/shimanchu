@@ -1,7 +1,9 @@
-import type { ProfileImageMimeType } from '@/domain/entities/profile-image';
+import type { ProfileImageCropRect, ProfileImageMimeType } from '@/domain/entities/profile-image';
 import {
   buildProfileImagePath,
+  calculateProfileImageCropRect,
   calculateProfileImageResize,
+  clampProfileImageCropTransform,
   isAllowedProfileImageMimeType,
   isValidProfileImagePath,
   isValidProfileImageSize,
@@ -99,4 +101,165 @@ describe('calculateProfileImageResize', () => {
     expect(calculateProfileImageResize(1024, 512)).toEqual({ width: 512 });
     expect(calculateProfileImageResize(512, 512)).toBeNull();
   });
+});
+
+describe('clampProfileImageCropTransform / calculateProfileImageCropRect', () => {
+  it.each<{
+    imageWidth: number;
+    imageHeight: number;
+    viewportSize: number;
+    scale: number;
+    translateX: number;
+    translateY: number;
+    expectedScale: number;
+    expectedTranslateX: number;
+    expectedTranslateY: number;
+  }>([
+    {
+      imageWidth: 1000,
+      imageHeight: 500,
+      viewportSize: 250,
+      scale: 0.5,
+      translateX: 500,
+      translateY: 100,
+      expectedScale: 1,
+      expectedTranslateX: 125,
+      expectedTranslateY: 0,
+    },
+    {
+      imageWidth: 1000,
+      imageHeight: 500,
+      viewportSize: 250,
+      scale: 6,
+      translateX: -999,
+      translateY: 999,
+      expectedScale: 4,
+      expectedTranslateX: -875,
+      expectedTranslateY: 375,
+    },
+    {
+      imageWidth: 600,
+      imageHeight: 1200,
+      viewportSize: 300,
+      scale: 1,
+      translateX: 40,
+      translateY: -500,
+      expectedScale: 1,
+      expectedTranslateX: 0,
+      expectedTranslateY: -150,
+    },
+  ])(
+    '($imageWidth x $imageHeight, scale=$scale, tx=$translateX, ty=$translateY) のクランプ結果を確認',
+    ({
+      imageWidth,
+      imageHeight,
+      viewportSize,
+      scale,
+      translateX,
+      translateY,
+      expectedScale,
+      expectedTranslateX,
+      expectedTranslateY,
+    }) => {
+      const clamped = clampProfileImageCropTransform({
+        imageWidth,
+        imageHeight,
+        viewportSize,
+        scale,
+        translateX,
+        translateY,
+      });
+      expect(clamped.scale).toBe(expectedScale);
+      expect(clamped.translateX).toBe(expectedTranslateX);
+      expect(clamped.translateY).toBe(expectedTranslateY);
+    },
+  );
+
+  it.each<{
+    imageWidth: number;
+    imageHeight: number;
+    viewportSize: number;
+    scale: number;
+    translateX: number;
+    translateY: number;
+    expected: ProfileImageCropRect;
+  }>([
+    {
+      imageWidth: 800,
+      imageHeight: 800,
+      viewportSize: 200,
+      scale: 1,
+      translateX: 0,
+      translateY: 0,
+      expected: { originX: 0, originY: 0, width: 800, height: 800 },
+    },
+    {
+      imageWidth: 800,
+      imageHeight: 800,
+      viewportSize: 200,
+      scale: 2,
+      translateX: 0,
+      translateY: 0,
+      expected: { originX: 200, originY: 200, width: 400, height: 400 },
+    },
+    {
+      imageWidth: 1000,
+      imageHeight: 500,
+      viewportSize: 250,
+      scale: 1,
+      translateX: 0,
+      translateY: 0,
+      expected: { originX: 250, originY: 0, width: 500, height: 500 },
+    },
+    {
+      imageWidth: 1000,
+      imageHeight: 500,
+      viewportSize: 250,
+      scale: 1,
+      translateX: 125,
+      translateY: 0,
+      expected: { originX: 0, originY: 0, width: 500, height: 500 },
+    },
+    {
+      imageWidth: 1000,
+      imageHeight: 500,
+      viewportSize: 250,
+      scale: 1,
+      translateX: -999,
+      translateY: 0,
+      expected: { originX: 500, originY: 0, width: 500, height: 500 },
+    },
+    {
+      imageWidth: 600,
+      imageHeight: 1200,
+      viewportSize: 300,
+      scale: 1,
+      translateX: 0,
+      translateY: 0,
+      expected: { originX: 0, originY: 300, width: 600, height: 600 },
+    },
+    {
+      imageWidth: 600,
+      imageHeight: 1200,
+      viewportSize: 300,
+      scale: 1,
+      translateX: 0,
+      translateY: -150,
+      expected: { originX: 0, originY: 600, width: 600, height: 600 },
+    },
+  ])(
+    '($imageWidth x $imageHeight, scale=$scale, tx=$translateX, ty=$translateY) → $expected',
+    ({ imageWidth, imageHeight, viewportSize, scale, translateX, translateY, expected }) => {
+      expect(
+        calculateProfileImageCropRect({
+          imageWidth,
+          imageHeight,
+          viewportSize,
+          scale,
+          translateX,
+          translateY,
+        }),
+      ).toEqual(expected);
+    },
+  );
 });
