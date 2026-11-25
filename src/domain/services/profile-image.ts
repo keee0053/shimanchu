@@ -1,10 +1,11 @@
 import {
+  type CropCorner,
   PROFILE_IMAGE_EXTENSIONS,
   PROFILE_IMAGE_MAX_BYTES,
-  PROFILE_IMAGE_MAX_CROP_SCALE,
   PROFILE_IMAGE_MAX_DIMENSION,
   type ProfileImageCropRect,
   type ProfileImageMimeType,
+  type SquareCropBox,
 } from '../entities/profile-image';
 
 function isSafePathSegment(segment: string): boolean {
@@ -87,105 +88,167 @@ export function calculateProfileImageResize(
   return width >= height ? { width: maxDimension } : { height: maxDimension };
 }
 
-export type ProfileImageCropTransformParams = {
-  imageWidth: number;
-  imageHeight: number;
-  viewportSize: number;
-  scale: number;
-  translateX: number;
-  translateY: number;
-  maxScale?: number;
-};
-
 /**
- * 切り抜き枠をはみ出さないように拡大率と移動量を正規化する
+ * 元画像を画面上の表示領域（maxWidth x maxHeight）に収める縦横比維持サイズを計算する
  */
-export function clampProfileImageCropTransform({
-  imageWidth,
-  imageHeight,
-  viewportSize,
-  scale,
-  translateX,
-  translateY,
-  maxScale = PROFILE_IMAGE_MAX_CROP_SCALE,
-}: ProfileImageCropTransformParams): {
-  scale: number;
-  translateX: number;
-  translateY: number;
-  displayedWidth: number;
-  displayedHeight: number;
-} {
+export function calculateFittedImageSize(
+  imageWidth: number,
+  imageHeight: number,
+  maxWidth: number,
+  maxHeight: number,
+): { width: number; height: number } {
   if (
     !isPositiveNumber(imageWidth) ||
     !isPositiveNumber(imageHeight) ||
-    !isPositiveNumber(viewportSize)
+    !isPositiveNumber(maxWidth) ||
+    !isPositiveNumber(maxHeight)
   ) {
-    const safeViewport = isPositiveNumber(viewportSize) ? viewportSize : 0;
-    return {
-      scale: 1,
-      translateX: 0,
-      translateY: 0,
-      displayedWidth: safeViewport,
-      displayedHeight: safeViewport,
-    };
+    return { width: 0, height: 0 };
   }
-
-  const resolvedMaxScale =
-    isPositiveNumber(maxScale) && maxScale > 1 ? maxScale : PROFILE_IMAGE_MAX_CROP_SCALE;
-  const clampedScale = clampNumber(Number.isFinite(scale) ? scale : 1, 1, resolvedMaxScale);
-  const baseScale = viewportSize / Math.min(imageWidth, imageHeight);
-  const displayedWidth = imageWidth * baseScale * clampedScale;
-  const displayedHeight = imageHeight * baseScale * clampedScale;
-  const maxTranslateX = Math.max(0, (displayedWidth - viewportSize) / 2);
-  const maxTranslateY = Math.max(0, (displayedHeight - viewportSize) / 2);
-
+  const scale = Math.min(maxWidth / imageWidth, maxHeight / imageHeight);
   return {
-    scale: clampedScale,
-    translateX: clampNumber(
-      Number.isFinite(translateX) ? translateX : 0,
-      -maxTranslateX,
-      maxTranslateX,
-    ),
-    translateY: clampNumber(
-      Number.isFinite(translateY) ? translateY : 0,
-      -maxTranslateY,
-      maxTranslateY,
-    ),
-    displayedWidth,
-    displayedHeight,
+    width: imageWidth * scale,
+    height: imageHeight * scale,
   };
 }
 
 /**
- * 切り抜きモーダル上の拡大率・移動量から、元画像座標系の正方形切り抜き範囲を計算する
+ * 表示画像の中央に収まる最大サイズの初期正方形切り抜き枠を作る
  */
-export function calculateProfileImageCropRect(
-  params: Omit<ProfileImageCropTransformParams, 'maxScale'>,
-): ProfileImageCropRect {
-  const { imageWidth, imageHeight, viewportSize } = params;
+export function createInitialSquareCropBox(
+  displayedWidth: number,
+  displayedHeight: number,
+): SquareCropBox {
+  if (!isPositiveNumber(displayedWidth) || !isPositiveNumber(displayedHeight)) {
+    return { x: 0, y: 0, size: 0 };
+  }
+  const size = Math.min(displayedWidth, displayedHeight);
+  return {
+    x: normalizeZero((displayedWidth - size) / 2),
+    y: normalizeZero((displayedHeight - size) / 2),
+    size,
+  };
+}
+
+/**
+ * 正方形切り抜き枠を表示画像からはみ出さないように移動する
+ */
+export function moveSquareCropBox(
+  box: SquareCropBox,
+  deltaX: number,
+  deltaY: number,
+  displayedWidth: number,
+  displayedHeight: number,
+): SquareCropBox {
+  if (!isPositiveNumber(displayedWidth) || !isPositiveNumber(displayedHeight)) {
+    return { x: 0, y: 0, size: 0 };
+  }
+  const maxAvailableSize = Math.min(displayedWidth, displayedHeight);
+  const size = clampNumber(Number.isFinite(box.size) ? box.size : 0, 0, maxAvailableSize);
+  const safeDeltaX = Number.isFinite(deltaX) ? deltaX : 0;
+  const safeDeltaY = Number.isFinite(deltaY) ? deltaY : 0;
+
+  return {
+    x: clampNumber(box.x + safeDeltaX, 0, Math.max(0, displayedWidth - size)),
+    y: clampNumber(box.y + safeDeltaY, 0, Math.max(0, displayedHeight - size)),
+    size,
+  };
+}
+
+/**
+ * 指定した四隅のハンドルをドラッグして正方形切り抜き枠を拡縮する（対角の角を固定）
+ */
+export function resizeSquareCropBox(
+  box: SquareCropBox,
+  corner: CropCorner,
+  deltaX: number,
+  deltaY: number,
+  displayedWidth: number,
+  displayedHeight: number,
+  minSize: number = 64,
+): SquareCropBox {
+  if (!isPositiveNumber(displayedWidth) || !isPositiveNumber(displayedHeight)) {
+    return { x: 0, y: 0, size: 0 };
+  }
+  const maxAvailableSize = Math.min(displayedWidth, displayedHeight);
+  const effectiveMin = Math.min(isPositiveNumber(minSize) ? minSize : 1, maxAvailableSize);
+  const safeDx = Number.isFinite(deltaX) ? deltaX : 0;
+  const safeDy = Number.isFinite(deltaY) ? deltaY : 0;
+
+  switch (corner) {
+    case 'bottom-right': {
+      const anchorX = clampNumber(box.x, 0, displayedWidth);
+      const anchorY = clampNumber(box.y, 0, displayedHeight);
+      const maxSize = Math.min(displayedWidth - anchorX, displayedHeight - anchorY);
+      const size = clampNumber(box.size + (safeDx + safeDy) / 2, effectiveMin, maxSize);
+      return { x: anchorX, y: anchorY, size };
+    }
+    case 'top-left': {
+      const anchorX = clampNumber(box.x + box.size, 0, displayedWidth);
+      const anchorY = clampNumber(box.y + box.size, 0, displayedHeight);
+      const maxSize = Math.min(anchorX, anchorY);
+      const size = clampNumber(box.size + (-safeDx - safeDy) / 2, effectiveMin, maxSize);
+      return {
+        x: normalizeZero(anchorX - size),
+        y: normalizeZero(anchorY - size),
+        size,
+      };
+    }
+    case 'top-right': {
+      const anchorX = clampNumber(box.x, 0, displayedWidth);
+      const anchorY = clampNumber(box.y + box.size, 0, displayedHeight);
+      const maxSize = Math.min(displayedWidth - anchorX, anchorY);
+      const size = clampNumber(box.size + (safeDx - safeDy) / 2, effectiveMin, maxSize);
+      return {
+        x: anchorX,
+        y: normalizeZero(anchorY - size),
+        size,
+      };
+    }
+    case 'bottom-left': {
+      const anchorX = clampNumber(box.x + box.size, 0, displayedWidth);
+      const anchorY = clampNumber(box.y, 0, displayedHeight);
+      const maxSize = Math.min(anchorX, displayedHeight - anchorY);
+      const size = clampNumber(box.size + (-safeDx + safeDy) / 2, effectiveMin, maxSize);
+      return {
+        x: normalizeZero(anchorX - size),
+        y: anchorY,
+        size,
+      };
+    }
+  }
+}
+
+/**
+ * 表示座標系の正方形切り抜き枠を、元画像ピクセル座標系の切り抜き範囲へ変換する
+ */
+export function convertSquareCropBoxToImageRect(params: {
+  box: SquareCropBox;
+  displayedWidth: number;
+  displayedHeight: number;
+  imageWidth: number;
+  imageHeight: number;
+}): ProfileImageCropRect {
+  const { box, displayedWidth, displayedHeight, imageWidth, imageHeight } = params;
   if (
+    !isPositiveNumber(displayedWidth) ||
+    !isPositiveNumber(displayedHeight) ||
     !isPositiveNumber(imageWidth) ||
-    !isPositiveNumber(imageHeight) ||
-    !isPositiveNumber(viewportSize)
+    !isPositiveNumber(imageHeight)
   ) {
     return { originX: 0, originY: 0, width: 1, height: 1 };
   }
 
-  const clamped = clampProfileImageCropTransform(params);
-  const totalScale = (viewportSize / Math.min(imageWidth, imageHeight)) * clamped.scale;
-  const rawSide = viewportSize / totalScale;
+  const scaleX = imageWidth / displayedWidth;
+  const scaleY = imageHeight / displayedHeight;
   const maxSide = Math.max(1, Math.min(Math.floor(imageWidth), Math.floor(imageHeight)));
-  const side = Math.max(1, Math.min(Math.round(rawSide), maxSide));
-
-  const rawOriginX = (imageWidth - rawSide) / 2 - clamped.translateX / totalScale;
-  const rawOriginY = (imageHeight - rawSide) / 2 - clamped.translateY / totalScale;
-
+  const side = clampNumber(Math.round(box.size * Math.min(scaleX, scaleY)), 1, maxSide);
   const maxOriginX = Math.max(0, Math.floor(imageWidth) - side);
   const maxOriginY = Math.max(0, Math.floor(imageHeight) - side);
 
   return {
-    originX: clampNumber(Math.round(rawOriginX), 0, maxOriginX),
-    originY: clampNumber(Math.round(rawOriginY), 0, maxOriginY),
+    originX: clampNumber(Math.round(box.x * scaleX), 0, maxOriginX),
+    originY: clampNumber(Math.round(box.y * scaleY), 0, maxOriginY),
     width: side,
     height: side,
   };

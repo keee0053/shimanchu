@@ -20,11 +20,6 @@ export type ProfileImageMimeType = keyof typeof PROFILE_IMAGE_EXTENSIONS;
 export const PROFILE_IMAGE_MAX_DIMENSION = 512;
 
 /**
- * 切り抜きモーダルで拡大できる最大倍率
- */
-export const PROFILE_IMAGE_MAX_CROP_SCALE = 4;
-
-/**
  * 端末から選択した直後のプロフィール画像（切り抜き前）
  */
 export type PickedProfileImage = {
@@ -32,6 +27,20 @@ export type PickedProfileImage = {
   width: number;
   height: number;
 };
+
+/**
+ * 表示画像上の正方形切り抜き枠（画面表示サイズ基準の座標系）
+ */
+export type SquareCropBox = {
+  x: number;
+  y: number;
+  size: number;
+};
+
+/**
+ * 切り抜き枠の四隅ハンドル位置
+ */
+export type CropCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 /**
  * 元画像のピクセル座標系における正方形の切り抜き範囲

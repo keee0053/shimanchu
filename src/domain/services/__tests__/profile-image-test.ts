@@ -1,12 +1,20 @@
-import type { ProfileImageCropRect, ProfileImageMimeType } from '@/domain/entities/profile-image';
+import type {
+  CropCorner,
+  ProfileImageCropRect,
+  ProfileImageMimeType,
+  SquareCropBox,
+} from '@/domain/entities/profile-image';
 import {
   buildProfileImagePath,
-  calculateProfileImageCropRect,
+  calculateFittedImageSize,
   calculateProfileImageResize,
-  clampProfileImageCropTransform,
+  convertSquareCropBoxToImageRect,
+  createInitialSquareCropBox,
   isAllowedProfileImageMimeType,
   isValidProfileImagePath,
   isValidProfileImageSize,
+  moveSquareCropBox,
+  resizeSquareCropBox,
 } from '@/domain/services/profile-image';
 
 const TWO_MIB = 2 * 1024 * 1024;
@@ -103,161 +111,136 @@ describe('calculateProfileImageResize', () => {
   });
 });
 
-describe('clampProfileImageCropTransform / calculateProfileImageCropRect', () => {
+describe('切り抜き枠の計算（calculateFittedImageSize / createInitialSquareCropBox / move / resize / convert）', () => {
   it.each<{
     imageWidth: number;
     imageHeight: number;
-    viewportSize: number;
-    scale: number;
-    translateX: number;
-    translateY: number;
-    expectedScale: number;
-    expectedTranslateX: number;
-    expectedTranslateY: number;
+    maxWidth: number;
+    maxHeight: number;
+    expected: { width: number; height: number };
   }>([
     {
       imageWidth: 1000,
       imageHeight: 500,
-      viewportSize: 250,
-      scale: 0.5,
-      translateX: 500,
-      translateY: 100,
-      expectedScale: 1,
-      expectedTranslateX: 125,
-      expectedTranslateY: 0,
+      maxWidth: 300,
+      maxHeight: 400,
+      expected: { width: 300, height: 150 },
     },
     {
-      imageWidth: 1000,
+      imageWidth: 500,
+      imageHeight: 1000,
+      maxWidth: 300,
+      maxHeight: 400,
+      expected: { width: 200, height: 400 },
+    },
+    {
+      imageWidth: 0,
       imageHeight: 500,
-      viewportSize: 250,
-      scale: 6,
-      translateX: -999,
-      translateY: 999,
-      expectedScale: 4,
-      expectedTranslateX: -875,
-      expectedTranslateY: 375,
-    },
-    {
-      imageWidth: 600,
-      imageHeight: 1200,
-      viewportSize: 300,
-      scale: 1,
-      translateX: 40,
-      translateY: -500,
-      expectedScale: 1,
-      expectedTranslateX: 0,
-      expectedTranslateY: -150,
+      maxWidth: 300,
+      maxHeight: 400,
+      expected: { width: 0, height: 0 },
     },
   ])(
-    '($imageWidth x $imageHeight, scale=$scale, tx=$translateX, ty=$translateY) のクランプ結果を確認',
-    ({
-      imageWidth,
-      imageHeight,
-      viewportSize,
-      scale,
-      translateX,
-      translateY,
-      expectedScale,
-      expectedTranslateX,
-      expectedTranslateY,
-    }) => {
-      const clamped = clampProfileImageCropTransform({
-        imageWidth,
-        imageHeight,
-        viewportSize,
-        scale,
-        translateX,
-        translateY,
-      });
-      expect(clamped.scale).toBe(expectedScale);
-      expect(clamped.translateX).toBe(expectedTranslateX);
-      expect(clamped.translateY).toBe(expectedTranslateY);
+    'fit ($imageWidth x $imageHeight in $maxWidth x $maxHeight) → $expected',
+    ({ imageWidth, imageHeight, maxWidth, maxHeight, expected }) => {
+      expect(calculateFittedImageSize(imageWidth, imageHeight, maxWidth, maxHeight)).toEqual(
+        expected,
+      );
+    },
+  );
+
+  it('初期切り抜き枠は表示画像の中央に最大正方形で配置される', () => {
+    expect(createInitialSquareCropBox(300, 150)).toEqual({ x: 75, y: 0, size: 150 });
+    expect(createInitialSquareCropBox(200, 400)).toEqual({ x: 0, y: 100, size: 200 });
+  });
+
+  it.each<{
+    box: SquareCropBox;
+    deltaX: number;
+    deltaY: number;
+    displayedWidth: number;
+    displayedHeight: number;
+    expected: SquareCropBox;
+  }>([
+    {
+      box: { x: 50, y: 0, size: 100 },
+      deltaX: 30,
+      deltaY: 20,
+      displayedWidth: 300,
+      displayedHeight: 200,
+      expected: { x: 80, y: 20, size: 100 },
+    },
+    {
+      box: { x: 50, y: 20, size: 100 },
+      deltaX: -999,
+      deltaY: 999,
+      displayedWidth: 300,
+      displayedHeight: 200,
+      expected: { x: 0, y: 100, size: 100 },
+    },
+  ])(
+    'moveSquareCropBox ($deltaX, $deltaY) → $expected',
+    ({ box, deltaX, deltaY, displayedWidth, displayedHeight, expected }) => {
+      expect(moveSquareCropBox(box, deltaX, deltaY, displayedWidth, displayedHeight)).toEqual(
+        expected,
+      );
     },
   );
 
   it.each<{
+    corner: CropCorner;
+    deltaX: number;
+    deltaY: number;
+    expected: SquareCropBox;
+  }>([
+    { corner: 'bottom-right', deltaX: 40, deltaY: 40, expected: { x: 50, y: 50, size: 140 } },
+    { corner: 'bottom-right', deltaX: -200, deltaY: -200, expected: { x: 50, y: 50, size: 64 } },
+    { corner: 'top-left', deltaX: -20, deltaY: -20, expected: { x: 30, y: 30, size: 120 } },
+    { corner: 'top-left', deltaX: -999, deltaY: -999, expected: { x: 0, y: 0, size: 150 } },
+    { corner: 'top-right', deltaX: 20, deltaY: -20, expected: { x: 50, y: 30, size: 120 } },
+    { corner: 'bottom-left', deltaX: -30, deltaY: 30, expected: { x: 20, y: 50, size: 130 } },
+  ])(
+    'resizeSquareCropBox ($corner, dx=$deltaX, dy=$deltaY) → $expected',
+    ({ corner, deltaX, deltaY, expected }) => {
+      const startBox: SquareCropBox = { x: 50, y: 50, size: 100 };
+      expect(resizeSquareCropBox(startBox, corner, deltaX, deltaY, 300, 300, 64)).toEqual(expected);
+    },
+  );
+
+  it.each<{
+    box: SquareCropBox;
+    displayedWidth: number;
+    displayedHeight: number;
     imageWidth: number;
     imageHeight: number;
-    viewportSize: number;
-    scale: number;
-    translateX: number;
-    translateY: number;
     expected: ProfileImageCropRect;
   }>([
     {
-      imageWidth: 800,
-      imageHeight: 800,
-      viewportSize: 200,
-      scale: 1,
-      translateX: 0,
-      translateY: 0,
-      expected: { originX: 0, originY: 0, width: 800, height: 800 },
-    },
-    {
-      imageWidth: 800,
-      imageHeight: 800,
-      viewportSize: 200,
-      scale: 2,
-      translateX: 0,
-      translateY: 0,
-      expected: { originX: 200, originY: 200, width: 400, height: 400 },
-    },
-    {
+      box: { x: 75, y: 0, size: 150 },
+      displayedWidth: 300,
+      displayedHeight: 150,
       imageWidth: 1000,
       imageHeight: 500,
-      viewportSize: 250,
-      scale: 1,
-      translateX: 0,
-      translateY: 0,
       expected: { originX: 250, originY: 0, width: 500, height: 500 },
     },
     {
-      imageWidth: 1000,
-      imageHeight: 500,
-      viewportSize: 250,
-      scale: 1,
-      translateX: 125,
-      translateY: 0,
-      expected: { originX: 0, originY: 0, width: 500, height: 500 },
-    },
-    {
-      imageWidth: 1000,
-      imageHeight: 500,
-      viewportSize: 250,
-      scale: 1,
-      translateX: -999,
-      translateY: 0,
-      expected: { originX: 500, originY: 0, width: 500, height: 500 },
-    },
-    {
+      box: { x: 25, y: 50, size: 100 },
+      displayedWidth: 200,
+      displayedHeight: 400,
       imageWidth: 600,
       imageHeight: 1200,
-      viewportSize: 300,
-      scale: 1,
-      translateX: 0,
-      translateY: 0,
-      expected: { originX: 0, originY: 300, width: 600, height: 600 },
-    },
-    {
-      imageWidth: 600,
-      imageHeight: 1200,
-      viewportSize: 300,
-      scale: 1,
-      translateX: 0,
-      translateY: -150,
-      expected: { originX: 0, originY: 600, width: 600, height: 600 },
+      expected: { originX: 75, originY: 150, width: 300, height: 300 },
     },
   ])(
-    '($imageWidth x $imageHeight, scale=$scale, tx=$translateX, ty=$translateY) → $expected',
-    ({ imageWidth, imageHeight, viewportSize, scale, translateX, translateY, expected }) => {
+    'convertSquareCropBoxToImageRect → $expected',
+    ({ box, displayedWidth, displayedHeight, imageWidth, imageHeight, expected }) => {
       expect(
-        calculateProfileImageCropRect({
+        convertSquareCropBoxToImageRect({
+          box,
+          displayedWidth,
+          displayedHeight,
           imageWidth,
           imageHeight,
-          viewportSize,
-          scale,
-          translateX,
-          translateY,
         }),
       ).toEqual(expected);
     },
