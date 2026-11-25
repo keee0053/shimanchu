@@ -4,7 +4,7 @@ import type { PlaceRepository } from '@/domain/repositories/place-repository';
 import type { PresenceRepository } from '@/domain/repositories/presence-repository';
 import { detectIsland } from '@/domain/services/island';
 
-export type UpdateMyLocationDeps = {
+type UpdateMyLocationDeps = {
   locationRepository: LocationRepository;
   placeRepository: PlaceRepository;
   presenceRepository: PresenceRepository;
@@ -12,7 +12,6 @@ export type UpdateMyLocationDeps = {
 
 export type UpdateMyLocationInput = {
   coords?: Coordinates | null;
-  currentIsland?: IslandType | null;
   requestPermission?: boolean;
 };
 
@@ -27,6 +26,7 @@ export type UpdateMyLocationResult = {
  */
 export function createUpdateMyLocation(deps: UpdateMyLocationDeps) {
   let operationQueue: Promise<unknown> = Promise.resolve();
+  // TODO(#94): ログアウト・アカウント切り替え時に lastResolvedIsland をリセットする
   let lastResolvedIsland: IslandType | null = null;
 
   function enqueue<T>(operation: () => Promise<T>): Promise<T> {
@@ -54,8 +54,7 @@ export function createUpdateMyLocation(deps: UpdateMyLocationDeps) {
       }
 
       const places = await deps.placeRepository.getRegisteredPlaces();
-      const currentIsland = lastResolvedIsland ?? input?.currentIsland ?? null;
-      const islandType = detectIsland(coords, places, currentIsland);
+      const islandType = detectIsland(coords, places, lastResolvedIsland);
       const presence = await deps.presenceRepository.saveMyIsland(islandType);
       lastResolvedIsland = islandType;
 

@@ -1,8 +1,8 @@
 import {
   type Coordinates,
-  DRIFTING_THRESHOLD_MS,
   EMPTY_REGISTERED_PLACES,
-  ISLAND_EXIT_MARGIN_METERS,
+  type IslandType,
+  type PlaceRadius,
   type RegisteredPlaces,
 } from '@/domain/entities/island';
 import {
@@ -13,6 +13,7 @@ import {
 } from '@/domain/services/island';
 
 const TOKYO_STATION: Coordinates = { latitude: 35.681236, longitude: 139.767125 };
+const HOUR_MS = 60 * 60 * 1000;
 
 /**
  * 基準点から北方向に指定メートル離れた座標を作るテスト用ヘルパー
@@ -40,11 +41,8 @@ describe('detectIsland', () => {
     school: { coordinates: offsetNorthMeters(TOKYO_STATION, 1000), radius: 200 },
   };
 
-  it('位置情報が null のときは drifting になる', () => {
+  it('位置情報が null または NaN のときは drifting になる', () => {
     expect(detectIsland(null, places)).toBe('drifting');
-  });
-
-  it('位置情報が NaN を含むときは drifting になる', () => {
     expect(detectIsland({ latitude: Number.NaN, longitude: 139.767125 }, places)).toBe('drifting');
   });
 
@@ -52,67 +50,112 @@ describe('detectIsland', () => {
     expect(detectIsland(TOKYO_STATION, EMPTY_REGISTERED_PLACES)).toBe('outside');
   });
 
-  it('家の半径（200m）の境界で判定が切り替わる', () => {
-    const justInside = offsetNorthMeters(TOKYO_STATION, 199.99);
-    const justOutside = offsetNorthMeters(TOKYO_STATION, 200.01);
-    expect(detectIsland(justInside, places)).toBe('home');
-    expect(detectIsland(justOutside, places, 'outside')).toBe('outside');
-  });
+  it.each<{ distanceFromHome: number; currentIsland: IslandType | null; expected: IslandType }>([
+    { distanceFromHome: 199.99, currentIsland: null, expected: 'home' },
+    { distanceFromHome: 200.01, currentIsland: null, expected: 'outside' },
+    { distanceFromHome: 215, currentIsland: 'outside', expected: 'outside' },
+    { distanceFromHome: 215, currentIsland: 'home', expected: 'home' },
+    { distanceFromHome: 229.99, currentIsland: 'home', expected: 'home' },
+    { distanceFromHome: 230.01, currentIsland: 'home', expected: 'outside' },
+    { distanceFromHome: 1150, currentIsland: null, expected: 'school' },
+    { distanceFromHome: 770.01, currentIsland: 'school', expected: 'school' },
+    { distanceFromHome: 769.99, currentIsland: 'school', expected: 'outside' },
+  ])(
+    '家から $distanceFromHome m・今の島 $currentIsland → $expected',
+    ({ distanceFromHome, currentIsland, expected }) => {
+      expect(
+        detectIsland(offsetNorthMeters(TOKYO_STATION, distanceFromHome), places, currentIsland),
+      ).toBe(expected);
+    },
+  );
 
-  it('現在 home にいるときは半径 + 余裕幅（200m + 30m）まで home のままになる', () => {
-    const midMargin = offsetNorthMeters(TOKYO_STATION, 215);
-    const marginInside = offsetNorthMeters(TOKYO_STATION, 200 + ISLAND_EXIT_MARGIN_METERS - 0.01);
-    expect(detectIsland(midMargin, places, 'outside')).toBe('outside');
-    expect(detectIsland(midMargin, places, 'home')).toBe('home');
-    expect(detectIsland(marginInside, places, 'home')).toBe('home');
-  });
+  it.each<{
+    radius: PlaceRadius;
+    distanceFromHome: number;
+    currentIsland: IslandType | null;
+    expected: IslandType;
+  }>([
+    { radius: 100, distanceFromHome: 99.99, currentIsland: null, expected: 'home' },
+    { radius: 100, distanceFromHome: 100.01, currentIsland: null, expected: 'outside' },
+    { radius: 100, distanceFromHome: 129.99, currentIsland: 'home', expected: 'home' },
+    { radius: 100, distanceFromHome: 130.01, currentIsland: 'home', expected: 'outside' },
+    { radius: 500, distanceFromHome: 499.99, currentIsland: null, expected: 'home' },
+    { radius: 500, distanceFromHome: 500.01, currentIsland: null, expected: 'outside' },
+    { radius: 500, distanceFromHome: 529.99, currentIsland: 'home', expected: 'home' },
+    { radius: 500, distanceFromHome: 530.01, currentIsland: 'home', expected: 'outside' },
+  ])(
+    '半径 $radius m・距離 $distanceFromHome m・今の島 $currentIsland → $expected',
+    ({ radius, distanceFromHome, currentIsland, expected }) => {
+      const customPlaces: RegisteredPlaces = {
+        home: { coordinates: TOKYO_STATION, radius },
+        school: null,
+      };
+      expect(
+        detectIsland(
+          offsetNorthMeters(TOKYO_STATION, distanceFromHome),
+          customPlaces,
+          currentIsland,
+        ),
+      ).toBe(expected);
+    },
+  );
 
-  it('現在 home にいても半径 + 余裕幅を超えると outside になる', () => {
-    const marginOutside = offsetNorthMeters(TOKYO_STATION, 200 + ISLAND_EXIT_MARGIN_METERS + 0.01);
-    expect(detectIsland(marginOutside, places, 'home')).toBe('outside');
-  });
-
-  it('学校の範囲内にいるときは school になる', () => {
-    const nearSchool = offsetNorthMeters(TOKYO_STATION, 1150);
-    expect(detectIsland(nearSchool, places)).toBe('school');
-  });
-
-  it('家と学校の範囲が重なっているときは中心が近い方の島になる', () => {
+  it('家と学校の範囲が重なっているときは中心が近い方を優先し、等距離なら home にする', () => {
     const overlappingPlaces: RegisteredPlaces = {
       home: { coordinates: TOKYO_STATION, radius: 500 },
       school: { coordinates: offsetNorthMeters(TOKYO_STATION, 300), radius: 500 },
     };
 
-    const closerToHome = offsetNorthMeters(TOKYO_STATION, 100);
-    expect(detectIsland(closerToHome, overlappingPlaces)).toBe('home');
+    expect(detectIsland(offsetNorthMeters(TOKYO_STATION, 100), overlappingPlaces)).toBe('home');
+    expect(detectIsland(offsetNorthMeters(TOKYO_STATION, 200), overlappingPlaces)).toBe('school');
 
-    const closerToSchool = offsetNorthMeters(TOKYO_STATION, 200);
-    expect(detectIsland(closerToSchool, overlappingPlaces)).toBe('school');
+    // 同緯度・経度対称配置により両方の中心から完全に等距離になる座標を作る
+    const symmetricPlaces: RegisteredPlaces = {
+      home: { coordinates: { latitude: 35.68, longitude: 139.76 }, radius: 500 },
+      school: { coordinates: { latitude: 35.68, longitude: 139.762 }, radius: 500 },
+    };
+    const exactMidpoint: Coordinates = { latitude: 35.68, longitude: 139.761 };
+    expect(detectIsland(exactMidpoint, symmetricPlaces)).toBe('home');
   });
 });
 
 describe('isDriftingByInactivity / resolveDisplayedIsland', () => {
-  it('最終更新から24時間未満なら漂流扱いにならない', () => {
-    const now = new Date('2026-11-20T12:00:00.000Z');
-    const updatedAt = new Date(now.getTime() - (DRIFTING_THRESHOLD_MS - 1));
-    expect(isDriftingByInactivity(updatedAt, now)).toBe(false);
-    expect(resolveDisplayedIsland('home', updatedAt, now)).toBe('home');
-  });
+  const now = new Date('2026-11-20T12:00:00.000Z');
 
-  it('最終更新からちょうど24時間経過したら漂流扱いになる', () => {
-    const now = new Date('2026-11-20T12:00:00.000Z');
-    const updatedAt = new Date(now.getTime() - DRIFTING_THRESHOLD_MS);
-    expect(isDriftingByInactivity(updatedAt, now)).toBe(true);
-    expect(resolveDisplayedIsland('home', updatedAt, now)).toBe('drifting');
-  });
-
-  it('もともと drifting が保存されていれば最新でも drifting になる', () => {
-    const now = new Date('2026-11-20T12:00:00.000Z');
-    expect(resolveDisplayedIsland('drifting', now, now)).toBe('drifting');
-  });
+  it.each<{
+    islandType: IslandType;
+    elapsedMs: number;
+    expectedDrifting: boolean;
+    expectedDisplayed: IslandType;
+  }>([
+    {
+      islandType: 'home',
+      elapsedMs: 24 * HOUR_MS - 1,
+      expectedDrifting: false,
+      expectedDisplayed: 'home',
+    },
+    {
+      islandType: 'home',
+      elapsedMs: 24 * HOUR_MS,
+      expectedDrifting: true,
+      expectedDisplayed: 'drifting',
+    },
+    {
+      islandType: 'drifting',
+      elapsedMs: 0,
+      expectedDrifting: false,
+      expectedDisplayed: 'drifting',
+    },
+  ])(
+    '保存済み=$islandType・経過時間=$elapsedMs ms → drifting=$expectedDrifting, 表示=$expectedDisplayed',
+    ({ islandType, elapsedMs, expectedDrifting, expectedDisplayed }) => {
+      const updatedAt = new Date(now.getTime() - elapsedMs);
+      expect(isDriftingByInactivity(updatedAt, now)).toBe(expectedDrifting);
+      expect(resolveDisplayedIsland(islandType, updatedAt, now)).toBe(expectedDisplayed);
+    },
+  );
 
   it('不正な日時文字列のときは漂流扱いになる', () => {
-    const now = new Date('2026-11-20T12:00:00.000Z');
     expect(isDriftingByInactivity('invalid-date', now)).toBe(true);
   });
 });

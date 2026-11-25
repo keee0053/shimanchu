@@ -27,17 +27,15 @@ export const ISLAND_LABELS: Record<IslandType, { label: string; description: str
  */
 export const PLACE_ISLAND_LABELS: Record<
   PlaceIslandType,
-  { label: string; badge: string; accentColor: string; fillColor: string }
+  { label: string; accentColor: string; fillColor: string }
 > = {
   home: {
     label: '家',
-    badge: '自宅の島',
     accentColor: '#16A34A',
     fillColor: 'rgba(22, 163, 74, 0.18)',
   },
   school: {
     label: '学校',
-    badge: '学校の島',
     accentColor: '#0284C7',
     fillColor: 'rgba(2, 132, 199, 0.18)',
   },
@@ -46,8 +44,8 @@ export const PLACE_ISLAND_LABELS: Record<
 /**
  * 判定半径の選択肢の表示情報
  */
-export const PLACE_RADIUS_LABELS: Record<PlaceRadius, { label: string; shortLabel: string }> = {
-  100: { label: '小（100m）', shortLabel: '100m' },
-  200: { label: '中（200m）', shortLabel: '200m' },
-  500: { label: '大（500m）', shortLabel: '500m' },
+export const PLACE_RADIUS_LABELS: Record<PlaceRadius, { label: string }> = {
+  100: { label: '小（100m）' },
+  200: { label: '中（200m）' },
+  500: { label: '大（500m）' },
 };

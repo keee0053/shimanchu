@@ -52,10 +52,7 @@ export const expoLocationRepository: LocationRepository = {
     }
   },
 
-  async watchForegroundPosition(
-    onMove: (coords: Coordinates) => void,
-    onError?: () => void,
-  ): Promise<() => void> {
+  async watchForegroundPosition(onMove: (coords: Coordinates) => void): Promise<() => void> {
     try {
       const granted = await ensureForegroundPermission(false);
       if (!granted) {
@@ -67,6 +64,7 @@ export const expoLocationRepository: LocationRepository = {
         return () => {};
       }
 
+      // 一時的な監視エラーで漂流扱いにしないため、失敗時は監視を開始せず次の移動または定期取得に任せる
       const subscription = await Location.watchPositionAsync(
         {
           accuracy: FOREGROUND_LOCATION_ACCURACY,
@@ -78,16 +76,12 @@ export const expoLocationRepository: LocationRepository = {
             longitude: position.coords.longitude,
           });
         },
-        () => {
-          onError?.();
-        },
       );
 
       return () => {
         subscription.remove();
       };
     } catch {
-      onError?.();
       return () => {};
     }
   },

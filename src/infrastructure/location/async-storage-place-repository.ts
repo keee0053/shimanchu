@@ -10,6 +10,7 @@ import {
 } from '@/domain/entities/island';
 import type { PlaceRepository } from '@/domain/repositories/place-repository';
 
+// TODO(#94): ユーザー ID ごとのキー分離および SecureStore を用いた座標の保護保存に対応する
 const STORAGE_KEY = 'shimanchu:registered_places_v1';
 
 let operationQueue: Promise<unknown> = Promise.resolve();

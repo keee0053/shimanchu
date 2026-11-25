@@ -1,14 +1,13 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import { locationRepository, PRESENCE_HEARTBEAT_INTERVAL_MS } from '@/container';
 import type { Coordinates } from '@/domain/entities/island';
-import { getCurrentCachedIsland, useUpdateMyLocation } from '@/presentation/queries/presence';
+import { useUpdateMyLocation } from '@/presentation/queries/presence';
 
 type PendingLocationRequest = {
   hasPending: boolean;
-  coords?: Coordinates | null;
+  coords?: Coordinates;
 };
 
 /**
@@ -18,7 +17,6 @@ type PendingLocationRequest = {
  * - 島が変わらなくても 15 分ごとに upsert して updated_at を進める
  */
 export function useForegroundLocationSync() {
-  const queryClient = useQueryClient();
   const { mutateAsync } = useUpdateMyLocation();
   const mutateRef = useRef(mutateAsync);
   const syncingRef = useRef(false);
@@ -35,39 +33,28 @@ export function useForegroundLocationSync() {
     let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
     let sessionToken = 0;
 
-    const syncLocation = async (coords?: Coordinates | null) => {
-      if (!mounted) {
+    const syncLocation = async (coords?: Coordinates) => {
+      if (!mounted || !isActiveSessionRef.current) {
         return;
       }
       if (syncingRef.current) {
+        // ユースケース側で直列化されるため、同期中に届いた通知は最新の1件だけ残して古い位置を捨てる
         pendingRequestRef.current = { hasPending: true, coords };
         return;
       }
 
       syncingRef.current = true;
-      let nextCoords = coords;
-      let hasNext = true;
-
       try {
-        while (hasNext && mounted && isActiveSessionRef.current) {
-          hasNext = false;
-          try {
-            await mutateRef.current({
-              ...(nextCoords !== undefined ? { coords: nextCoords } : {}),
-              currentIsland: getCurrentCachedIsland(queryClient),
-            });
-          } catch {
-            // 権限拒否・通信エラー時もエラー画面にはしない
-          }
-
-          if (mounted && isActiveSessionRef.current && pendingRequestRef.current.hasPending) {
-            nextCoords = pendingRequestRef.current.coords;
-            pendingRequestRef.current = { hasPending: false };
-            hasNext = true;
-          }
-        }
+        await mutateRef.current({ coords });
+      } catch {
+        // 権限拒否・通信エラー時もエラー画面にはしない
       } finally {
         syncingRef.current = false;
+        if (mounted && isActiveSessionRef.current && pendingRequestRef.current.hasPending) {
+          const nextCoords = pendingRequestRef.current.coords;
+          pendingRequestRef.current = { hasPending: false };
+          void syncLocation(nextCoords);
+        }
       }
     };
 
@@ -95,14 +82,9 @@ export function useForegroundLocationSync() {
         return;
       }
 
-      const unsubscribe = await locationRepository.watchForegroundPosition(
-        (coords) => {
-          void syncLocation(coords);
-        },
-        () => {
-          void syncLocation(null);
-        },
-      );
+      const unsubscribe = await locationRepository.watchForegroundPosition((coords) => {
+        void syncLocation(coords);
+      });
 
       if (!mounted || currentToken !== sessionToken) {
         unsubscribe();
@@ -132,5 +114,5 @@ export function useForegroundLocationSync() {
       stopForegroundTracking();
       subscription.remove();
     };
-  }, [queryClient]);
+  }, []);
 }

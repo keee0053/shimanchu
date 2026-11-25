@@ -12,10 +12,11 @@ import type {
   RegisteredPlace,
   RegisteredPlaces,
 } from '@/domain/entities/island';
+import { usePresenceEvaluationStore } from '@/presentation/stores/presence-evaluation-store';
 
-import { getCurrentCachedIsland, presenceKeys } from './presence';
+import { presenceKeys } from './presence';
 
-export const placeKeys = {
+const placeKeys = {
   all: ['places'] as const,
 };
 
@@ -45,8 +46,7 @@ export function useSaveRegisteredPlace() {
       saveRegisteredPlace({
         type: input.type,
         place: input.place,
-        ...(input.coords !== undefined ? { coords: input.coords } : {}),
-        currentIsland: getCurrentCachedIsland(queryClient),
+        coords: input.coords,
         onPlacesUpdated: (places) => {
           queryClient.setQueryData(placeKeys.all, places);
           input.onPlacesCommitted?.(places);
@@ -54,7 +54,7 @@ export function useSaveRegisteredPlace() {
       }),
     onSuccess: ({ evaluation }) => {
       if (evaluation) {
-        queryClient.setQueryData(presenceKeys.latestEvaluation(), evaluation);
+        usePresenceEvaluationStore.getState().setLatestEvaluation(evaluation);
         if (evaluation.presence) {
           queryClient.setQueryData(presenceKeys.mine(), evaluation.presence);
         }
@@ -76,7 +76,6 @@ export function useRemoveRegisteredPlace() {
     }) =>
       removeRegisteredPlace({
         type: input.type,
-        currentIsland: getCurrentCachedIsland(queryClient),
         onPlacesUpdated: (places) => {
           queryClient.setQueryData(placeKeys.all, places);
           input.onPlacesCommitted?.(places);
@@ -84,7 +83,7 @@ export function useRemoveRegisteredPlace() {
       }),
     onSuccess: ({ evaluation }) => {
       if (evaluation) {
-        queryClient.setQueryData(presenceKeys.latestEvaluation(), evaluation);
+        usePresenceEvaluationStore.getState().setLatestEvaluation(evaluation);
         if (evaluation.presence) {
           queryClient.setQueryData(presenceKeys.mine(), evaluation.presence);
         }

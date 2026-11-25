@@ -7,8 +7,5 @@ export type GetCurrentPositionOptions = {
 
 export type LocationRepository = {
   getCurrentPosition(options?: GetCurrentPositionOptions): Promise<Coordinates | null>;
-  watchForegroundPosition(
-    onMove: (coords: Coordinates) => void,
-    onError?: () => void,
-  ): Promise<() => void>;
+  watchForegroundPosition(onMove: (coords: Coordinates) => void): Promise<() => void>;
 };
