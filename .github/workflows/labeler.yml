@@ -28,7 +28,7 @@ jobs:
       # 英語のラベル名を日本語に変える（#90）。リポジトリのラベルが全部変わったらこのステップは消す
       # 後のステップが日本語のラベルを新しく作って重複しないよう、最初に実行する
       - name: 英語のラベル名を日本語に変更
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const RENAMES = [
@@ -57,12 +57,12 @@ jobs:
 
       - name: 変更したファイル
         if: contains(fromJSON('["develop", "main"]'), github.event.pull_request.base.ref)
-        uses: actions/labeler@v5
+        uses: actions/labeler@v7
         with:
           configuration-path: .github/labeler.yml
 
       - name: 向き先のブランチ・タイトルの prefix
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             // 向き先のブランチとラベルの対応
