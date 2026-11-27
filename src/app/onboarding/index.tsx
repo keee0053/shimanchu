@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
-import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { REGISTRATION_RULES } from '@/domain/entities/registration';
 import { BirthDateField } from '@/presentation/components/form/birth-date-field';
@@ -15,17 +16,14 @@ import { useCheckPublicIdTaken } from '@/presentation/queries/registration';
 import { registrationSchema, type RegistrationInput } from '@/presentation/schemas/registration';
 import { useRegistrationDraftStore } from '@/presentation/stores/registration-draft-store';
 
-// TODO(#36): 利用規約・プライバシーポリシーのページができたらリンク先を開く
-function showLegalDocument(title: string) {
-  Alert.alert(title, '準備中です。');
-}
-
 export default function OnboardingProfileScreen() {
   const router = useRouter();
   const theme = useTheme();
   const draft = useRegistrationDraftStore((s) => s.draft);
   const setDraft = useRegistrationDraftStore((s) => s.setDraft);
   const checkPublicIdTaken = useCheckPublicIdTaken();
+  // TODO(#36): 利用規約・プライバシーポリシーのページができたらリンク先を開く
+  const [pendingLegalDocument, setPendingLegalDocument] = useState<string | null>(null);
 
   const {
     control,
@@ -48,12 +46,14 @@ export default function OnboardingProfileScreen() {
     try {
       taken = await checkPublicIdTaken.mutateAsync(input.publicId);
     } catch (error) {
-      Alert.alert(
-        '公開 ID を確かめられませんでした',
-        error instanceof Error && error.message
-          ? error.message
-          : '通信状況を確認して、もう一度お試しください。',
-      );
+      // Web では Alert が表示されないため、フォームの中にエラーを出す
+      setError('root.publicIdCheck', {
+        message: `公開 ID を確かめられませんでした。${
+          error instanceof Error && error.message
+            ? error.message
+            : '通信状況を確認して、もう一度お試しください。'
+        }`,
+      });
       return;
     }
     if (taken) {
@@ -168,7 +168,7 @@ export default function OnboardingProfileScreen() {
                     type="small"
                     accessibilityRole="link"
                     style={styles.link}
-                    onPress={() => showLegalDocument('利用規約')}
+                    onPress={() => setPendingLegalDocument('利用規約')}
                   >
                     利用規約
                   </ThemedText>
@@ -177,7 +177,7 @@ export default function OnboardingProfileScreen() {
                     type="small"
                     accessibilityRole="link"
                     style={styles.link}
-                    onPress={() => showLegalDocument('プライバシーポリシー')}
+                    onPress={() => setPendingLegalDocument('プライバシーポリシー')}
                   >
                     プライバシーポリシー
                   </ThemedText>
@@ -186,10 +186,19 @@ export default function OnboardingProfileScreen() {
               </Checkbox>
             )}
           />
+          {pendingLegalDocument && (
+            <ThemedText type="small" themeColor="textSecondary">
+              {pendingLegalDocument}は準備中です。
+            </ThemedText>
+          )}
           {errors.agreedToTerms?.message && (
             <FormErrorText message={errors.agreedToTerms.message} />
           )}
         </View>
+
+        {errors.root?.publicIdCheck?.message && (
+          <FormErrorText message={errors.root.publicIdCheck.message} />
+        )}
 
         <Pressable
           accessibilityRole="button"
