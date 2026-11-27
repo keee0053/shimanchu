@@ -47,7 +47,7 @@ function formatLabel(value: string): string | null {
 export function BirthDateField({ value, onChange, onBlur, hasError = false }: BirthDateFieldProps) {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const range = useMemo(() => getBirthDateRange(getJstToday()), []);
+  const range = useMemo(() => getBirthDateRange(getJstToday(new Date())), []);
   const minimumDate = toLocalDate(range.min);
   const maximumDate = toLocalDate(range.max);
   const parsed = parseIsoDate(value);

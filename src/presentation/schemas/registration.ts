@@ -39,7 +39,7 @@ export const registrationSchema = z.object({
         ctx.addIssue({ code: 'custom', message: '生年月日を正しく選んでください' });
         return;
       }
-      if (!isBirthDateInAllowedRange(parsed, getJstToday())) {
+      if (!isBirthDateInAllowedRange(parsed, getJstToday(new Date()))) {
         ctx.addIssue({
           code: 'custom',
           message: `しまんちゅは${MIN_AGE_YEARS}歳以上の方だけ利用できます`,

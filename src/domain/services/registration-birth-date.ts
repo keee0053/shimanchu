@@ -54,8 +54,8 @@ export function formatIsoDate({ year, month, day }: DateParts): string {
   return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-/** 日本時間での今日の年月日 */
-export function getJstToday(now: Date = new Date()): DateParts {
+/** `now` の時点の、日本時間での今日の年月日 */
+export function getJstToday(now: Date): DateParts {
   const jst = new Date(now.getTime() + JST_OFFSET_MS);
   return { year: jst.getUTCFullYear(), month: jst.getUTCMonth() + 1, day: jst.getUTCDate() };
 }
