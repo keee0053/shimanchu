@@ -16,6 +16,22 @@ export default function OnboardingAvatarScreen() {
   const clearDraft = useRegistrationDraftStore((s) => s.clearDraft);
   const register = useRegister();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
+
+  const goHome = () => {
+    clearDraft();
+    router.replace('/');
+  };
+
+  // すでに登録済みのアカウント。今回選んだアバターは保存していないことを伝える
+  if (alreadyRegistered) {
+    return (
+      <StateMessage
+        message="このアカウントはすでに登録されています。今回選んだアバターは保存していません。アバターはマイページの「アバター編集」から変えられます。"
+        action={{ label: 'ホームへ', onPress: goHome }}
+      />
+    );
+  }
 
   // プロフィールの入力内容はメモリにだけあるので、アプリを閉じると消える
   if (!draft) {
@@ -31,6 +47,10 @@ export default function OnboardingAvatarScreen() {
     setErrorMessage(null);
     try {
       const result = await register.mutateAsync({ draft, avatarConfig });
+      if (!result.ok && result.reason === 'already_registered') {
+        setAlreadyRegistered(true);
+        return;
+      }
       if (!result.ok) {
         setErrorMessage(
           'この公開 ID はほかの人が使い始めました。前の画面に戻って公開 ID を変えてください。',
@@ -48,8 +68,7 @@ export default function OnboardingAvatarScreen() {
       return;
     }
 
-    clearDraft();
-    router.replace('/');
+    goHome();
   };
 
   return (

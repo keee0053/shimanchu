@@ -35,9 +35,9 @@ export const supabaseAccountRepository: AccountRepository = {
       if (error.message.includes(PUBLIC_ID_UNIQUE_CONSTRAINT)) {
         return { ok: false, reason: 'public_id_taken' };
       }
-      // 自分の行がもうある（通信が切れて再送したときなど）。登録は済んでいるので成功として扱う
+      // 自分の行がもうある（通信が切れて再送したときなど）。今回の入力は保存されていないので、成功とは分けて返す
       if (error.message.includes(PRIMARY_KEY_CONSTRAINT)) {
-        return { ok: true };
+        return { ok: false, reason: 'already_registered' };
       }
     }
     if (error) throw error;

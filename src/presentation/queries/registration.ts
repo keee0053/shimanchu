@@ -23,9 +23,9 @@ export function useRegister() {
     mutationFn: (input: { draft: RegistrationDraft; avatarConfig: AvatarConfig }) =>
       accountRepository.register(input.draft, input.avatarConfig),
     onSuccess: (result) => {
-      // 登録済み（profiles_pkey の重複）のときは今回の入力が保存されていないので、
-      // 入力値をキャッシュに入れず、DB から読み直させる
-      if (result.ok) {
+      // 登録できたとき・登録済みだったときは、DB にあるアバターを読み直させる
+      // （登録済みのときは今回の入力が保存されていないので、入力値をキャッシュに入れない）
+      if (result.ok || result.reason === 'already_registered') {
         void queryClient.invalidateQueries({ queryKey: avatarKeys.mine() });
       }
     },
