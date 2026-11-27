@@ -48,7 +48,7 @@ export function BirthDateField({ value, onChange, onBlur, hasError = false }: Bi
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   // 日付が変わったら選べる範囲も変える（送信時のスキーマの判定とそろえる）
-  const today = useJstToday();
+  const { today, refresh: refreshToday } = useJstToday();
   const range = useMemo(() => getBirthDateRange(today), [today]);
   const minimumDate = toLocalDate(range.min);
   const maximumDate = toLocalDate(range.max);
@@ -83,7 +83,9 @@ export function BirthDateField({ value, onChange, onBlur, hasError = false }: Bi
         accessibilityRole="button"
         accessibilityLabel={label ? `生年月日 ${label}` : '生年月日を選ぶ'}
         onPress={() => {
-          setIosDraft(pickerValue);
+          // 開く瞬間に日付を取り直す（日付が変わった直後でも、新たに18歳になった日を選べるように）
+          const latestMax = toLocalDate(getBirthDateRange(refreshToday()).max);
+          setIosDraft(parsed ? toLocalDate(parsed) : latestMax);
           setIsOpen(true);
         }}
         style={({ pressed }) => [

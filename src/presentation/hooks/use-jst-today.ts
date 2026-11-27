@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { type DateParts, getJstToday } from '@/domain/services/registration-birth-date';
@@ -11,16 +11,18 @@ function isSameDate(a: DateParts, b: DateParts): boolean {
 
 /**
  * 日本時間の今日。画面を開いたまま日付が変わったときや、アプリに戻ってきたときに更新する
+ * refresh はその場で取り直した今日を返す（ピッカーを開くときなど、定期更新を待てない場面で使う）
  */
-export function useJstToday(): DateParts {
+export function useJstToday(): { today: DateParts; refresh: () => DateParts } {
   const [today, setToday] = useState(() => getJstToday(new Date()));
 
-  useEffect(() => {
-    const refresh = () => {
-      const next = getJstToday(new Date());
-      setToday((current) => (isSameDate(current, next) ? current : next));
-    };
+  const refresh = useCallback(() => {
+    const next = getJstToday(new Date());
+    setToday((current) => (isSameDate(current, next) ? current : next));
+    return next;
+  }, []);
 
+  useEffect(() => {
     const interval = setInterval(refresh, CHECK_INTERVAL_MS);
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') refresh();
@@ -29,7 +31,7 @@ export function useJstToday(): DateParts {
       clearInterval(interval);
       subscription.remove();
     };
-  }, []);
+  }, [refresh]);
 
-  return today;
+  return { today, refresh };
 }
