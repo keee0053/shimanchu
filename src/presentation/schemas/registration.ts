@@ -28,7 +28,7 @@ export const registrationSchema = z.object({
     .min(1, '公開 ID を入力してください')
     .regex(
       PUBLIC_ID_PATTERN,
-      `公開 ID は英小文字と数字の${PUBLIC_ID_MIN_LENGTH}〜${PUBLIC_ID_MAX_LENGTH}文字で入力してください`,
+      `公開 ID は半角の英小文字か数字で${PUBLIC_ID_MIN_LENGTH}〜${PUBLIC_ID_MAX_LENGTH}文字にしてください`,
     ),
   birthDate: z
     .string()

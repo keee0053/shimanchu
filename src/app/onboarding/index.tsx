@@ -113,7 +113,7 @@ export default function OnboardingProfileScreen() {
         <FormField
           label="公開 ID"
           required
-          hint={`友達に探してもらうときに使います。英小文字と数字の${REGISTRATION_RULES.PUBLIC_ID_MIN_LENGTH}〜${REGISTRATION_RULES.PUBLIC_ID_MAX_LENGTH}文字`}
+          hint={`友達があなたを検索するときに入力する ID です。\n半角の英小文字か数字で${REGISTRATION_RULES.PUBLIC_ID_MIN_LENGTH}〜${REGISTRATION_RULES.PUBLIC_ID_MAX_LENGTH}文字`}
           error={errors.publicId?.message}
         >
           <Controller
