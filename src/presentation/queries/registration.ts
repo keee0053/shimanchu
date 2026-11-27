@@ -22,9 +22,11 @@ export function useRegister() {
   return useMutation({
     mutationFn: (input: { draft: RegistrationDraft; avatarConfig: AvatarConfig }) =>
       accountRepository.register(input.draft, input.avatarConfig),
-    onSuccess: (result, input) => {
+    onSuccess: (result) => {
+      // 登録済み（profiles_pkey の重複）のときは今回の入力が保存されていないので、
+      // 入力値をキャッシュに入れず、DB から読み直させる
       if (result.ok) {
-        queryClient.setQueryData(avatarKeys.mine(), input.avatarConfig);
+        void queryClient.invalidateQueries({ queryKey: avatarKeys.mine() });
       }
     },
   });
