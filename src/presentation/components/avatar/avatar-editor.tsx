@@ -39,6 +39,7 @@ export function AvatarEditor({
   const [activeTab, setActiveTab] = useState<AvatarCustomizeTab>('hair');
 
   const handlePartChange = <K extends keyof AvatarConfig>(key: K, value: AvatarConfig[K]) => {
+    if (isSubmitting) return;
     setConfig((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -55,13 +56,19 @@ export function AvatarEditor({
           {/* 上部: プレビューエリア（立ち姿・浮き輪姿） */}
           <AvatarPreviewSection config={config} mode={previewMode} onModeChange={setPreviewMode} />
 
-          {/* 下部: パーツ・カラーセレクター */}
-          <PartsSelector
-            config={config}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            onChange={handlePartChange}
-          />
+          {/* 下部: パーツ・カラーセレクター（保存中は、送った設定と表示がずれないよう変更させない） */}
+          <View
+            pointerEvents={isSubmitting ? 'none' : 'auto'}
+            accessibilityState={{ disabled: isSubmitting }}
+            style={isSubmitting && styles.disabled}
+          >
+            <PartsSelector
+              config={config}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              onChange={handlePartChange}
+            />
+          </View>
         </ScrollView>
 
         {/* フッター固定: 決定ボタン */}
