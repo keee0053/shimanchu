@@ -6,12 +6,12 @@ import {
   type DateParts,
   formatIsoDate,
   getBirthDateRange,
-  getJstToday,
   parseIsoDate,
 } from '@/domain/services/registration-birth-date';
 import { ThemedText } from '@/presentation/components/themed-text';
 import { ThemedView } from '@/presentation/components/themed-view';
 import { Spacing } from '@/presentation/constants/theme';
+import { useJstToday } from '@/presentation/hooks/use-jst-today';
 import { useTheme } from '@/presentation/hooks/use-theme';
 
 type BirthDateFieldProps = {
@@ -47,7 +47,9 @@ function formatLabel(value: string): string | null {
 export function BirthDateField({ value, onChange, onBlur, hasError = false }: BirthDateFieldProps) {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const range = useMemo(() => getBirthDateRange(getJstToday(new Date())), []);
+  // 日付が変わったら選べる範囲も変える（送信時のスキーマの判定とそろえる）
+  const today = useJstToday();
+  const range = useMemo(() => getBirthDateRange(today), [today]);
   const minimumDate = toLocalDate(range.min);
   const maximumDate = toLocalDate(range.max);
   const parsed = parseIsoDate(value);
