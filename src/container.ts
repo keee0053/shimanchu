@@ -7,6 +7,7 @@ import { createRemoveRegisteredPlace } from '@/application/remove-registered-pla
 import { createSaveRegisteredPlace } from '@/application/save-registered-place';
 import { createUpdateMyLocation } from '@/application/update-my-location';
 import { createUploadProfileImage } from '@/application/upload-profile-image';
+import type { AccountRepository } from '@/domain/repositories/account-repository';
 import type { LocationRepository } from '@/domain/repositories/location-repository';
 import type { PlaceRepository } from '@/domain/repositories/place-repository';
 import type { PresenceRepository } from '@/domain/repositories/presence-repository';
@@ -18,6 +19,7 @@ import { asyncStoragePlaceRepository } from '@/infrastructure/location/async-sto
 import { PRESENCE_HEARTBEAT_INTERVAL_MS } from '@/infrastructure/location/constants';
 import { expoLocationRepository } from '@/infrastructure/location/expo-location-repository';
 import { expoProfileImagePickerRepository } from '@/infrastructure/media/expo-profile-image-picker-repository';
+import { supabaseAccountRepository } from '@/infrastructure/supabase/account-repository';
 import { supabasePresenceRepository } from '@/infrastructure/supabase/presence-repository';
 import { supabaseProfileImageRepository } from '@/infrastructure/supabase/profile-image-repository';
 
@@ -55,3 +57,5 @@ export const uploadProfileImage = createUploadProfileImage({
 export const removeProfileImage = createRemoveProfileImage({
   storageRepository: profileImageStorageRepository,
 });
+
+export const accountRepository: AccountRepository = supabaseAccountRepository;
