@@ -99,6 +99,7 @@ export default function OnboardingProfileScreen() {
                 accessibilityLabel="表示名"
                 placeholder="例: たろう"
                 placeholderTextColor={theme.textSecondary}
+                autoCapitalize="none"
                 maxLength={REGISTRATION_RULES.DISPLAY_NAME_MAX_LENGTH}
                 value={value}
                 onChangeText={onChange}
