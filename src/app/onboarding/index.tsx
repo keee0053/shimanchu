@@ -1,12 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'expo-router';
-import type { ReactNode } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { REGISTRATION_RULES } from '@/domain/entities/registration';
 import { BirthDateField } from '@/presentation/components/form/birth-date-field';
 import { Checkbox } from '@/presentation/components/form/checkbox';
+import { FormErrorText, FormField } from '@/presentation/components/form/form-field';
 import { ThemedText } from '@/presentation/components/themed-text';
 import { ThemedView } from '@/presentation/components/themed-view';
 import { Spacing } from '@/presentation/constants/theme';
@@ -89,7 +89,7 @@ export default function OnboardingProfileScreen() {
           は、友達と同じグループのメンバーに公開されます。生年月日は公開されず、年齢だけが見えます（あとでプロフィール編集から変えられます）。
         </ThemedText>
 
-        <Field label="表示名" required error={errors.displayName?.message}>
+        <FormField label="表示名" required error={errors.displayName?.message}>
           <Controller
             control={control}
             name="displayName"
@@ -107,9 +107,9 @@ export default function OnboardingProfileScreen() {
               />
             )}
           />
-        </Field>
+        </FormField>
 
-        <Field
+        <FormField
           label="公開 ID"
           required
           hint={`友達に探してもらうときに使います。英小文字と数字の${REGISTRATION_RULES.PUBLIC_ID_MIN_LENGTH}〜${REGISTRATION_RULES.PUBLIC_ID_MAX_LENGTH}文字`}
@@ -135,9 +135,9 @@ export default function OnboardingProfileScreen() {
               />
             )}
           />
-        </Field>
+        </FormField>
 
-        <Field label="生年月日" required error={errors.birthDate?.message}>
+        <FormField label="生年月日" required error={errors.birthDate?.message}>
           <Controller
             control={control}
             name="birthDate"
@@ -150,9 +150,9 @@ export default function OnboardingProfileScreen() {
               />
             )}
           />
-        </Field>
+        </FormField>
 
-        <View style={styles.field}>
+        <View style={styles.agreement}>
           <Controller
             control={control}
             name="agreedToTerms"
@@ -187,9 +187,7 @@ export default function OnboardingProfileScreen() {
             )}
           />
           {errors.agreedToTerms?.message && (
-            <ThemedText type="small" style={styles.errorText}>
-              {errors.agreedToTerms.message}
-            </ThemedText>
+            <FormErrorText message={errors.agreedToTerms.message} />
           )}
         </View>
 
@@ -212,36 +210,6 @@ export default function OnboardingProfileScreen() {
   );
 }
 
-type FieldProps = {
-  label: string;
-  required?: boolean;
-  hint?: string;
-  error?: string;
-  children: ReactNode;
-};
-
-function Field({ label, required = false, hint, error, children }: FieldProps) {
-  return (
-    <View style={styles.field}>
-      <ThemedText type="smallBold">
-        {label}
-        {required && <ThemedText style={styles.requiredMark}> 必須</ThemedText>}
-      </ThemedText>
-      {hint && (
-        <ThemedText type="small" themeColor="textSecondary">
-          {hint}
-        </ThemedText>
-      )}
-      {children}
-      {error && (
-        <ThemedText type="small" style={styles.errorText}>
-          {error}
-        </ThemedText>
-      )}
-    </View>
-  );
-}
-
 // TODO(#14): テーマカラーの整備にあわせてボタン・エラー色を共通テーマに統一する
 const styles = StyleSheet.create({
   container: {
@@ -251,13 +219,8 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.four,
   },
-  field: {
+  agreement: {
     gap: Spacing.two,
-  },
-  requiredMark: {
-    color: '#DC2626',
-    fontSize: 12,
-    fontWeight: 700,
   },
   input: {
     borderWidth: 1,
@@ -269,9 +232,6 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: '#DC2626',
-  },
-  errorText: {
-    color: '#DC2626',
   },
   link: {
     color: '#0284C7',
