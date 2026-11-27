@@ -11,7 +11,7 @@ import { useMyAvatarConfig, useUpdateMyAvatarConfig } from '@/presentation/queri
  */
 export default function AvatarEditScreen() {
   const router = useRouter();
-  const { data: savedConfig, isPending, isError, refetch } = useMyAvatarConfig();
+  const { data: savedConfig, isPending, isError, isRefetchError, refetch } = useMyAvatarConfig();
   const updateAvatar = useUpdateMyAvatarConfig();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -26,7 +26,9 @@ export default function AvatarEditScreen() {
   if (isPending) {
     return <StateMessage />;
   }
-  if (isError) {
+  // 一度も読み込めていないときだけ全面のエラーにする。
+  // 読み込み済みで再取得だけ失敗したときは、編集中の設定が消えないよう画面を残す
+  if (isError && savedConfig === undefined) {
     return (
       <StateMessage
         message="アバターを読み込めませんでした。通信状況を確認してください。"
@@ -67,7 +69,12 @@ export default function AvatarEditScreen() {
       submitLabel="保存する"
       submittingLabel="保存中..."
       isSubmitting={updateAvatar.isPending}
-      errorMessage={errorMessage}
+      errorMessage={
+        errorMessage ??
+        (isRefetchError
+          ? '最新のアバターを読み込めませんでした。通信状況を確認してください。'
+          : null)
+      }
       onSubmit={(config) => void handleSubmit(config)}
     />
   );
