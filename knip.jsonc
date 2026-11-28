@@ -1,0 +1,30 @@
+// Knip: 使っていないファイル・export・依存パッケージを検出する（npm run lint:unused。pre-push フックと CI でも実行される）
+// 一時的に除外したものは、使い始める PR で消すこと
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    // Git フック（.githooks/）や CI から node で直接実行されるスクリプト
+    "scripts/**/*.js",
+    // 【一時的】プロフィール画像の部品。プロフィール編集画面（#85）で使う予定。
+    // ここに入れておくと、これらが使っている container の export や expo-image も「使用中」として扱われる
+    "src/presentation/components/profile/*.tsx",
+    "src/presentation/queries/profile-images.ts",
+  ],
+  // npm run gen:types で生成するファイル
+  "ignore": ["src/infrastructure/supabase/database.types.ts"],
+  // Supabase CLI は npm ではなく別途インストールする（docs/SETUP.md）
+  "ignoreBinaries": ["supabase"],
+  "ignoreDependencies": [
+    // Expo の設定から自動で必要と判定されるが、このプロジェクトでは使っていない（誤検知）
+    "expo-updates",
+    // 【一時的】Google ログインで使う予定
+    "expo-auth-session",
+    "expo-web-browser",
+  ],
+  "ignoreIssues": {
+    // 【一時的】create-expo-app テンプレートのまま残しているファイル。初期デザイン（#14）で置き換える
+    "src/presentation/constants/theme.ts": ["exports"],
+  },
+  // 同じファイルの中で使っている型の export は、未使用として扱わない
+  "ignoreExportsUsedInFile": { "type": true, "interface": true },
+}

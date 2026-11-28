@@ -7,7 +7,8 @@ Git・PR・レビューのルールは [CONTRIBUTING.md](../CONTRIBUTING.md)、�
 
 ## 1. 基本
 
-- コミット前に `npx tsc --noEmit`・`npm run lint`・`npm run format:check` が通ること（pre-push フックと CI でも確認される）
+- コミット前に `npx tsc --noEmit`・`npm run lint`・`npm run lint:unused`・`npm run format:check` が通ること（pre-push フックと CI でも確認される）
+- 使っていないファイル・export・依存パッケージは残さない（`npm run lint:unused` で検出される）。後の PR で使う予定のものも、使う PR で足す
 - テスト（`npm test`）は CI だけで実行される。テストを書いた・ルールを変えたときは手元でも `npm test` を通す（[8. テスト](#8-テスト)）
 - VS Code では保存時に Prettier で自動整形される（推奨拡張を入れること）
 - `any` は使わない。型が分からないときは `unknown` で受けて絞り込む
@@ -247,17 +248,19 @@ export type ProfileInput = z.infer<typeof profileSchema>;
 - テストのファイルは、テストする関数の近くの `__tests__/` に `<名前>-test.ts` で置く
 - `describe` / `it` / `expect` はグローバルのまま使う（import しない）。テスト名は日本語で、何を確かめるかを書く
 - 境界の値（ちょうど18歳になる日、島の範囲の端など）を必ず入れる
+- 入力と期待する値の組は **`it.each` / `test.each` のテーブル**で書く。テスト名には `$変数名` で値を入れる
+  - `for` 文・`while` 文や `forEach` / `map` で `it` を作るのは Lint のエラー。普通の `it` / `test` は Lint の警告になる（1ケースしかないなど、テーブルにしにくいときだけ使う）
 
 ```ts
 // src/domain/services/__tests__/age-test.ts
 import { calculateAge } from '@/domain/services/age';
 
 describe('calculateAge', () => {
-  it('誕生日の前日はまだ年を取らない', () => {
-    expect(calculateAge(new Date('2008-04-01'), new Date('2026-03-31'))).toBe(17);
-  });
-  it('誕生日の当日に年を取る', () => {
-    expect(calculateAge(new Date('2008-04-01'), new Date('2026-04-01'))).toBe(18);
+  it.each<{ today: string; expected: number }>([
+    { today: '2026-03-31', expected: 17 }, // 誕生日の前日はまだ年を取らない
+    { today: '2026-04-01', expected: 18 }, // 誕生日の当日に年を取る
+  ])('2008-04-01 生まれは $today に $expected 歳', ({ today, expected }) => {
+    expect(calculateAge(new Date('2008-04-01'), new Date(today))).toBe(expected);
   });
 });
 ```

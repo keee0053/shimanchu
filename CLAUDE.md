@@ -17,6 +17,8 @@ Expo 全般のルール（docs の参照方法、`npx expo install`、`ios/` `an
 
 - **AI ツール表記を一切入れない。** コミット・PR・コードに `Co-Authored-By`、`Generated with Claude Code` などを書かない（hook で拒否される）
 - コミットメッセージは **日本語1行** の `type: 説明`。本文は書かない。1つの目的につき1コミット
+  - 実装の前に区切り（層構成の作る順番が目安）を決め、区切りごとにコミットする。各コミットで型チェック・Lint が通るようにする
+  - 修正の意図ごとに分ける。リファクタリング・整形を機能追加や修正と混ぜない。レビュー指摘は指摘ごとにコミットする。詳細は CONTRIBUTING.md の「コミットの粒度」
   - type: `add` / `fix` / `refactor` / `test` / `chore` / `perf` / `docs`
 - `main` / `develop` に直接コミットしない。`develop` から `feature/PascalCase`（例: `feature/AvatarDrift`）を切って作業する
 - PR は `develop` 向け。タイトルは `prefix: 日本語`、本文は `.github/pull_request_template.md` に沿う。自己マージしない
@@ -30,13 +32,14 @@ npx expo start            # 開発サーバー
 npx expo install <pkg>    # パッケージ追加（npm install ではなくこちら）
 npx tsc --noEmit          # 型チェック
 npm run lint              # ESLint（Prettier 連携）
+npm run lint:unused       # 未使用のファイル・export・依存パッケージの検出（Knip）
 npm run format            # Prettier で整形（format:check は確認のみ）
 npm test                  # テスト（jest-expo。CI だけで実行され、pre-push フックでは実行されない）
 npm run gen:types         # DB の型を src/infrastructure/supabase/database.types.ts に生成（要 supabase start）
 supabase migration new <name>  # マイグレーション作成
 ```
 
-作業完了前に `npx tsc --noEmit`・`npm run lint`・`npm run format:check` を通すこと。テストを書いた・domain のルールを変えたときは `npm test` も通すこと。
+作業完了前に `npx tsc --noEmit`・`npm run lint`・`npm run lint:unused`・`npm run format:check` を通すこと。テストを書いた・domain のルールを変えたときは `npm test` も通すこと。
 
 ## コードを書くときの要点
 
@@ -60,7 +63,7 @@ supabase migration new <name>  # マイグレーション作成
 - DB 変更は必ずマイグレーションで。新しいテーブルは RLS を有効にしてポリシーを書く。マージ済みマイグレーションは編集しない
 - DB の行の型は手書きせず `npm run gen:types` で生成したもの（infrastructure 内）を使う。domain のエンティティは必要な項目だけ手で定義し、リポジトリの実装で変換する
 - 位置情報: MVP はフォアグラウンドのみ（バックグラウンドは MVP 後にジオフェンスで導入）。座標は DB に保存せずサーバーにも送らない（端末で島を判定し、`user_presence` に島の種類だけ送る。登録した場所の座標も端末内だけ）。取得失敗・権限拒否は「漂流」状態として扱う（domain のルール）。座標をログに出さない。`TaskManager.defineTask` は `src/infrastructure/location/` のトップレベルで定義し、`src/container.ts` で import する
-- テスト: 壊れると困る domain のルール（年齢・島の判定・漂流の判定など）だけ書く。ユースケース・画面は書かない。テストする関数の近くの `__tests__/<名前>-test.ts` に置く。期待する値が仕様どおりかはユーザーに確かめてもらう
+- テスト: 壊れると困る domain のルール（年齢・島の判定・漂流の判定など）だけ書く。ユースケース・画面は書かない。テストする関数の近くの `__tests__/<名前>-test.ts` に置く。入力と期待する値の組は `it.each` / `test.each` のテーブルで書く（`for`・`while`・`forEach`・`map` で `it` を作るのは Lint のエラー、普通の `it` は警告）。期待する値が仕様どおりかはユーザーに確かめてもらう
 - フォームは React Hook Form + Zod（`src/presentation/schemas/`、型は `z.infer`、エラーメッセージは日本語）
 - 秘密情報（`service_role` キー、`.env.local`）をコードやコミットに含めない。`EXPO_PUBLIC_` 付きの環境変数は公開される前提で扱う
 

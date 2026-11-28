@@ -68,6 +68,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: 未使用コードの検出
+        run: npm run lint:unused
+
       - name: 整形チェック
         run: npm run format:check
 

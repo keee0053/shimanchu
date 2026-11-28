@@ -451,6 +451,7 @@ supabase status          # ローカル Supabase が起動している
 npx expo-doctor          # "No issues detected!"
 npx tsc --noEmit         # 型チェック
 npm run lint             # ESLint
+npm run lint:unused             # 未使用のファイル・export・依存パッケージ
 npm run format:check     # Prettier
 npm test                 # テスト（テストがなくても成功する）
 git config core.hooksPath  # .githooks（Git フックが有効）
