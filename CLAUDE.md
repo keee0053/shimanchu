@@ -17,6 +17,8 @@ Expo 全般のルール（docs の参照方法、`npx expo install`、`ios/` `an
 
 - **AI ツール表記を一切入れない。** コミット・PR・コードに `Co-Authored-By`、`Generated with Claude Code` などを書かない（hook で拒否される）
 - コミットメッセージは **日本語1行** の `type: 説明`。本文は書かない。1つの目的につき1コミット
+  - 実装の前に区切り（層構成の作る順番が目安）を決め、区切りごとにコミットする。各コミットで型チェック・Lint が通るようにする
+  - 修正の意図ごとに分ける。リファクタリング・整形を機能追加や修正と混ぜない。レビュー指摘は指摘ごとにコミットする。詳細は CONTRIBUTING.md の「コミットの粒度」
   - type: `add` / `fix` / `refactor` / `test` / `chore` / `perf` / `docs`
 - `main` / `develop` に直接コミットしない。`develop` から `feature/PascalCase`（例: `feature/AvatarDrift`）を切って作業する
 - PR は `develop` 向け。タイトルは `prefix: 日本語`、本文は `.github/pull_request_template.md` に沿う。自己マージしない
