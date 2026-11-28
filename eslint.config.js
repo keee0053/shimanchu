@@ -39,6 +39,14 @@ const frameworkPackages = {
     'domain / application は React・Expo・Supabase などに依存させない（純粋な TypeScript で書く）',
 };
 
+// テストを定義する呼び出し（it / test / describe と、it.only・test.concurrent・it.each などの修飾付き）
+const jestCall =
+  'CallExpression:matches(' +
+  '[callee.name=/^[fx]?(it|test|describe)$/], ' +
+  '[callee.object.name=/^[fx]?(it|test|describe)$/], ' +
+  '[callee.object.object.name=/^(it|test|describe)$/]' +
+  ')';
+
 // テーブルテストを促すためのルール（普通の it / test を警告する）
 // it.each(...)(...) は呼び出し元が it ではなく it.each(...) の戻り値なので対象にならない
 const tablePlugin = {
@@ -163,8 +171,7 @@ module.exports = defineConfig([
       'no-restricted-syntax': [
         'error',
         {
-          selector:
-            'CallExpression[callee.property.name=/^(forEach|map)$/] CallExpression[callee.name=/^(it|test|describe)$/]',
+          selector: `CallExpression[callee.property.name=/^(forEach|map)$/] ${jestCall}`,
           message: 'forEach / map でテストを量産しない（it.each / test.each を使う）',
         },
       ],
