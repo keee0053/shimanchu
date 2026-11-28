@@ -30,13 +30,14 @@ npx expo start            # 開発サーバー
 npx expo install <pkg>    # パッケージ追加（npm install ではなくこちら）
 npx tsc --noEmit          # 型チェック
 npm run lint              # ESLint（Prettier 連携）
+npm run lint:unused       # 未使用のファイル・export・依存パッケージの検出（Knip）
 npm run format            # Prettier で整形（format:check は確認のみ）
 npm test                  # テスト（jest-expo。CI だけで実行され、pre-push フックでは実行されない）
 npm run gen:types         # DB の型を src/infrastructure/supabase/database.types.ts に生成（要 supabase start）
 supabase migration new <name>  # マイグレーション作成
 ```
 
-作業完了前に `npx tsc --noEmit`・`npm run lint`・`npm run format:check` を通すこと。テストを書いた・domain のルールを変えたときは `npm test` も通すこと。
+作業完了前に `npx tsc --noEmit`・`npm run lint`・`npm run lint:unused`・`npm run format:check` を通すこと。テストを書いた・domain のルールを変えたときは `npm test` も通すこと。
 
 ## コードを書くときの要点
 

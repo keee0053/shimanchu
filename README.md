@@ -33,6 +33,7 @@ npx expo start
 | `npx expo install <pkg>`           | SDK 互換バージョンでパッケージ追加（Expo 系は必ずこちら）                  |
 | `npx tsc --noEmit`                 | 型チェック                                                                 |
 | `npm run lint`                     | Lint                                                                       |
+| `npm run lint:unused`              | 未使用のファイル・export・依存パッケージの検出                             |
 | `npm run format`                   | Prettier で全ファイルを整形（`format:check` は確認のみ）                   |
 | `npm test`                         | テスト（jest-expo。CI でも実行される）                                     |
 | `npm run gen:types`                | DB スキーマから型を生成（`src/infrastructure/supabase/database.types.ts`） |

@@ -7,7 +7,8 @@ Git・PR・レビューのルールは [CONTRIBUTING.md](../CONTRIBUTING.md)、�
 
 ## 1. 基本
 
-- コミット前に `npx tsc --noEmit`・`npm run lint`・`npm run format:check` が通ること（pre-push フックと CI でも確認される）
+- コミット前に `npx tsc --noEmit`・`npm run lint`・`npm run lint:unused`・`npm run format:check` が通ること（pre-push フックと CI でも確認される）
+- 使っていないファイル・export・依存パッケージは残さない（`npm run lint:unused` で検出される）。後の PR で使う予定のものも、使う PR で足す
 - テスト（`npm test`）は CI だけで実行される。テストを書いた・ルールを変えたときは手元でも `npm test` を通す（[8. テスト](#8-テスト)）
 - VS Code では保存時に Prettier で自動整形される（推奨拡張を入れること）
 - `any` は使わない。型が分からないときは `unknown` で受けて絞り込む

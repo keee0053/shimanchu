@@ -225,6 +225,7 @@ shimanchu/
 ├── package-lock.json             # 依存バージョンの固定（コミットする）
 ├── tsconfig.json                 # TypeScript 設定（strict、"@/*" → src/* のパスエイリアス、jest の型）
 ├── eslint.config.js              # ESLint 設定（Expo 推奨 + Prettier 連携 + 層の依存ルール）
+├── knip.jsonc                    # Knip 設定（未使用のファイル・export・依存パッケージの検出）
 ├── .prettierrc.json              # Prettier 設定（.prettierignore で対象外を指定）
 ├── expo-env.d.ts                 # 🚫 Expo の型定義（expo start 時に自動生成）
 ├── .env.example                  # 環境変数のひな形 → .env.local にコピーして使う

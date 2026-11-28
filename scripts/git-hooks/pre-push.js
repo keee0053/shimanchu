@@ -2,7 +2,7 @@
 // pre-push フック本体
 // 1. push 先のブランチ名（feature/PascalCase、main / develop への直接 push 禁止）
 // 2. push するコミットのメッセージ
-// 3. 型チェック・Lint・整形チェック（CI と同じ）
+// 3. 型チェック・Lint・未使用コードの検出・整形チェック（CI と同じ）
 // 作業途中の push で 3 だけを飛ばす場合は、環境変数 SKIP_QUALITY_CHECKS=1 を付けて push する（1・2 は常に行う）
 // git push --no-verify はフック全体を飛ばすので使わない（CONTRIBUTING.md 参照）
 
@@ -71,7 +71,7 @@ if (!ok) {
 
 if (process.env.SKIP_QUALITY_CHECKS === '1') {
   console.log(
-    '\n⚠ SKIP_QUALITY_CHECKS=1 のため、型チェック・Lint・整形チェックを飛ばしました（PR を出す前には通すこと。CI では実行される）\n',
+    '\n⚠ SKIP_QUALITY_CHECKS=1 のため、型チェック・Lint・未使用コードの検出・整形チェックを飛ばしました（PR を出す前には通すこと。CI では実行される）\n',
   );
   process.exit(0);
 }
@@ -91,6 +91,14 @@ const checks = [
     hints: [
       'npm run lint -- --fix で自動で直せるものは直る',
       '残ったものは、上に表示された箇所をルール名（行末）を参考に手で直す',
+    ],
+  },
+  {
+    name: '未使用コードの検出',
+    command: 'npm run lint:unused',
+    hints: [
+      '上に表示された未使用のファイル・export・依存パッケージを消す（使う予定のものは export をやめるか、使う PR で足す）',
+      'npm run lint:unused -- --fix で未使用の export・依存パッケージは自動で消せる（ファイルは消えない）',
     ],
   },
   {
