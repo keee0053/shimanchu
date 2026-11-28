@@ -248,17 +248,19 @@ export type ProfileInput = z.infer<typeof profileSchema>;
 - テストのファイルは、テストする関数の近くの `__tests__/` に `<名前>-test.ts` で置く
 - `describe` / `it` / `expect` はグローバルのまま使う（import しない）。テスト名は日本語で、何を確かめるかを書く
 - 境界の値（ちょうど18歳になる日、島の範囲の端など）を必ず入れる
+- 入力と期待する値の組は **`it.each` / `test.each` のテーブル**で書く。テスト名には `$変数名` で値を入れる
+  - `for` 文や `forEach` / `map` で `it` を作るのは Lint のエラー。普通の `it` / `test` は Lint の警告になる（1ケースしかないなど、テーブルにしにくいときだけ使う）
 
 ```ts
 // src/domain/services/__tests__/age-test.ts
 import { calculateAge } from '@/domain/services/age';
 
 describe('calculateAge', () => {
-  it('誕生日の前日はまだ年を取らない', () => {
-    expect(calculateAge(new Date('2008-04-01'), new Date('2026-03-31'))).toBe(17);
-  });
-  it('誕生日の当日に年を取る', () => {
-    expect(calculateAge(new Date('2008-04-01'), new Date('2026-04-01'))).toBe(18);
+  it.each<{ today: string; expected: number }>([
+    { today: '2026-03-31', expected: 17 }, // 誕生日の前日はまだ年を取らない
+    { today: '2026-04-01', expected: 18 }, // 誕生日の当日に年を取る
+  ])('2008-04-01 生まれは $today に $expected 歳', ({ today, expected }) => {
+    expect(calculateAge(new Date('2008-04-01'), new Date(today))).toBe(expected);
   });
 });
 ```

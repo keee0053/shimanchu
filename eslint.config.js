@@ -2,6 +2,7 @@
 const { defineConfig } = require('eslint/config');
 const expoConfig = require('eslint-config-expo/flat');
 const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommended');
+const jest = require('eslint-plugin-jest');
 
 // ---------------------------------------------------------------------------
 // クリーンアーキテクチャの依存ルール（docs/ARCHITECTURE.md・docs/CODING_GUIDELINES.md）
@@ -36,6 +37,29 @@ const frameworkPackages = {
   ],
   message:
     'domain / application は React・Expo・Supabase などに依存させない（純粋な TypeScript で書く）',
+};
+
+// テーブルテストを促すためのルール（普通の it / test を警告する）
+// it.each(...)(...) は呼び出し元が it ではなく it.each(...) の戻り値なので対象にならない
+const tablePlugin = {
+  rules: {
+    'prefer-table': {
+      meta: {
+        type: 'suggestion',
+        messages: {
+          preferTable:
+            'テストはなるべく it.each / test.each のテーブルで書く（入力と期待する値の組を並べる）',
+        },
+      },
+      create: (context) => ({
+        CallExpression(node) {
+          if (node.callee.type === 'Identifier' && ['it', 'test'].includes(node.callee.name)) {
+            context.report({ node: node.callee, messageId: 'preferTable' });
+          }
+        },
+      }),
+    },
+  },
 };
 
 module.exports = defineConfig([
@@ -120,6 +144,32 @@ module.exports = defineConfig([
           ],
         },
       ],
+    },
+  },
+  // -------------------------------------------------------------------------
+  // テスト（docs/CODING_GUIDELINES.md の「8. テスト」）
+  //   入力と期待する値の組は it.each / test.each のテーブルで書く
+  // -------------------------------------------------------------------------
+  {
+    name: 'tests',
+    files: ['src/**/__tests__/**/*.{ts,tsx}'],
+    ...jest.configs['flat/recommended'],
+    plugins: { ...jest.configs['flat/recommended'].plugins, table: tablePlugin },
+    rules: {
+      ...jest.configs['flat/recommended'].rules,
+      // for 文でテストを量産しない（it.each / test.each を使う）
+      'jest/prefer-each': 'error',
+      // forEach / map でテストを量産しない（jest/prefer-each は for 文しか見ないため補う）
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'CallExpression[callee.property.name=/^(forEach|map)$/] CallExpression[callee.name=/^(it|test|describe)$/]',
+          message: 'forEach / map でテストを量産しない（it.each / test.each を使う）',
+        },
+      ],
+      // 普通の it / test は警告にとどめる（1ケースだけのテストなど、テーブルにしにくいときは使ってよい）
+      'table/prefer-table': 'warn',
     },
   },
 ]);
