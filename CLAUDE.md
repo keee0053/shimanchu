@@ -63,7 +63,7 @@ supabase migration new <name>  # マイグレーション作成
 - DB 変更は必ずマイグレーションで。新しいテーブルは RLS を有効にしてポリシーを書く。マージ済みマイグレーションは編集しない
 - DB の行の型は手書きせず `npm run gen:types` で生成したもの（infrastructure 内）を使う。domain のエンティティは必要な項目だけ手で定義し、リポジトリの実装で変換する
 - 位置情報: MVP はフォアグラウンドのみ（バックグラウンドは MVP 後にジオフェンスで導入）。座標は DB に保存せずサーバーにも送らない（端末で島を判定し、`user_presence` に島の種類だけ送る。登録した場所の座標も端末内だけ）。取得失敗・権限拒否は「漂流」状態として扱う（domain のルール）。座標をログに出さない。`TaskManager.defineTask` は `src/infrastructure/location/` のトップレベルで定義し、`src/container.ts` で import する
-- テスト: 壊れると困る domain のルール（年齢・島の判定・漂流の判定など）だけ書く。ユースケース・画面は書かない。テストする関数の近くの `__tests__/<名前>-test.ts` に置く。入力と期待する値の組は `it.each` / `test.each` のテーブルで書く（ループで `it` を作るのは Lint のエラー、普通の `it` は警告）。期待する値が仕様どおりかはユーザーに確かめてもらう
+- テスト: 壊れると困る domain のルール（年齢・島の判定・漂流の判定など）だけ書く。ユースケース・画面は書かない。テストする関数の近くの `__tests__/<名前>-test.ts` に置く。入力と期待する値の組は `it.each` / `test.each` のテーブルで書く（`for`・`while`・`forEach`・`map` で `it` を作るのは Lint のエラー、普通の `it` は警告）。期待する値が仕様どおりかはユーザーに確かめてもらう
 - フォームは React Hook Form + Zod（`src/presentation/schemas/`、型は `z.infer`、エラーメッセージは日本語）
 - 秘密情報（`service_role` キー、`.env.local`）をコードやコミットに含めない。`EXPO_PUBLIC_` 付きの環境変数は公開される前提で扱う
 

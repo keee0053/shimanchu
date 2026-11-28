@@ -167,9 +167,13 @@ module.exports = defineConfig([
       ...jest.configs['flat/recommended'].rules,
       // for 文でテストを量産しない（it.each / test.each を使う）
       'jest/prefer-each': 'error',
-      // forEach / map でテストを量産しない（jest/prefer-each は for 文しか見ないため補う）
+      // while 文・forEach / map でテストを量産しない（jest/prefer-each は for 文しか見ないため補う）
       'no-restricted-syntax': [
         'error',
+        {
+          selector: `:matches(WhileStatement, DoWhileStatement) ${jestCall}`,
+          message: 'while 文でテストを量産しない（it.each / test.each を使う）',
+        },
         {
           selector: `CallExpression[callee.property.name=/^(forEach|map)$/] ${jestCall}`,
           message: 'forEach / map でテストを量産しない（it.each / test.each を使う）',

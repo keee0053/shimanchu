@@ -249,7 +249,7 @@ export type ProfileInput = z.infer<typeof profileSchema>;
 - `describe` / `it` / `expect` はグローバルのまま使う（import しない）。テスト名は日本語で、何を確かめるかを書く
 - 境界の値（ちょうど18歳になる日、島の範囲の端など）を必ず入れる
 - 入力と期待する値の組は **`it.each` / `test.each` のテーブル**で書く。テスト名には `$変数名` で値を入れる
-  - `for` 文や `forEach` / `map` で `it` を作るのは Lint のエラー。普通の `it` / `test` は Lint の警告になる（1ケースしかないなど、テーブルにしにくいときだけ使う）
+  - `for` 文・`while` 文や `forEach` / `map` で `it` を作るのは Lint のエラー。普通の `it` / `test` は Lint の警告になる（1ケースしかないなど、テーブルにしにくいときだけ使う）
 
 ```ts
 // src/domain/services/__tests__/age-test.ts
